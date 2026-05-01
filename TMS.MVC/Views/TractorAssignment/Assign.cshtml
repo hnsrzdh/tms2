@@ -1,0 +1,259 @@
+﻿@model TMS.MVC.ViewModels.TractorAssignmentUpsertViewModel
+
+@{
+    ViewData["Title"] = "تخصیص کشنده جدید";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">حواله‌ها</li>
+                    <li class="breadcrumb-item">زیرحواله‌ها</li>
+                    <li class="breadcrumb-item">تخصیص کشنده</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">
+                    <span class="text-muted" style="font-size: 0.9rem;">حواله شماره:</span>
+                    <span class="fw-bold">@Model.HavalehNumber</span>
+                    <span class="mx-2 text-muted">|</span>
+                    <span class="text-muted" style="font-size: 0.9rem;">زیرحواله:</span>
+                    <span>@Model.SubHavalehTitle</span>
+                </h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <form asp-action="Assign" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="SubHavalehId" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <!-- انتخاب کشنده -->
+                    <div class="col-md-6">
+                        <label class="form-label">کشنده <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input asp-for="TractorId" type="hidden" />
+                            <input asp-for="TractorPlateNumber" class="form-control" readonly placeholder="انتخاب کنید..." />
+                            <button type="button" class="btn btn-outline-secondary" id="openTractorModal">
+                                <i class="bi bi-search"></i> انتخاب
+                            </button>
+                        </div>
+                        <span asp-validation-for="TractorId" class="text-danger"></span>
+                    </div>
+
+                    <!-- انتخاب راننده -->
+                    <div class="col-md-6">
+                        <label class="form-label">راننده</label>
+                        <div class="input-group">
+                            <input asp-for="DriverProfileId" type="hidden" />
+                            <input asp-for="DriverFullName" class="form-control" readonly placeholder="انتخاب کنید..." />
+                            <button type="button" class="btn btn-outline-secondary" id="openDriverModal">
+                                <i class="bi bi-person"></i> انتخاب
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- توضیحات -->
+                    <div class="col-12">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> ذخیره
+                    </button>
+                    <a asp-action="Index" asp-route-subHavalehId="@Model.SubHavalehId" class="btn btn-secondary">
+                        <i class="bi bi-x-lg"></i> انصراف
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- مودال انتخاب کشنده -->
+<div class="modal fade" id="tractorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">انتخاب کشنده</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="tractorSearchInput" class="form-control mb-3" placeholder="حداقل ۲ کاراکتر برای جستجوی پلاک وارد کنید..." />
+                <small class="text-muted mb-3 d-block">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</small>
+                <table class="table table-hover">
+                    <thead><tr><th>پلاک</th><th>نوع</th><th>ظرفیت</th><th>انتخاب</th></tr></thead>
+                    <tbody id="tractorSearchResults">
+                        <tr><td colspan="4" class="text-muted text-center">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال انتخاب راننده -->
+<div class="modal fade" id="driverModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">انتخاب راننده</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="driverSearchInput" class="form-control mb-3" placeholder="حداقل ۲ کاراکتر برای جستجوی نام وارد کنید..." />
+                <small class="text-muted mb-3 d-block">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</small>
+                <table class="table table-hover">
+                    <thead><tr><th>نام</th><th>کد ملی</th><th>شماره تماس</th><th>انتخاب</th></tr></thead>
+                    <tbody id="driverSearchResults">
+                        <tr><td colspan="4" class="text-muted text-center">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // مودال کشنده
+            var tractorModal = new bootstrap.Modal(document.getElementById("tractorModal"));
+            var tractorSearchInput = document.getElementById("tractorSearchInput");
+            var tractorResults = document.getElementById("tractorSearchResults");
+
+            document.getElementById("openTractorModal").addEventListener("click", function () {
+                tractorSearchInput.value = "";
+                tractorResults.innerHTML = '<tr><td colspan="4" class="text-muted text-center">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</td></tr>';
+                tractorModal.show();
+                setTimeout(function () { tractorSearchInput.focus(); }, 200);
+            });
+
+            var tractorTimeout;
+            tractorSearchInput.addEventListener("input", function () {
+                clearTimeout(tractorTimeout);
+                var term = this.value.trim();
+                if (term.length < 2) {
+                    tractorResults.innerHTML = '<tr><td colspan="4" class="text-muted text-center">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</td></tr>';
+                    return;
+                }
+                tractorResults.innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm"></div> در حال جستجو...</td></tr>';
+                tractorTimeout = setTimeout(function () { loadTractors(term); }, 400);
+            });
+
+            function loadTractors(term) {
+                fetch('/TractorAssignment/SearchAvailableTractors?term=' + encodeURIComponent(term))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.length === 0) {
+                            tractorResults.innerHTML = '<tr><td colspan="4" class="text-center">موردی یافت نشد</td></tr>';
+                            return;
+                        }
+                        var html = '';
+                        for (var i = 0; i < data.length; i++) {
+                            var x = data[i];
+                            html += '<tr>' +
+                                '<td>' + (x.policePlateNumber || '') + '</td>' +
+                                '<td>' + (x.tractorType || '-') + '</td>' +
+                                '<td>' + (x.capacity || '-') + ' ' + (x.capacityUnit || '') + '</td>' +
+                                '<td><button type="button" class="btn btn-sm btn-primary js-select-tractor" data-id="' + x.id + '" data-text="' + (x.policePlateNumber || '') + '">انتخاب</button></td>' +
+                                '</tr>';
+                        }
+                        tractorResults.innerHTML = html;
+
+                        var buttons = tractorResults.querySelectorAll(".js-select-tractor");
+                        for (var j = 0; j < buttons.length; j++) {
+                            buttons[j].addEventListener("click", function () {
+                                document.getElementById("TractorId").value = this.dataset.id;
+                                document.getElementById("TractorPlateNumber").value = this.dataset.text;
+                                tractorModal.hide();
+                            });
+                        }
+                    })
+                    .catch(function () {
+                        tractorResults.innerHTML = '<tr><td colspan="4" class="text-center text-danger">خطا در جستجو</td></tr>';
+                    });
+            }
+
+            // مودال راننده
+            var driverModal = new bootstrap.Modal(document.getElementById("driverModal"));
+            var driverSearchInput = document.getElementById("driverSearchInput");
+            var driverResults = document.getElementById("driverSearchResults");
+
+            document.getElementById("openDriverModal").addEventListener("click", function () {
+                driverSearchInput.value = "";
+                driverResults.innerHTML = '<tr><td colspan="4" class="text-muted text-center">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</td></tr>';
+                driverModal.show();
+                setTimeout(function () { driverSearchInput.focus(); }, 200);
+            });
+
+            var driverTimeout;
+            driverSearchInput.addEventListener("input", function () {
+                clearTimeout(driverTimeout);
+                var term = this.value.trim();
+                if (term.length < 2) {
+                    driverResults.innerHTML = '<tr><td colspan="4" class="text-muted text-center">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید</td></tr>';
+                    return;
+                }
+                driverResults.innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm"></div> در حال جستجو...</td></tr>';
+                driverTimeout = setTimeout(function () { loadDrivers(term); }, 400);
+            });
+
+            function loadDrivers(term) {
+                fetch('/TractorAssignment/SearchAvailableDrivers?term=' + encodeURIComponent(term))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.length === 0) {
+                            driverResults.innerHTML = '<tr><td colspan="4" class="text-center">موردی یافت نشد</td></tr>';
+                            return;
+                        }
+                        var html = '';
+                        for (var i = 0; i < data.length; i++) {
+                            var x = data[i];
+                            html += '<tr>' +
+                                '<td>' + (x.fullName || '') + '</td>' +
+                                '<td>' + (x.nationalId || '-') + '</td>' +
+                                '<td>' + (x.phoneNumber || '-') + '</td>' +
+                                '<td><button type="button" class="btn btn-sm btn-primary js-select-driver" data-id="' + x.id + '" data-text="' + (x.fullName || '') + '">انتخاب</button></td>' +
+                                '</tr>';
+                        }
+                        driverResults.innerHTML = html;
+
+                        var buttons = driverResults.querySelectorAll(".js-select-driver");
+                        for (var j = 0; j < buttons.length; j++) {
+                            buttons[j].addEventListener("click", function () {
+                                document.getElementById("DriverProfileId").value = this.dataset.id;
+                                document.getElementById("DriverFullName").value = this.dataset.text;
+                                driverModal.hide();
+                            });
+                        }
+                    })
+                    .catch(function () {
+                        driverResults.innerHTML = '<tr><td colspan="4" class="text-center text-danger">خطا در جستجو</td></tr>';
+                    });
+            }
+
+            // پاک کردن راننده
+            document.getElementById("clearDriver").addEventListener("click", function () {
+                document.getElementById("DriverProfileId").value = "";
+                document.getElementById("DriverFullName").value = "";
+            });
+        });
+    </script>
+}

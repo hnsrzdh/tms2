@@ -1,0 +1,296 @@
+﻿@using TMS.MVC.Models.ViewModels
+@model UserIndexViewModel
+
+@{
+    ViewData["Title"] = "مدیریت کاربران";
+}
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">کاربران</li>
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success">@TempData["Ok"]</div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <a asp-action="Create" class="btn btn-primary">تعریف کاربر جدید</a>
+        </div>
+
+        <div class="card-body">
+            <form method="get" class="row g-2 mb-3">
+                <div class="col-md-9">
+                    <input type="text"
+                           name="search"
+                           value="@Model.Search"
+                           class="form-control"
+                           placeholder="جستجو بر اساس ایمیل، نام یا نام خانوادگی" />
+                </div>
+
+                <div class="col-md-2">
+                    <select name="pageSize" class="form-select">
+                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                        <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                    </select>
+                </div>
+
+                <div class="col-md-1  d-grid">
+                    <button type="submit" class="btn btn-primary">فیلتر</button>
+                </div>
+            </form>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:60px;">#</th>
+                                    <th>ایمیل</th>
+                                    <th>نام</th>
+                                    <th>نام خانوادگی</th>
+                                    <th>نقش‌ها</th>
+                                    <th>وضعیت</th>
+                                    <th style="width:300px;">عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Items.Any())
+                                {
+                                    var rowNo = Model.RowNumberStart;
+                                    foreach (var item in Model.Items)
+                                    {
+                                        <tr>
+                                            <td>@rowNo</td>
+                                            <td>@item.Email</td>
+                                            <td>@(string.IsNullOrWhiteSpace(item.FirstName) ? "-" : item.FirstName)</td>
+                                            <td>@(string.IsNullOrWhiteSpace(item.LastName) ? "-" : item.LastName)</td>
+                                            <td>
+                                                @if (item.Roles != null && item.Roles.Any())
+                                                {
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        @foreach (var role in item.Roles)
+                                                        {
+                                                            <span class="badge bg-info text-dark">@role</span>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span>-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (item.IsActive)
+                                                {
+                                                    <span class="badge bg-success">فعال</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">غیرفعال</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    <a asp-action="Edit"
+                                                       asp-route-id="@item.Id"
+                                                       class="btn btn-sm btn-outline-warning">
+                                                        ویرایش
+                                                    </a>
+
+                                                    <a asp-action="Permissions"
+                                                       asp-route-id="@item.Id"
+                                                       class="btn btn-sm btn-outline-info">
+                                                        دسترسی‌ها
+                                                    </a>
+
+                                                    <a asp-action="ChangePassword"
+                                                       asp-route-id="@item.Id"
+                                                       class="btn btn-sm btn-outline-secondary">
+                                                        تغییر رمز
+                                                    </a>
+
+                                                    <button type="button"
+                                                            class="btn btn-sm @(item.IsActive ? "btn-outline-danger" : "btn-outline-success") js-toggle-active-btn"
+                                                            data-id="@item.Id"
+                                                            data-name="@item.Email"
+                                                            data-isactive="@item.IsActive.ToString().ToLower()">
+                                                        @(item.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        rowNo++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            موردی یافت نشد.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                    <div class="text-muted small">
+                        صفحه @Model.Page از @Model.TotalPages
+                        -
+                        تعداد کل: @Model.TotalItems
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-primary">
+
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="1"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    اول
+                                </a>
+                            </li>
+
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@(Model.Page - 1)"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    قبلی
+                                </a>
+                            </li>
+
+                            @{
+                                var startPage = Math.Max(1, Model.Page - 2);
+                                var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                            }
+
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link"
+                                       asp-action="Index"
+                                       asp-route-page="@i"
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.Search">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@(Model.Page + 1)"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    بعدی
+                                </a>
+                            </li>
+
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@Model.TotalPages"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    آخر
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+
+                </div>
+            }
+
+            <div class="modal fade" id="toggleActiveModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" asp-action="ToggleActive">
+                            @Html.AntiForgeryToken()
+
+                            <div class="modal-header">
+                                <h5 class="modal-title">تایید عملیات</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <input type="hidden" id="toggleUserId" name="id" />
+                                <input type="hidden" name="page" value="@Model.Page" />
+                                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                <input type="hidden" name="search" value="@Model.Search" />
+
+                                <p id="toggleActiveText" class="mb-0"></p>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                <button type="submit" id="toggleActiveSubmitBtn" class="btn">تایید</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modalEl = document.getElementById("toggleActiveModal");
+            const modal = new bootstrap.Modal(modalEl);
+
+            const userIdInput = document.getElementById("toggleUserId");
+            const textEl = document.getElementById("toggleActiveText");
+            const submitBtn = document.getElementById("toggleActiveSubmitBtn");
+
+            document.querySelectorAll(".js-toggle-active-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    const isActive = this.dataset.isactive === "true";
+
+                    userIdInput.value = id;
+
+                    if (isActive) {
+                        textEl.textContent = `آیا از غیرفعال‌سازی کاربر ${name} مطمئن هستید؟`;
+                        submitBtn.textContent = "غیرفعال‌سازی";
+                        submitBtn.className = "btn btn-danger";
+                    } else {
+                        textEl.textContent = `آیا از فعال‌سازی کاربر ${name} مطمئن هستید؟`;
+                        submitBtn.textContent = "فعال‌سازی";
+                        submitBtn.className = "btn btn-success";
+                    }
+
+                    modal.show();
+                });
+            });
+        });
+    </script>
+}

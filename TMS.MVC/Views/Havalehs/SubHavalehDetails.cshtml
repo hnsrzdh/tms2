@@ -1,0 +1,340 @@
+﻿@using System.Globalization
+@model TMS.MVC.Models.SubHavaleh
+
+@{
+    ViewData["Title"] = "جزئیات زیرحواله";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    var originText = Model.Havaleh?.OriginCity == null
+        ? "-"
+        : $"{Model.Havaleh.OriginCity.CountryName} / {Model.Havaleh.OriginCity.ProvinceName} / {Model.Havaleh.OriginCity.Name}";
+
+    var destinationText = Model.DestinationCity == null
+        ? "-"
+        : $"{Model.DestinationCity.CountryName} / {Model.DestinationCity.ProvinceName} / {Model.DestinationCity.Name}";
+
+    // تعیین واحد بار (تن یا کیلوگرم)
+    var cargoUnit = Model.Havaleh?.Unit ?? "کیلوگرم";
+    var penaltyUnit = cargoUnit == "لیتر" ? "لیتر" : "کیلوگرم";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">حواله‌ها</li>
+                    <li class="breadcrumb-item">زیرحواله</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- کارت اطلاعات پایه -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>اطلاعات پایه</h5>
+            <div class="d-flex gap-2">
+                <a asp-action="Details" asp-route-id="@Model.HavalehId" class="btn btn-secondary btn-sm">بازگشت</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">شماره حواله</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@Model.Havaleh.HavalehNumber</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">عنوان</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.Title ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">نوع قرارداد</small>
+                        <span class="badge bg-info mt-2 d-block">@(Model.ContractType ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">مبنای تسویه</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.SettlementBase ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">نوع حمل</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.TransportType ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">حق سرویس</small>
+                        <span class="badge mt-2 d-block @(Model.IsUnderSupervisor ? "bg-success" : "bg-secondary")">@(Model.IsUnderSupervisor ? "فعال" : "غیرفعال")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">مبدا</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@originText</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">مقصد نهایی</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@destinationText</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">شهرهای میانی</small>
+                        <span class="fw-bold text-muted mt-2 d-block">
+                            @if (Model.IntermediateCities.Any())
+                            {
+                                @string.Join(" → ", Model.IntermediateCities.OrderBy(x => x.SortOrder).Select(x => x.City.Name))
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">واحد بارگیری</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@cargoUnit</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- کارت اطلاعات مالی -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>اطلاعات مالی</h5>
+            <small class="text-muted">تمامی مبالغ به ریال می‌باشد</small>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-secondary border-bottom text-center pb-2 mb-3">اطلاعات راننده</h6>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <div class="border rounded-2 p-2 text-center">
+                                <small class="text-muted d-block">فی هر 1000 @cargoUnit</small>
+                                <span class="fw-bold text-success mt-2 d-block">@(Model.DriverPricePerTon?.ToString("N0") ?? "-")</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded-2 p-2 text-center">
+                                <small class="text-muted d-block">انعام</small>
+                                <span class="fw-bold text-warning mt-2 d-block">@(Model.DriverTip?.ToString("N0") ?? "-")</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded-2 p-2 text-center">
+                                <small class="text-muted d-block">حق توقف به ازای هر روز</small>
+                                <span class="fw-bold text-info mt-2 d-block">@(Model.DriverStopFee?.ToString("N0") ?? "-")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-secondary border-bottom text-center pb-2 mb-3">اطلاعات صاحب کالا</h6>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <div class="border rounded-2 p-2 text-center">
+                                <small class="text-muted d-block">فی هر 1000 @cargoUnit</small>
+                                <span class="fw-bold text-success mt-2 d-block">@(Model.GoodsOwnerPricePerTon?.ToString("N0") ?? "-")</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded-2 p-2 text-center">
+                                <small class="text-muted d-block">انعام</small>
+                                <span class="fw-bold text-warning mt-2 d-block">@(Model.GoodsOwnerTip?.ToString("N0") ?? "-")</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded-2 p-2 text-center">
+                                <small class="text-muted d-block">حق توقف به ازای هر روز</small>
+                                <span class="fw-bold text-info mt-2 d-block">@(Model.GoodsOwnerStopFee?.ToString("N0") ?? "-")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- کارت جریمه‌ها و زمان‌ها -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>جریمه‌ها و زمان‌ها</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 text-center">
+                        <i class="bi bi-clock text-info"></i>
+                        <small class="text-muted d-block">زمان مجاز بارگیری</small>
+                        <span class="fw-bold d-block mt-2">@(Model.AllowedLoadingTime?.ToString() ?? "-") روز</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 text-center">
+                        <i class="bi bi-calendar-check text-success"></i>
+                        <small class="text-muted d-block">زمان مجاز تحویل</small>
+                        <span class="fw-bold d-block mt-2">@(Model.AllowedDeliveryTime?.ToString() ?? "-") روز</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 text-center">
+                        <i class="bi bi-exclamation-triangle text-danger"></i>
+                        <small class="text-muted d-block">جریمه تاخیر</small>
+                        <span class="fw-bold text-danger d-block mt-2">@(Model.LateDeliveryPenalty?.ToString("N0") ?? "-") ریال به ازای هر روز</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 text-center">
+                        <i class="bi bi-box-seam text-warning"></i>
+                        <small class="text-muted d-block">جریمه کسری بار</small>
+                        <span class="fw-bold text-warning d-block mt-2">@(Model.FixedShortageAmount?.ToString("N0") ?? "-") ریال به ازای هر @penaltyUnit</span>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="border rounded-3 p-2 text-center bg-light">
+                        <i class="bi bi-percent"></i>
+                        <small class="text-muted">کسر بار قابل قبول:</small>
+                        <span class="fw-bold text-primary  mt-1">@(Model.AcceptableWeightLoss?.ToString("N0") ?? "-")</span>
+                        <small class="text-muted">@cargoUnit</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- کارت بار و زمان‌بندی -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>بار و زمان‌بندی</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 text-center bg-light">
+                        <i class="bi bi-boxes text-primary fs-4"></i>
+                        <small class="text-muted d-block mt-1">میزان محموله درخواستی</small>
+                        <span class="fw-bold d-block mt-2 text-primary">@(Model.RequestedCargoAmount?.ToString("N0") ?? "-") @cargoUnit</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 text-center bg-light">
+                        <i class="bi bi-calendar-plus text-success fs-4"></i>
+                        <small class="text-muted d-block mt-1">تاریخ شروع</small>
+                        <span class="fw-bold d-block mt-2 text-primary">@ToJalali(Model.StartDate)</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 text-center bg-light">
+                        <i class="bi bi-calendar-x text-danger fs-4"></i>
+                        <small class="text-muted d-block mt-1">تاریخ پایان</small>
+                        <span class="fw-bold d-block mt-2 text-primary">@ToJalali(Model.EndDate)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- کارت کشنده‌ها -->
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>
+               کشنده‌های تخصیص داده شده
+            </h5>
+            <a asp-controller="TractorAssignment" asp-action="Assign" asp-route-subHavalehId="@Model.Id" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> تخصیص کشنده جدید
+            </a>
+        </div>
+        <div class="card-body">
+            <div id="tractorAssignmentsList">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">در حال بارگذاری...</span>
+                    </div>
+                    <p class="mt-2 text-muted">در حال بارگذاری لیست کشنده‌ها...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        let currentSearch = '';
+        let currentStatus = '';
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadTractorAssignments(@Model.Id);
+        });
+
+        function loadTractorAssignments(subHavalehId, page = 1, search = '', statusFilter = '') {
+            currentPage = page;
+            currentSearch = search;
+            currentStatus = statusFilter;
+
+            let url = `/TractorAssignment/GetAssignmentsList?subHavalehId=${subHavalehId}&page=${page}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (statusFilter) url += `&statusFilter=${statusFilter}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.text();
+                })
+                .then(html => {
+                    document.getElementById("tractorAssignmentsList").innerHTML = html;
+                    document.querySelectorAll("#tractorAssignmentsList .page-link").forEach(link => {
+                        link.addEventListener("click", function(e) {
+                            e.preventDefault();
+                            let pageNum = parseInt(this.getAttribute("data-page"));
+                            if (!isNaN(pageNum)) {
+                                loadTractorAssignments(@Model.Id, pageNum, currentSearch, currentStatus);
+                            }
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading tractor assignments:', error);
+                    document.getElementById("tractorAssignmentsList").innerHTML = `
+                        <div class="alert alert-danger text-center m-4">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            خطا در بارگذاری لیست کشنده‌ها. لطفاً صفحه را refresh کنید.
+                        </div>
+                    `;
+                });
+        }
+
+        function refreshTractorAssignments() {
+            loadTractorAssignments(@Model.Id, currentPage, currentSearch, currentStatus);
+        }
+    </script>
+}

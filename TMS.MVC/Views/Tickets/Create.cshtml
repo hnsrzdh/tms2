@@ -1,0 +1,62 @@
+﻿@model TMS.MVC.ViewModels.Tickets.TicketCreateVm
+@using TMS.MVC.Models.Tickets
+
+@{
+    ViewData["Title"] = "تیکت جدید";
+    var categories = ViewBag.Categories as List<TicketCategory> ?? new();
+}
+
+<h1 class="mb-3">تیکت جدید</h1>
+
+<form method="post" class="card shadow-sm">
+    @Html.AntiForgeryToken()
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">عنوان</label>
+                <input asp-for="Subject" class="form-control" />
+                <span class="text-danger">@Html.ValidationMessageFor(m => m.Subject)</span>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">اولویت</label>
+                <select asp-for="Priority" class="form-select">
+                    <option value="1">کم</option>
+                    <option value="2" selected>معمولی</option>
+                    <option value="3">زیاد</option>
+                    <option value="4">فوری</option>
+                </select>
+                <span class="text-danger">@Html.ValidationMessageFor(m => m.Priority)</span>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">دسته‌بندی</label>
+                <select asp-for="CategoryId" class="form-select">
+                    <option value="">انتخاب کنید...</option>
+                    @foreach (var c in categories)
+                    {
+                        <option value="@c.Id">@c.Title</option>
+                    }
+                </select>
+                <span class="text-danger">@Html.ValidationMessageFor(m => m.CategoryId)</span>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">متن</label>
+                <textarea asp-for="Body" class="form-control" rows="6"></textarea>
+                <span class="text-danger">@Html.ValidationMessageFor(m => m.Body)</span>
+            </div>
+
+            <input type="hidden" asp-for="RelatedEntityType" />
+            <input type="hidden" asp-for="RelatedEntityId" />
+        </div>
+
+        <div class="mt-3 d-flex gap-2">
+            <button class="btn btn-primary" type="submit">ثبت</button>
+            <a class="btn btn-outline-secondary" asp-action="MyTickets">بازگشت</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

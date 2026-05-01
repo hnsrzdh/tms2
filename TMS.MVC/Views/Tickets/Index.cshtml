@@ -1,0 +1,89 @@
+﻿@model List<TMS.MVC.Models.Tickets.Ticket>
+@using TMS.MVC.Models.Tickets
+
+@{
+    ViewData["Title"] = "مدیریت تیکت‌ها";
+    var q = ViewBag.Q as string;
+    var status = ViewBag.Status as string;
+    var priority = ViewBag.Priority as string;
+}
+
+<h1 class="mb-3">مدیریت تیکت‌ها</h1>
+
+@if (TempData["Ok"] != null)
+{
+    <div class="alert alert-success">@TempData["Ok"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-6">
+        <label class="form-label">جستجو</label>
+        <input name="q" class="form-control" value="@q" placeholder="کد/عنوان" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">وضعیت</label>
+        <select name="status" class="form-select">
+            <option value="">همه</option>
+            @foreach (var s in Enum.GetNames(typeof(TicketStatus)))
+            {
+                <option value="@s" selected="@(string.Equals(status, s, StringComparison.OrdinalIgnoreCase))">@s</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">اولویت</label>
+        <select name="priority" class="form-select">
+            <option value="">همه</option>
+            @foreach (var p in Enum.GetNames(typeof(TicketPriority)))
+            {
+                <option value="@p" selected="@(string.Equals(priority, p, StringComparison.OrdinalIgnoreCase))">@p</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-outline-primary w-100" type="submit">اعمال</button>
+    </div>
+</form>
+
+@if (Model == null || Model.Count == 0)
+{
+    <div class="text-muted">موردی وجود ندارد.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>کد</th>
+                    <th>عنوان</th>
+                    <th>دسته</th>
+                    <th>اولویت</th>
+                    <th>وضعیت</th>
+                    <th>ثبت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@t.Code</td>
+                        <td>@t.Subject</td>
+                        <td>@(t.Category?.Title ?? "—")</td>
+                        <td>@t.Priority</td>
+                        <td>@t.Status</td>
+                        <td>@t.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="Tickets" asp-action="Details" asp-route-id="@t.Id">کنترل</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

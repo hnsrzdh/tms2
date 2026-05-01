@@ -1,0 +1,68 @@
+﻿<header class="tms-topbar" dir="rtl">
+    <div class="tms-topbar-left">
+    
+    </div>
+
+    <div class="tms-topbar-right">
+        <button class="tms-iconbtn" type="button" title="اعلان‌ها">
+            <i class="bi bi-bell"></i>
+            <span class="tms-dot"></span>
+        </button>
+
+        <a class="tms-primarybtn" asp-controller="Tickets" asp-action="Create">
+            <i class="bi bi-plus-lg"></i>
+            <span>ایجاد درخواست</span>
+        </a>
+
+        <div class="dropdown">
+            <button class="tms-user tms-userbtn" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="tms-avatar">A</div>
+
+                <div class="tms-userinfo">
+                    <div class="tms-username">@(User?.Identity?.Name ?? "کاربر")</div>
+                    <div class="tms-role">حساب کاربری</div>
+                </div>
+
+                <span class="tms-userchev"><i class="bi bi-chevron-down"></i></span>
+            </button>
+
+            <div class="dropdown-menu dropdown-menu-end tms-user-popup" dir="rtl">
+                <div class="tms-user-popup-head">
+                    <div class="tms-user-popup-avatar">A</div>
+                    <div class="tms-user-popup-meta">
+                        <div class="tms-user-popup-name">@(User?.Identity?.Name ?? "کاربر")</div>
+                        <div class="tms-user-popup-sub">خوش آمدید 👋</div>
+                    </div>
+                </div>
+
+                <div class="tms-user-popup-actions">
+                    <a class="tms-user-action" asp-controller="Account" asp-action="Profile">
+                        <i class="bi bi-person"></i>
+                        <span>پروفایل</span>
+                    </a>
+
+                    <a class="tms-user-action" asp-controller="Account" asp-action="Settings">
+                        <i class="bi bi-gear"></i>
+                        <span>تنظیمات</span>
+                    </a>
+                    <a class="tms-user-action" asp-controller="Havalehs" asp-action="MyTrips">
+                        <i class="bi fa-mobile"></i>
+                        <span>ماموریت های من</span>
+                    </a>
+                    <a class="tms-user-action" asp-controller="Tickets" asp-action="MyTickets">
+                        <i class="bi fa-mobile"></i>
+                        <span>تیکت های من</span>
+                    </a>
+
+                    <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="m-0">
+                        <button type="submit" class="tms-user-action tms-user-action-danger">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>خروج</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

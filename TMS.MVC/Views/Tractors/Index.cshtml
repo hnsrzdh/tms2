@@ -1,0 +1,244 @@
+﻿@using TMS.MVC.ViewModels
+@model TractorIndexViewModel
+
+@{
+    ViewData["Title"] = "کشنده‌ها";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">کشنده‌ها</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success">@TempData["Ok"]</div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <a asp-action="Create" class="btn btn-primary">تعریف کشنده جدید</a>
+        </div>
+
+        <div class="card-body">
+            <form method="get" class="row g-2 mb-3">
+                <div class="col-md-9">
+                    <input type="text" name="search" value="@Model.Search" class="form-control"
+                           placeholder="جستجو بر اساس پلاک، مالک، هوشمند، وضعیت یا شماره پرونده" />
+                </div>
+                <div class="col-md-2">
+                    <select name="pageSize" class="form-select">
+                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                        <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button type="submit" class="btn btn-primary">فیلتر</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>پلاک انتظامی</th>
+                            <th>مالک</th>
+                            <th>شماره هوشمند</th>
+                            <th>وضعیت</th>
+                            <th>حداکثر ظرفیت</th>
+                            <th>بیمه/معاینه</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            var rowNo = Model.RowNumberStart;
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>@rowNo</td>
+                                    <td>@item.PolicePlateNumber</td>
+                                    <td>@item.OwnerName</td>
+                                    <td>@item.TractorSmartCardNumber</td>
+                                    <td>
+                                        @{
+                                            var statusText = item.Status?.Trim() ?? "";
+                                            var statusClass = statusText == "فعال"
+                                            ? "bg-success"
+                                            : statusText == "غیرفعال"
+                                            ? "bg-danger"
+                                            : "bg-secondary";
+                                        }
+                                        <span class="badge rounded-pill @statusClass px-3 py-2">@statusText</span>
+                                    </td>
+                                    <td>
+                                        @if (item.MaxLoadCapacity.HasValue)
+                                        {
+                                            @($"{item.MaxLoadCapacity:N0} {(item.CapacityUnit ?? "")}")
+                                        }
+                                        else
+                                        {
+                                            <span>-</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @{
+                                            var today = DateTime.Today;
+                                            var warningDays = 10;
+
+                                            var insuranceDate = item.ThirdPartyInsuranceExpireDate;
+                                            var inspectionDate = item.TechnicalInspectionExpireDate;
+
+                                            var isInsuranceNotSet = !insuranceDate.HasValue ;
+                                            var isInspectionNotSet = !inspectionDate.HasValue;
+
+                                            var isInsuranceExpired = insuranceDate.HasValue && insuranceDate.Value.Date < today;
+                                            var isInspectionExpired = inspectionDate.HasValue && inspectionDate.Value.Date < today;
+
+                                            var isInsuranceNear = insuranceDate.HasValue &&
+                                            insuranceDate.Value.Date >= today &&
+                                            (insuranceDate.Value.Date - today).TotalDays <= warningDays;
+
+                                            var isInspectionNear = inspectionDate.HasValue &&
+                                            inspectionDate.Value.Date >= today &&
+                                            (inspectionDate.Value.Date - today).TotalDays <= warningDays;
+
+                                            var validityClass = "bg-success";
+                                            var validityText = "معتبر";
+
+                                            if (isInsuranceNotSet || isInspectionNotSet)
+                                            {
+                                                validityClass = "bg-warning text-dark";
+                                                validityText = "ثبت نشده";
+                                            }
+                                            else if (isInsuranceExpired || isInspectionExpired)
+                                            {
+                                                validityClass = "bg-danger";
+                                                validityText = "منقضی";
+                                            }
+                                            else if (isInsuranceNear || isInspectionNear)
+                                            {
+                                                validityClass = "bg-warning text-dark";
+                                                validityText = "نزدیک انقضا";
+                                            }
+
+                                            
+                                        }
+
+                                        <span class="badge rounded-pill @validityClass px-3 py-2">
+                                            @validityText
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">ویرایش</a>
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
+
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#deleteModal_@item.Id">
+                                                حذف
+                                            </button>
+                                        </div>
+
+                                        <div class="modal fade" id="deleteModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="Delete" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">حذف کشنده</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-0">
+                                                                آیا از حذف این کشنده مطمئن هستید؟
+                                                            </p>
+                                                            <div class="mt-2 text-muted">
+                                                                پلاک: @item.PolicePlateNumber
+                                                            </div>
+                                                            @if (!string.IsNullOrWhiteSpace(item.OwnerName))
+                                                            {
+                                                                <div class="text-muted">
+                                                                    مالک: @item.OwnerName
+                                                                </div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-danger">حذف</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                rowNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="8" class="text-center py-4">موردی یافت نشد.</td></tr>
+                        }
+                    
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                    <div class="text-muted small">صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems</div>
+                    <nav>
+                        <ul class="pagination pagination-primary">
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-route-page="1" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">اول</a>
+                            </li>
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">قبلی</a>
+                            </li>
+                            @{
+                                var startPage = Math.Max(1, Model.Page - 2);
+                                var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                            }
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link" asp-route-page="@i" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">بعدی</a>
+                            </li>
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-route-page="@Model.TotalPages" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        
+        </div>
+    </div>
+</div>
+

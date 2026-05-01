@@ -1,0 +1,127 @@
+﻿@using TMS.MVC.Models.ViewModels
+@model UserPermissionsEditViewModel
+
+@{
+    ViewData["Title"] = "مدیریت دسترسی‌های کاربر";
+}
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+                <div class="text-muted small mt-2">
+                    کاربر: <strong>@Model.Email</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.FullName))
+                    {
+                        <span>- @Model.FullName</span>
+                    }
+                </div>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">کاربران</li>
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="Permissions" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="Email" />
+                <input type="hidden" asp-for="FullName" />
+
+                @if (Model.Categories != null && Model.Categories.Any())
+                {
+                    for (int i = 0; i < Model.Categories.Count; i++)
+                    {
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <strong>@Model.Categories[i].Category</strong>
+
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success js-check-category" data-index="@i">
+                                        انتخاب همه
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary js-uncheck-category" data-index="@i">
+                                        حذف انتخاب
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <input type="hidden" asp-for="Categories[@i].Category" />
+
+                                <div class="row g-2">
+                                    @for (int j = 0; j < Model.Categories[i].Items.Count; j++)
+                                    {
+                                        <input type="hidden" asp-for="Categories[@i].Items[@j].PermissionDefinitionId" />
+                                        <input type="hidden" asp-for="Categories[@i].Items[@j].Key" />
+                                        <input type="hidden" asp-for="Categories[@i].Items[@j].Title" />
+
+                                        <div class="col-md-4">
+                                            <div class="form-check border rounded p-2 h-100">
+                                                <input asp-for="Categories[@i].Items[@j].Selected"
+                                                       class="form-check-input permission-checkbox category-@i" />
+
+                                                <label asp-for="Categories[@i].Items[@j].Selected" class="form-check-label">
+                                                    @Model.Categories[i].Items[j].Title
+                                                </label>
+
+                                                <div class="text-muted small mt-1">
+                                                    @Model.Categories[i].Items[j].Key
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">ذخیره دسترسی‌ها</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        هیچ دسترسی‌ای برای نمایش تعریف نشده است.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary">بازگشت</a>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".js-check-category").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const index = this.dataset.index;
+                    document.querySelectorAll(".category-" + index).forEach(chk => chk.checked = true);
+                });
+            });
+
+            document.querySelectorAll(".js-uncheck-category").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const index = this.dataset.index;
+                    document.querySelectorAll(".category-" + index).forEach(chk => chk.checked = false);
+                });
+            });
+        });
+    </script>
+}

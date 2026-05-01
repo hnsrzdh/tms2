@@ -1,0 +1,499 @@
+﻿@model TMS.MVC.ViewModels.SubHavalehUpsertViewModel
+
+@{
+    ViewData["Title"] = "ویرایش زیرحواله";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">حواله‌ها</li>
+                    <li class="breadcrumb-item">زیرحواله</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <form asp-action="EditSubHavaleh" method="post" id="subHavalehForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="HavalehId" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><h4 class="mb-0">اطلاعات پایه</h4></div>
+            <div class="card-body row g-3">
+                <div class="col-md-4">
+                    <label asp-for="HavalehNumber" class="form-label"></label>
+                    <input asp-for="HavalehNumber" class="form-control" readonly />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="OriginCityDisplayName" class="form-label"></label>
+                    <input asp-for="OriginCityDisplayName" class="form-control" readonly />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">مقصد نهایی</label>
+                    <div class="input-group">
+                        <input asp-for="DestinationCityId" type="hidden" />
+                        <input asp-for="DestinationCityDisplayName" class="form-control" readonly />
+                        <button type="button" class="btn btn-outline-secondary" id="openDestinationCityModal">انتخاب</button>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="ContractType" class="form-label"></label>
+                    <input asp-for="ContractType" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="SettlementBase" class="form-label"></label>
+                    <input asp-for="SettlementBase" class="form-control" />
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">مسیر حمل</h4>
+                <button type="button" class="btn btn-primary" id="addIntermediateCityBtn">افزودن شهر میانی</button>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border">
+                    <strong>مبدا:</strong> @Model.OriginCityDisplayName
+                </div>
+
+                <div id="intermediateCitiesContainer">
+                    @for (int i = 0; i < Model.IntermediateCities.Count; i++)
+                    {
+                        <div class="row g-2 mb-2 intermediate-city-row">
+                            <input type="hidden" name="IntermediateCities[@i].Id" value="@Model.IntermediateCities[i].Id" />
+                            <input type="hidden" name="IntermediateCities[@i].CityId" value="@Model.IntermediateCities[i].CityId" class="city-id-input" />
+                            <input type="hidden" name="IntermediateCities[@i].SortOrder" value="@(i + 1)" class="sort-order-input" />
+
+                            <div class="col-md-10">
+                                <input type="text" name="IntermediateCities[@i].CityDisplayName" value="@Model.IntermediateCities[i].CityDisplayName" class="form-control city-display-input" readonly />
+                            </div>
+                            <div class="col-md-2 d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm select-city-btn">انتخاب</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-city-btn">حذف</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="alert alert-info border mt-3">
+                    <strong>مقصد نهایی:</strong> <span id="destinationSummary">@(Model.DestinationCityDisplayName ?? "-")</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><h4 class="mb-0">اطلاعات مالی</h4></div>
+            <div class="card-body row g-3">
+                <div class="col-md-3">
+                    <label asp-for="DriverCurrencyType" class="form-label"></label>
+                    <input asp-for="DriverCurrencyType" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="DriverCurrencyRate" class="form-label"></label>
+                    <input asp-for="DriverCurrencyRate" class="form-control" />
+                </div>
+                <div class="col-md-6"> </div>
+                <div class="col-md-3">
+                    <label asp-for="GoodsOwnerCurrencyType" class="form-label"></label>
+                    <input asp-for="GoodsOwnerCurrencyType" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="GoodsOwnerCurrencyRate" class="form-label"></label>
+                    <input asp-for="GoodsOwnerCurrencyRate" class="form-control" />
+                </div>
+                <div class="col-md-6"> </div>
+
+                <div class="col-md-3">
+                    <label asp-for="GoodsOwnerPricePerTon" class="form-label"></label>
+                    <input asp-for="GoodsOwnerPricePerTon" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="GoodsOwnerTip" class="form-label"></label>
+                    <input asp-for="GoodsOwnerTip" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="GoodsOwnerStopFee" class="form-label"></label>
+                    <input asp-for="GoodsOwnerStopFee" class="form-control" />
+                </div>
+
+                <div class="col-md-3"> </div>
+
+                <div class="col-md-3">
+                    <label asp-for="DriverPricePerTon" class="form-label"></label>
+                    <input asp-for="DriverPricePerTon" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="DriverTip" class="form-label"></label>
+                    <input asp-for="DriverTip" class="form-control" />
+                </div>
+
+
+                <div class="col-md-3">
+                    <label asp-for="DriverStopFee" class="form-label"></label>
+                    <input asp-for="DriverStopFee" class="form-control" />
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><h4 class="mb-0">محدودیت‌ها و جریمه‌ها</h4></div>
+            <div class="card-body row g-3">
+                <div class="col-md-3">
+                    <label asp-for="AllowedLoadingTime" class="form-label"></label>
+                    <input asp-for="AllowedLoadingTime" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="AllowedDeliveryTime" class="form-label"></label>
+                    <input asp-for="AllowedDeliveryTime" class="form-control" />
+                </div>
+
+                <div class="col-md-6"> </div>
+
+                <div class="col-md-3">
+                    <label asp-for="LateDeliveryPenalty" class="form-label"></label>
+                    <input asp-for="LateDeliveryPenalty" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="LateDeliveryPenaltyType" class="form-label"></label>
+                    <input asp-for="LateDeliveryPenaltyType" class="form-control" />
+                </div>
+
+                <div class="col-md-6"> </div>
+
+                <div class="col-md-3">
+                    <label asp-for="FixedShortageAmount" class="form-label"></label>
+                    <input asp-for="FixedShortageAmount" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="ShortagePenaltyType" class="form-label"></label>
+                    <input asp-for="ShortagePenaltyType" class="form-control" />
+                </div>
+
+
+                <div class="col-md-3">
+                    <label asp-for="AcceptableWeightLoss" class="form-label"></label>
+                    <input asp-for="AcceptableWeightLoss" class="form-control" />
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><h4 class="mb-0">بار و زمان‌بندی</h4></div>
+            <div class="card-body row g-3">
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        <input asp-for="IsUnderSupervisor" class="form-check-input" />
+                        <label asp-for="IsUnderSupervisor" class="form-check-label"></label>
+                    </div>
+                </div>
+                <div class="col-md-9"> </div>
+
+                <div class="col-md-3">
+                    <label asp-for="RequestedCargoAmount" class="form-label"></label>
+                    <input asp-for="RequestedCargoAmount" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="StartDate" class="form-label"></label>
+                    <input type="hidden" asp-for="StartDate" id="StartDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+                    <input id="StartDate_shamsi" class="form-control" autocomplete="off" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="EndDate" class="form-label"></label>
+                    <input type="hidden" asp-for="EndDate" id="EndDate" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+                    <input id="EndDate_shamsi" class="form-control" autocomplete="off" />
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">ذخیره</button>
+            <a asp-action="Details" asp-route-id="@Model.HavalehId" class="btn btn-secondary">انصراف</a>
+        </div>
+    </form>
+</div>
+
+<div class="modal fade" id="cityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">انتخاب شهر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="citySearchInput" class="form-control mb-3" placeholder="جستجو..." />
+                <table class="table table-hover">
+                    <thead><tr><th>شهر</th><th>انتخاب</th></tr></thead>
+                    <tbody id="citySearchResults"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="~/assets/css/persianDatepicker-default.css">
+    <script src="~/assets/js/persianDatepicker.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const cityModal = new bootstrap.Modal(document.getElementById("cityModal"));
+            const citySearchInput = document.getElementById("citySearchInput");
+            const citySearchResults = document.getElementById("citySearchResults");
+            const intermediateContainer = document.getElementById("intermediateCitiesContainer");
+            let currentTarget = null;
+
+            document.getElementById("openDestinationCityModal").addEventListener("click", function () {
+                currentTarget = { type: "destination" };
+                openCityModal();
+            });
+
+            document.getElementById("addIntermediateCityBtn").addEventListener("click", function () {
+                addIntermediateCityRow();
+            });
+
+            intermediateContainer.addEventListener("click", function (e) {
+                if (e.target.classList.contains("remove-city-btn")) {
+                    e.target.closest(".intermediate-city-row").remove();
+                    reindexIntermediateRows();
+                    return;
+                }
+
+                if (e.target.classList.contains("select-city-btn")) {
+                    currentTarget = { type: "intermediate", row: e.target.closest(".intermediate-city-row") };
+                    openCityModal();
+                }
+            });
+
+            citySearchInput.addEventListener("input", function () {
+                const term = this.value.trim();
+                if (!term) {
+                    citySearchResults.innerHTML = "";
+                    return;
+                }
+
+                fetch(`/Havalehs/SearchCities?term=${encodeURIComponent(term)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        citySearchResults.innerHTML = data.map(x => `
+                            <tr>
+                                <td>${x.text ?? ""}</td>
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary js-select-city"
+                                            data-id="${x.id}"
+                                            data-text="${x.text ?? ""}">
+                                        انتخاب
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join("");
+
+                        citySearchResults.querySelectorAll(".js-select-city").forEach(btn => {
+                            btn.addEventListener("click", function () {
+                                const id = this.dataset.id;
+                                const text = this.dataset.text;
+
+                                if (currentTarget?.type === "destination") {
+                                    document.getElementById("DestinationCityId").value = id;
+                                    document.getElementById("DestinationCityDisplayName").value = text;
+                                    document.getElementById("destinationSummary").textContent = text;
+                                } else if (currentTarget?.type === "intermediate" && currentTarget.row) {
+                                    currentTarget.row.querySelector(".city-id-input").value = id;
+                                    currentTarget.row.querySelector(".city-display-input").value = text;
+                                }
+
+                                cityModal.hide();
+                            });
+                        });
+                    });
+            });
+
+            function openCityModal() {
+                citySearchInput.value = "";
+                citySearchResults.innerHTML = "";
+                cityModal.show();
+                setTimeout(() => citySearchInput.focus(), 200);
+            }
+
+            function addIntermediateCityRow() {
+                const index = intermediateContainer.querySelectorAll(".intermediate-city-row").length;
+                const rowHtml = `
+                    <div class="row g-2 mb-2 intermediate-city-row">
+                        <input type="hidden" name="IntermediateCities[${index}].Id" value="" />
+                        <input type="hidden" name="IntermediateCities[${index}].CityId" value="" class="city-id-input" />
+                        <input type="hidden" name="IntermediateCities[${index}].SortOrder" value="${index + 1}" class="sort-order-input" />
+
+                        <div class="col-md-10">
+                            <input type="text" name="IntermediateCities[${index}].CityDisplayName" value="" class="form-control city-display-input" readonly />
+                        </div>
+                        <div class="col-md-2 d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm select-city-btn">انتخاب</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-city-btn">حذف</button>
+                        </div>
+                    </div>
+                `;
+                intermediateContainer.insertAdjacentHTML("beforeend", rowHtml);
+            }
+
+            function reindexIntermediateRows() {
+                const rows = intermediateContainer.querySelectorAll(".intermediate-city-row");
+                rows.forEach((row, index) => {
+                    row.querySelectorAll("input").forEach(input => {
+                        if (input.name.includes(".Id")) input.name = `IntermediateCities[${index}].Id`;
+                        if (input.name.includes(".CityId")) input.name = `IntermediateCities[${index}].CityId`;
+                        if (input.name.includes(".SortOrder")) {
+                            input.name = `IntermediateCities[${index}].SortOrder`;
+                            input.value = index + 1;
+                        }
+                        if (input.name.includes(".CityDisplayName")) input.name = `IntermediateCities[${index}].CityDisplayName`;
+                    });
+                });
+            }
+
+            setupJalaliDateField("StartDate", "StartDate_shamsi");
+            setupJalaliDateField("EndDate", "EndDate_shamsi");
+
+            function setupJalaliDateField(hiddenInputId, shamsiInputId) {
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const shamsiInput = document.getElementById(shamsiInputId);
+                if (!hiddenInput || !shamsiInput) return;
+
+                if (typeof $ !== "undefined" && typeof $(shamsiInput).persianDatepicker === "function") {
+                    $(shamsiInput).persianDatepicker({
+                        formatDate: "YYYY/0M/0D",
+                        autoClose: true,
+                        onSelect: function () {
+                            syncShamsiToGregorian(hiddenInput, shamsiInput);
+                        }
+                    });
+                }
+
+                if (hiddenInput.value) {
+                    const g = normalizeGregorianDate(hiddenInput.value);
+                    if (g) {
+                        const j = gregorianToJalali(g.y, g.m, g.d);
+                        shamsiInput.value = j.y + "/" + pad2(j.m) + "/" + pad2(j.d);
+                    }
+                }
+
+                const form = document.getElementById("subHavalehForm");
+                if (form) {
+                    form.addEventListener("submit", function () {
+                        syncShamsiToGregorian(hiddenInput, shamsiInput);
+                    });
+                }
+            }
+
+            function syncShamsiToGregorian(hiddenInput, shamsiInput) {
+                let value = (shamsiInput.value || "").trim();
+                value = toEnglishDigits(value);
+                if (!value) { hiddenInput.value = ""; return; }
+
+                const parts = value.replace(/-/g, "/").split("/");
+                if (parts.length !== 3) { hiddenInput.value = ""; return; }
+
+                const jy = parseInt(parts[0], 10);
+                const jm = parseInt(parts[1], 10);
+                const jd = parseInt(parts[2], 10);
+                if (isNaN(jy) || isNaN(jm) || isNaN(jd)) { hiddenInput.value = ""; return; }
+
+                const g = jalaliToGregorian(jy, jm, jd);
+                hiddenInput.value = g.y + "-" + pad2(g.m) + "-" + pad2(g.d);
+            }
+
+            function normalizeGregorianDate(value) {
+                if (!value) return null;
+                if (value.includes("T")) value = value.split("T")[0];
+                const parts = value.split("-");
+                if (parts.length !== 3) return null;
+                return { y: parseInt(parts[0]), m: parseInt(parts[1]), d: parseInt(parts[2]) };
+            }
+
+            function toEnglishDigits(str) {
+                const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+                const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+                for (let i = 0; i < 10; i++) str = (str || "").replaceAll(fa[i], i.toString()).replaceAll(ar[i], i.toString());
+                return str;
+            }
+
+            function pad2(n) { return n < 10 ? "0" + n : n.toString(); }
+
+            function gregorianToJalali(gy, gm, gd) {
+                var g_d_m, jy, jm, jd, gy2, days;
+                g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+                gy2 = (gm > 2) ? (gy + 1) : gy;
+                days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
+                jy = -1595 + (33 * Math.floor(days / 12053));
+                days %= 12053;
+                jy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+                if (days > 365) {
+                    jy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+                if (days < 186) {
+                    jm = 1 + Math.floor(days / 31);
+                    jd = 1 + (days % 31);
+                } else {
+                    jm = 7 + Math.floor((days - 186) / 30);
+                    jd = 1 + ((days - 186) % 30);
+                }
+                return { y: jy, m: jm, d: jd };
+            }
+
+            function jalaliToGregorian(jy, jm, jd) {
+                var sal_a, gy, gm, gd, days;
+                jy += 1595;
+                days = -355668 + (365 * jy) + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4) + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+                gy = 400 * Math.floor(days / 146097);
+                days %= 146097;
+                if (days > 36524) {
+                    gy += 100 * Math.floor(--days / 36524);
+                    days %= 36524;
+                    if (days >= 365) days++;
+                }
+                gy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+                if (days > 365) {
+                    gy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+                gd = days + 1;
+                sal_a = [0,31,((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28,31,30,31,30,31,31,30,31,30,31];
+                for (gm = 1; gm <= 12 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
+                return { y: gy, m: gm, d: gd };
+            }
+        });
+    </script>
+}

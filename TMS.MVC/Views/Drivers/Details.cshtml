@@ -1,0 +1,227 @@
+﻿@model TMS.MVC.Models.DriverProfile
+
+@{
+    ViewData["Title"] = "مشخصات کامل راننده";
+
+    var fullName = Model.ApplicationUser == null
+        ? "-"
+        : (
+            !string.IsNullOrWhiteSpace(((Model.ApplicationUser.FirstName ?? "") + " " + (Model.ApplicationUser.LastName ?? "")).Trim())
+                ? ((Model.ApplicationUser.FirstName ?? "") + " " + (Model.ApplicationUser.LastName ?? "")).Trim()
+                : (Model.ApplicationUser.Email ?? "-")
+          );
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">رانندگان</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success">@TempData["Ok"]</div>
+    }
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>اطلاعات کلی</h4>
+            <div class="d-flex gap-2 mt-2">
+                <a asp-action="Index" class="btn btn-secondary">بازگشت</a>
+            </div>
+        </div>
+        <div class="card-body row">
+            <div class="col-md-4 mb-2"><strong>نام راننده:</strong> @fullName</div>
+            <div class="col-md-4 mb-2"><strong>کد ملی:</strong> @(Model.ApplicationUser?.NationalId ?? "-")</div>
+            <div class="col-md-4 mb-2"><strong>شماره کارت هوشمند:</strong> @(Model.SmartCardNumber ?? "-")</div>
+            <div class="col-md-4 mb-2"><strong>شماره گواهینامه:</strong> @(Model.DrivingLicenseNumber ?? "-")</div>
+            <div class="col-md-4 mb-2">
+                <strong>وضعیت:</strong>
+                @if (Model.IsBlocked)
+                {
+                    <span class="badge rounded-pill bg-danger px-3 py-2">محدود</span>
+                }
+                else
+                {
+                    <span class="badge rounded-pill bg-success px-3 py-2">فعال</span>
+                }
+            </div>
+            <div class="col-md-12 mb-2"><strong>توضیحات محدودیت:</strong> @(string.IsNullOrWhiteSpace(Model.BlockDescription) ? "-" : Model.BlockDescription)</div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>حساب‌های بانکی</h4>
+            <a asp-action="AddBankAccount" asp-route-driverProfileId="@Model.Id" class="btn btn-primary">افزودن</a>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>نام صاحب حساب</th>
+                        <th>نام بانک</th>
+                        <th>شماره حساب</th>
+                        <th>شماره کارت</th>
+                        <th>شماره شبا</th>
+                        <th>پیش فرض</th>
+                        <th>توضیحات</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.BankAccounts.Any())
+                    {
+                        @foreach (var item in Model.BankAccounts.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id))
+                        {
+                            <tr>
+                                <td>@(item.AccountOwnerName ?? "-")</td>
+                                <td>@(item.BankName ?? "-")</td>
+                                <td>@(item.AccountNumber ?? "-")</td>
+                                <td>@(item.CardNumber ?? "-")</td>
+                                <td>@(item.ShebaNumber ?? "-")</td>
+                                <td class="text-center">
+                                    @if (item.IsDefault)
+                                    {
+                                        <span class="text-success fw-bold fs-5">✓</span>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                                <td>@(item.Description ?? "-")</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="EditBankAccount" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
+                                        <form asp-action="DeleteBankAccount" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="driverProfileId" value="@Model.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="8" class="text-center py-4">موردی ثبت نشده است.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>راه‌های ارتباطی</h4>
+            <a asp-action="AddContact" asp-route-driverProfileId="@Model.Id" class="btn btn-primary">افزودن</a>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>عنوان</th>
+                        <th>راه ارتباطی</th>
+                        <th>پیامک</th>
+                        <th>واتساپ</th>
+                        <th>فکس</th>
+                        <th>تلفن</th>
+                        <th>ایمیل</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Contacts.Any())
+                    {
+                        @foreach (var item in Model.Contacts.OrderBy(x => x.Id))
+                        {
+                            <tr>
+                                <td>@item.Title</td>
+                                <td>@item.ContactValue</td>
+                                <td>@(item.HasSms ? "بله" : "-")</td>
+                                <td>@(item.HasWhatsApp ? "بله" : "-")</td>
+                                <td>@(item.IsFax ? "بله" : "-")</td>
+                                <td>@(item.IsPhone ? "بله" : "-")</td>
+                                <td>@(item.IsEmail ? "بله" : "-")</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="EditContact" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
+                                        <form asp-action="DeleteContact" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="driverProfileId" value="@Model.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="8" class="text-center py-4">موردی ثبت نشده است.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>آدرس‌ها</h4>
+            <a asp-action="AddAddress" asp-route-driverProfileId="@Model.Id" class="btn btn-primary">افزودن</a>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>عنوان</th>
+                        <th>آدرس</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Addresses.Any())
+                    {
+                        @foreach (var item in Model.Addresses.OrderBy(x => x.Id))
+                        {
+                            <tr>
+                                <td>@item.Title</td>
+                                <td>@item.AddressText</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="EditAddress" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
+                                        <form asp-action="DeleteAddress" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="driverProfileId" value="@Model.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="3" class="text-center py-4">موردی ثبت نشده است.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

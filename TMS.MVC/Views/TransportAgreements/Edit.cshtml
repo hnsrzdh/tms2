@@ -1,0 +1,335 @@
+﻿@using TMS.MVC.ViewModels
+@model TransportAgreementUpsertViewModel
+
+@{
+    ViewData["Title"] = "ویرایش تفاهم‌نامه حمل";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">تفاهم‌نامه‌های حمل</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="Edit" method="post" id="agreementForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Title" class="form-label"></label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CargoOwnerName" class="form-label"></label>
+                        <input asp-for="CargoOwnerName" class="form-control" />
+                        <span asp-validation-for="CargoOwnerName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Origin" class="form-label"></label>
+                        <div class="input-group">
+                            <input asp-for="Origin" class="form-control" readonly />
+                            <button type="button"
+                                    class="btn btn-outline-secondary js-open-city-modal"
+                                    data-target-input="Origin"
+                                    data-modal-title="انتخاب شهر مبدا">
+                                انتخاب
+                            </button>
+                        </div>
+                        <span asp-validation-for="Origin" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Destination" class="form-label"></label>
+                        <div class="input-group">
+                            <input asp-for="Destination" class="form-control" readonly />
+                            <button type="button"
+                                    class="btn btn-outline-secondary js-open-city-modal"
+                                    data-target-input="Destination"
+                                    data-modal-title="انتخاب شهر مقصد">
+                                انتخاب
+                            </button>
+                        </div>
+                        <span asp-validation-for="Destination" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ProductName" class="form-label"></label>
+                        <div class="input-group">
+                            <input asp-for="ProductName" class="form-control" readonly />
+                            <button type="button"
+                                    class="btn btn-outline-secondary js-open-product-modal"
+                                    data-target-input="ProductName"
+                                    data-modal-title="انتخاب محصول">
+                                انتخاب
+                            </button>
+                        </div>
+                        <span asp-validation-for="ProductName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Amount" class="form-label"></label>
+                        <input asp-for="Amount" class="form-control js-amount-input" autocomplete="off" />
+                        <span asp-validation-for="Amount" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Unit" class="form-label"></label>
+                        <select asp-for="Unit" class="form-select">
+                            <option value="">انتخاب کنید</option>
+                            <option value="لیتر">لیتر</option>
+                            <option value="کیلوگرم">کیلوگرم</option>
+                        </select>
+                        <span asp-validation-for="Unit" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Status" class="form-label"></label>
+                        <input asp-for="Status" class="form-control" />
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cityPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cityPickerTitle">انتخاب شهر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="citySearchInput" class="form-control" placeholder="جستجوی شهر..." />
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>کشور</th>
+                                <th>استان</th>
+                                <th>شهر</th>
+                                <th style="width:100px;">انتخاب</th>
+                            </tr>
+                        </thead>
+                        <tbody id="citySearchResults">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="productPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productPickerTitle">انتخاب محصول</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="productSearchInput" class="form-control" placeholder="جستجوی محصول..." />
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>نام محصول</th>
+                                <th style="width:100px;">انتخاب</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productSearchResults">
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let currentTargetInputId = null;
+
+            const cityModalEl = document.getElementById("cityPickerModal");
+            const cityModal = new bootstrap.Modal(cityModalEl);
+            const cityTitle = document.getElementById("cityPickerTitle");
+            const citySearchInput = document.getElementById("citySearchInput");
+            const citySearchResults = document.getElementById("citySearchResults");
+
+            const productModalEl = document.getElementById("productPickerModal");
+            const productModal = new bootstrap.Modal(productModalEl);
+            const productTitle = document.getElementById("productPickerTitle");
+            const productSearchInput = document.getElementById("productSearchInput");
+            const productSearchResults = document.getElementById("productSearchResults");
+
+            document.querySelectorAll(".js-open-city-modal").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    currentTargetInputId = this.dataset.targetInput;
+                    cityTitle.textContent = this.dataset.modalTitle || "انتخاب شهر";
+                    citySearchInput.value = "";
+                    citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                    cityModal.show();
+                    setTimeout(() => citySearchInput.focus(), 300);
+                });
+            });
+
+            document.querySelectorAll(".js-open-product-modal").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    currentTargetInputId = this.dataset.targetInput;
+                    productTitle.textContent = this.dataset.modalTitle || "انتخاب محصول";
+                    productSearchInput.value = "";
+                    productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                    productModal.show();
+                    setTimeout(() => productSearchInput.focus(), 300);
+                });
+            });
+
+            let citySearchTimeout;
+            citySearchInput.addEventListener("input", function () {
+                clearTimeout(citySearchTimeout);
+                const term = this.value.trim();
+
+                citySearchTimeout = setTimeout(() => {
+                    if (!term) {
+                        citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                        return;
+                    }
+
+                    fetch(`/TransportAgreements/SearchCities?term=${encodeURIComponent(term)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data || data.length === 0) {
+                                citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted">موردی یافت نشد.</td></tr>';
+                                return;
+                            }
+
+                            citySearchResults.innerHTML = data.map(x => `
+                                <tr>
+                                    <td>${x.countryName ?? ""}</td>
+                                    <td>${x.provinceName ?? ""}</td>
+                                    <td>${x.name ?? ""}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary js-select-city" data-name="${x.name}">
+                                            انتخاب
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join("");
+
+                            document.querySelectorAll(".js-select-city").forEach(btn => {
+                                btn.addEventListener("click", function () {
+                                    const name = this.dataset.name;
+                                    const input = document.getElementById(currentTargetInputId);
+                                    if (input) input.value = name;
+                                    cityModal.hide();
+                                });
+                            });
+                        });
+                }, 300);
+            });
+
+            let productSearchTimeout;
+            productSearchInput.addEventListener("input", function () {
+                clearTimeout(productSearchTimeout);
+                const term = this.value.trim();
+
+                productSearchTimeout = setTimeout(() => {
+                    if (!term) {
+                        productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                        return;
+                    }
+
+                    fetch(`/TransportAgreements/SearchProducts?term=${encodeURIComponent(term)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data || data.length === 0) {
+                                productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted">موردی یافت نشد.</td></tr>';
+                                return;
+                            }
+
+                            productSearchResults.innerHTML = data.map(x => `
+                                <tr>
+                                    <td>${x.name ?? ""}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary js-select-product" data-name="${x.name}">
+                                            انتخاب
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join("");
+
+                            document.querySelectorAll(".js-select-product").forEach(btn => {
+                                btn.addEventListener("click", function () {
+                                    const name = this.dataset.name;
+                                    const input = document.getElementById(currentTargetInputId);
+                                    if (input) input.value = name;
+                                    productModal.hide();
+                                });
+                            });
+                        });
+                }, 300);
+            });
+
+            document.querySelectorAll(".js-amount-input").forEach(input => {
+                const formatValue = () => {
+                    let value = input.value.replace(/,/g, "").replace(/[^\d.]/g, "");
+                    if (!value) {
+                        input.value = "";
+                        return;
+                    }
+
+                    const parts = value.split(".");
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    input.value = parts.length > 1 ? parts[0] + "." + parts[1] : parts[0];
+                };
+
+                formatValue();
+                input.addEventListener("input", formatValue);
+            });
+
+            document.getElementById("agreementForm")?.addEventListener("submit", function () {
+                document.querySelectorAll(".js-amount-input").forEach(input => {
+                    input.value = input.value.replace(/,/g, "");
+                });
+            });
+        });
+    </script>
+}

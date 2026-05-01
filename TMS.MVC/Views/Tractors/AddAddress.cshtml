@@ -1,0 +1,54 @@
+﻿@model TMS.MVC.ViewModels.TractorAddressUpsertViewModel
+
+@{
+    ViewData["Title"] = "افزودن آدرس کشنده";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">کشنده‌ها</li>
+                    <li class="breadcrumb-item">آدرس</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="AddAddress" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="TractorId" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label">عنوان</label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label">آدرس کامل</label>
+                        <textarea asp-for="AddressText" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="AddressText" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">ذخیره</button>
+                    <a asp-action="Details" asp-route-id="@Model.TractorId" class="btn btn-secondary">انصراف</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,577 @@
+﻿@using TMS.MVC.ViewModels
+@model TractorUpsertViewModel
+
+@{
+    ViewData["Title"] = "ایجاد کشنده";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">کشنده‌ها</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="Create" method="post" id="tractorCreateForm">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-12 d-flex justify-content-center">
+                        <div class="tractor-plate-wrap">
+                            <div class="tractor-plate-main">
+                                <div class="tractor-plate-left">
+                                    <div class="tractor-plate-fields">
+                                        <input asp-for="PlatePartLeft2"
+                                               class="form-control text-center plate-box plate-box-1 js-plate-2"
+                                               maxlength="2"
+                                               placeholder="44" />
+
+                                        <select asp-for="PlateLetter" class="form-select text-center plate-box plate-box-letter">
+                                            <option value="الف">الف</option>
+                                            <option value="ب">ب</option>
+                                            <option value="پ">پ</option>
+                                            <option value="ت">ت</option>
+                                            <option value="ث">ث</option>
+                                            <option value="ج">ج</option>
+                                            <option value="چ">چ</option>
+                                            <option value="ح">ح</option>
+                                            <option value="خ">خ</option>
+                                            <option value="د">د</option>
+                                            <option value="ذ">ذ</option>
+                                            <option value="ر">ر</option>
+                                            <option value="ز">ز</option>
+                                            <option value="ژ">ژ</option>
+                                            <option value="س">س</option>
+                                            <option value="ش">ش</option>
+                                            <option value="ص">ص</option>
+                                            <option value="ض">ض</option>
+                                            <option value="ط">ط</option>
+                                            <option value="ظ">ظ</option>
+                                            <option value="ع">ع</option>
+                                            <option value="غ">غ</option>
+                                            <option value="ف">ف</option>
+                                            <option value="ق">ق</option>
+                                            <option value="ک">ک</option>
+                                            <option value="گ">گ</option>
+                                            <option value="ل">ل</option>
+                                            <option value="م">م</option>
+                                            <option value="ن">ن</option>
+                                            <option value="و">و</option>
+                                            <option value="ه">ه</option>
+                                            <option value="ی">ی</option>
+                                        </select>
+
+                                        <input asp-for="PlatePartMiddle3"
+                                               class="form-control text-center plate-box plate-box-3 js-plate-3"
+                                               maxlength="3"
+                                               placeholder="123" />
+                                    </div>
+                                </div>
+
+                                <div class="tractor-plate-right">
+                                    <div class="tractor-plate-iran">ایران</div>
+                                    <div class="tractor-plate-code">
+                                        <input asp-for="PlatePartRight2"
+                                               class="form-control text-center plate-box plate-box-2 js-plate-2"
+                                               maxlength="2"
+                                               placeholder="25" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-2">
+                            <span asp-validation-for="PlatePartMiddle3" class="text-danger d-block"></span>
+                            <span asp-validation-for="PlateLetter" class="text-danger d-block"></span>
+                            <span asp-validation-for="PlatePartLeft2" class="text-danger d-block"></span>
+                            <span asp-validation-for="PlatePartRight2" class="text-danger d-block"></span>
+                        </div>
+                    </div>
+
+                    <h2></h2>
+
+                    <div class="col-md-4">
+                        <label class="form-label">مالک</label>
+                        <div class="input-group">
+                            <input asp-for="OwnerApplicationUserId" type="hidden" />
+                            <input asp-for="OwnerUserDisplayName" class="form-control" readonly />
+                            <button type="button" class="btn btn-outline-secondary" id="openOwnerModal">انتخاب</button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="NationalId" class="form-label"></label>
+                        <input asp-for="NationalId" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Status" class="form-label"></label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="فعال">فعال</option>
+                            <option value="غیرفعال">غیرفعال</option>
+                        </select>
+                    </div>
+
+                    <h3></h3>
+
+                    <div class="col-md-3">
+                        <label asp-for="ProductionYear" class="form-label"></label>
+                        <input asp-for="ProductionYear" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="TractorSmartCardNumber" class="form-label"></label>
+                        <input asp-for="TractorSmartCardNumber" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="FileNumber" class="form-label"></label>
+                        <input asp-for="FileNumber" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="TractorIdentifier" class="form-label"></label>
+                        <input asp-for="TractorIdentifier" class="form-control" />
+                    </div>
+
+                    <h3></h3>
+
+                    <div class="col-md-3">
+                        <label asp-for="TractorType" class="form-label"></label>
+                        <input asp-for="TractorType" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="SystemName" class="form-label"></label>
+                        <input asp-for="SystemName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="AxleCount" class="form-label"></label>
+                        <input asp-for="AxleCount" class="form-control" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="MaxLoadCapacity" class="form-label"></label>
+                        <input type="text"
+                               id="MaxLoadCapacityDisplay"
+                               class="form-control text-start"
+                               inputmode="numeric"
+                               autocomplete="off"
+                               value="@(Model.MaxLoadCapacity.HasValue ? string.Format("{0:N0}", Model.MaxLoadCapacity.Value) : "")" />
+                        <input type="hidden" asp-for="MaxLoadCapacity" id="MaxLoadCapacity" />
+                        <span asp-validation-for="MaxLoadCapacity" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="CapacityUnit" class="form-label"></label>
+                        <select asp-for="CapacityUnit" class="form-select">
+                            <option selected value="لیتر">لیتر</option>
+                            <option value="کیلوگرم">کیلوگرم</option>
+                        </select>
+                        <span asp-validation-for="CapacityUnit" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="TechnicalInspectionExpireDate" class="form-label"></label>
+                        <input type="hidden"
+                               id="TechnicalInspectionExpireDate"
+                               name="TechnicalInspectionExpireDate"
+                               value="@(Model?.TechnicalInspectionExpireDate.HasValue == true
+                                                                  ? Model.TechnicalInspectionExpireDate.Value.ToString("yyyy-MM-dd")
+                                                                  : "")" />
+                        <input id="TechnicalInspectionExpireDate_shamsi"
+                               class="form-control jalali-date"
+                               autocomplete="off"
+                               placeholder="1405/01/25" />
+                        <span asp-validation-for="TechnicalInspectionExpireDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ThirdPartyInsuranceExpireDate" class="form-label"></label>
+                        <input type="hidden"
+                               id="ThirdPartyInsuranceExpireDate"
+                               name="ThirdPartyInsuranceExpireDate"
+                               value="@(Model?.ThirdPartyInsuranceExpireDate.HasValue == true
+                                                                  ? Model.ThirdPartyInsuranceExpireDate.Value.ToString("yyyy-MM-dd")
+                                                                  : "")" />
+                        <input id="ThirdPartyInsuranceExpireDate_shamsi"
+                               class="form-control jalali-date"
+                               autocomplete="off"
+                               placeholder="1405/01/25" />
+                        <span asp-validation-for="ThirdPartyInsuranceExpireDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="TransitPlateNumber" class="form-label"></label>
+                        <input asp-for="TransitPlateNumber" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">ثبت</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="ownerPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">انتخاب مالک</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="ownerSearchInput" class="form-control mb-3" placeholder="جستجو..." />
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>نام</th>
+                            <th>ایمیل</th>
+                            <th>شناسه ملی</th>
+                            <th>انتخاب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ownerSearchResults"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="~/assets/css/persianDatepicker-default.css">
+    <script src="~/assets/js/persianDatepicker.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const displayInput = document.getElementById("MaxLoadCapacityDisplay");
+            const hiddenInput = document.getElementById("MaxLoadCapacity");
+
+            if (!displayInput || !hiddenInput) return;
+
+            function toEnglishDigits(str) {
+                if (!str) return str;
+
+                const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+                const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+
+                for (let i = 0; i < 10; i++) {
+                    str = str.replaceAll(fa[i], i.toString());
+                    str = str.replaceAll(ar[i], i.toString());
+                }
+
+                return str;
+            }
+
+            function normalizeDigits(value) {
+                value = toEnglishDigits(value || "");
+                value = value.replace(/[^\d]/g, "");
+                return value;
+            }
+
+            function formatThousands(value) {
+                value = normalizeDigits(value);
+                if (!value) return "";
+                return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            function syncHidden() {
+                hiddenInput.value = normalizeDigits(displayInput.value);
+            }
+
+            displayInput.addEventListener("input", function () {
+                const raw = normalizeDigits(this.value);
+                this.value = formatThousands(raw);
+                hiddenInput.value = raw;
+            });
+
+            const form = displayInput.closest("form");
+            if (form) {
+                form.addEventListener("submit", function () {
+                    syncHidden();
+                });
+            }
+
+            if (displayInput.value) {
+                const raw = normalizeDigits(displayInput.value);
+                displayInput.value = formatThousands(raw);
+                hiddenInput.value = raw;
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("tractorCreateForm");
+
+            setupJalaliDateField("TechnicalInspectionExpireDate", "TechnicalInspectionExpireDate_shamsi");
+            setupJalaliDateField("ThirdPartyInsuranceExpireDate", "ThirdPartyInsuranceExpireDate_shamsi");
+
+            function setupJalaliDateField(hiddenInputId, shamsiInputId) {
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const shamsiInput = document.getElementById(shamsiInputId);
+
+                if (!hiddenInput || !shamsiInput) return;
+
+                if (typeof $ !== "undefined" && typeof $(shamsiInput).persianDatepicker === "function") {
+                    $(shamsiInput).persianDatepicker({
+                        formatDate: "YYYY/0M/0D",
+                        autoClose: true,
+                        onSelect: function () {
+                            syncShamsiToGregorian(hiddenInput, shamsiInput);
+                        }
+                    });
+                }
+
+                if (hiddenInput.value) {
+                    const g = normalizeGregorianDate(hiddenInput.value);
+                    if (g) {
+                        const j = gregorianToJalali(g.y, g.m, g.d);
+                        shamsiInput.value = j.y + "/" + pad2(j.m) + "/" + pad2(j.d);
+                    }
+                }
+
+                shamsiInput.addEventListener("change", function () {
+                    syncShamsiToGregorian(hiddenInput, shamsiInput);
+                });
+
+                shamsiInput.addEventListener("blur", function () {
+                    syncShamsiToGregorian(hiddenInput, shamsiInput);
+                });
+            }
+
+            if (form) {
+                form.addEventListener("submit", function () {
+                    syncShamsiToGregorian(
+                        document.getElementById("TechnicalInspectionExpireDate"),
+                        document.getElementById("TechnicalInspectionExpireDate_shamsi")
+                    );
+
+                    syncShamsiToGregorian(
+                        document.getElementById("ThirdPartyInsuranceExpireDate"),
+                        document.getElementById("ThirdPartyInsuranceExpireDate_shamsi")
+                    );
+                });
+            }
+
+            function syncShamsiToGregorian(hiddenInput, shamsiInput) {
+                if (!hiddenInput || !shamsiInput) return;
+
+                let value = (shamsiInput.value || "").trim();
+                value = toEnglishDigits(value);
+
+                if (!value) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const parts = value.replace(/-/g, "/").split("/");
+                if (parts.length !== 3) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const jy = parseInt(parts[0], 10);
+                const jm = parseInt(parts[1], 10);
+                const jd = parseInt(parts[2], 10);
+
+                if (isNaN(jy) || isNaN(jm) || isNaN(jd)) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const g = jalaliToGregorian(jy, jm, jd);
+                hiddenInput.value = g.y + "-" + pad2(g.m) + "-" + pad2(g.d);
+            }
+
+            function normalizeGregorianDate(value) {
+                if (!value) return null;
+
+                value = toEnglishDigits(value).trim();
+
+                if (value.includes("T")) {
+                    value = value.split("T")[0];
+                }
+
+                const parts = value.split("-");
+                if (parts.length !== 3) return null;
+
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const d = parseInt(parts[2], 10);
+
+                if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+
+                return { y, m, d };
+            }
+
+            function toEnglishDigits(str) {
+                if (!str) return str;
+
+                const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+                const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+
+                for (let i = 0; i < 10; i++) {
+                    str = str.replaceAll(fa[i], i.toString());
+                    str = str.replaceAll(ar[i], i.toString());
+                }
+
+                return str;
+            }
+
+            function pad2(n) {
+                return n < 10 ? "0" + n : n.toString();
+            }
+
+            function gregorianToJalali(gy, gm, gd) {
+                var g_d_m, jy, jm, jd, gy2, days;
+                g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+                gy2 = (gm > 2) ? (gy + 1) : gy;
+                days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
+                jy = -1595 + (33 * Math.floor(days / 12053));
+                days %= 12053;
+                jy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+
+                if (days > 365) {
+                    jy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+
+                if (days < 186) {
+                    jm = 1 + Math.floor(days / 31);
+                    jd = 1 + (days % 31);
+                } else {
+                    jm = 7 + Math.floor((days - 186) / 30);
+                    jd = 1 + ((days - 186) % 30);
+                }
+
+                return { y: jy, m: jm, d: jd };
+            }
+
+            function jalaliToGregorian(jy, jm, jd) {
+                var sal_a, gy, gm, gd, days;
+                jy += 1595;
+                days = -355668 + (365 * jy) + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4) + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+                gy = 400 * Math.floor(days / 146097);
+                days %= 146097;
+
+                if (days > 36524) {
+                    gy += 100 * Math.floor(--days / 36524);
+                    days %= 36524;
+                    if (days >= 365) days++;
+                }
+
+                gy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+
+                if (days > 365) {
+                    gy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+
+                gd = days + 1;
+                sal_a = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+                for (gm = 1; gm <= 12 && gd > sal_a[gm]; gm++) {
+                    gd -= sal_a[gm];
+                }
+
+                return { y: gy, m: gm, d: gd };
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".js-plate-1").forEach(input => {
+                input.addEventListener("input", function () {
+                    this.value = this.value.replace(/\D/g, "").slice(0, 1);
+                });
+            });
+
+            document.querySelectorAll(".js-plate-2").forEach(input => {
+                input.addEventListener("input", function () {
+                    this.value = this.value.replace(/\D/g, "").slice(0, 2);
+                });
+            });
+
+            document.querySelectorAll(".js-plate-3").forEach(input => {
+                input.addEventListener("input", function () {
+                    this.value = this.value.replace(/\D/g, "").slice(0, 3);
+                });
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modalElement = document.getElementById("ownerPickerModal");
+            const modal = new bootstrap.Modal(modalElement);
+            const searchInput = document.getElementById("ownerSearchInput");
+            const results = document.getElementById("ownerSearchResults");
+
+            document.getElementById("openOwnerModal").addEventListener("click", function () {
+                searchInput.value = "";
+                results.innerHTML = "";
+                modal.show();
+                setTimeout(() => searchInput.focus(), 200);
+            });
+
+            let timeout;
+            searchInput.addEventListener("input", function () {
+                clearTimeout(timeout);
+                const term = this.value.trim();
+
+                timeout = setTimeout(() => {
+                    if (!term) {
+                        results.innerHTML = "";
+                        return;
+                    }
+
+                    fetch(`/Tractors/SearchOwners?term=${encodeURIComponent(term)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            results.innerHTML = data.map(x => `
+                                <tr>
+                                    <td>${x.fullName ?? ""}</td>
+                                    <td>${x.email ?? ""}</td>
+                                    <td>${x.nationalId ?? ""}</td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-sm btn-primary js-select-owner"
+                                                data-id="${x.applicationUserId}"
+                                                data-text="${(x.fullName ?? "")} - ${x.email ?? ""}">
+                                            انتخاب
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join("");
+
+                            document.querySelectorAll(".js-select-owner").forEach(btn => {
+                                btn.addEventListener("click", function () {
+                                    document.getElementById("OwnerApplicationUserId").value = this.dataset.id;
+                                    document.getElementById("OwnerUserDisplayName").value = this.dataset.text;
+                                    modal.hide();
+                                });
+                            });
+                        });
+                }, 300);
+            });
+        });
+    </script>
+}

@@ -1,0 +1,164 @@
+﻿@model TMS.MVC.ViewModels.DriverUpsertViewModel
+
+@{
+    ViewData["Title"] = "تعریف راننده";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">رانندگان</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">کاربر راننده</label>
+                        <div class="input-group">
+                            <input asp-for="ApplicationUserId" type="hidden" />
+                            <input asp-for="UserDisplayName" class="form-control" readonly />
+                            <button type="button" class="btn btn-outline-secondary" id="openUserModal">انتخاب</button>
+                        </div>
+                        <span asp-validation-for="ApplicationUserId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="NationalId" class="form-label"></label>
+                        <input asp-for="NationalId" class="form-control" />
+                        <span asp-validation-for="NationalId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="SmartCardNumber" class="form-label"></label>
+                        <input asp-for="SmartCardNumber" class="form-control" />
+                        <span asp-validation-for="SmartCardNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="DrivingLicenseNumber" class="form-label"></label>
+                        <input asp-for="DrivingLicenseNumber" class="form-control" />
+                        <span asp-validation-for="DrivingLicenseNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="form-check mt-4">
+                            <input asp-for="IsBlocked" class="form-check-input" />
+                            <label asp-for="IsBlocked" class="form-check-label"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-9">
+                        <label asp-for="BlockDescription" class="form-label"></label>
+                        <textarea asp-for="BlockDescription" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="BlockDescription" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">ذخیره</button>
+                    <a asp-action="Index" class="btn btn-secondary">انصراف</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="userPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">انتخاب راننده</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="userSearchInput" class="form-control mb-3" placeholder="جستجو..." />
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>نام</th>
+                            <th>ایمیل</th>
+                            <th>کد ملی</th>
+                            <th>انتخاب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userSearchResults"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modal = new bootstrap.Modal(document.getElementById("userPickerModal"));
+            const searchInput = document.getElementById("userSearchInput");
+            const results = document.getElementById("userSearchResults");
+
+            document.getElementById("openUserModal").addEventListener("click", function () {
+                searchInput.value = "";
+                results.innerHTML = "";
+                modal.show();
+                setTimeout(() => searchInput.focus(), 200);
+            });
+
+            let timeout;
+            searchInput.addEventListener("input", function () {
+                clearTimeout(timeout);
+                const term = this.value.trim();
+
+                timeout = setTimeout(() => {
+                    if (!term) {
+                        results.innerHTML = "";
+                        return;
+                    }
+
+                    fetch(`/Drivers/SearchUsers?term=${encodeURIComponent(term)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            results.innerHTML = data.map(x => `
+                                <tr>
+                                    <td>${x.fullName ?? ""}</td>
+                                    <td>${x.email ?? ""}</td>
+                                    <td>${x.nationalId ?? ""}</td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-sm btn-primary js-select-user"
+                                                data-id="${x.applicationUserId}"
+                                                data-text="${(x.fullName ?? "")} - ${x.email ?? ""}"
+                                                data-national-id="${x.nationalId ?? ""}">
+                                            انتخاب
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join("");
+
+                            document.querySelectorAll(".js-select-user").forEach(btn => {
+                                btn.addEventListener("click", function () {
+                                    document.getElementById("ApplicationUserId").value = this.dataset.id;
+                                    document.getElementById("UserDisplayName").value = this.dataset.text;
+                                    document.getElementById("NationalId").value = this.dataset.nationalId;
+                                    modal.hide();
+                                });
+                            });
+                        });
+                }, 300);
+            });
+        });
+    </script>
+}

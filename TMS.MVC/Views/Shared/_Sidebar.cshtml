@@ -1,0 +1,150 @@
+﻿@* Views/Shared/_Sidebar.cshtml *@
+@{
+    var controller = (ViewContext.RouteData.Values["controller"] ?? "").ToString();
+    var action = (ViewContext.RouteData.Values["action"] ?? "").ToString();
+
+    bool IsCtrl(string c) => string.Equals(controller, c, StringComparison.OrdinalIgnoreCase);
+    string ActiveIf(bool cond) => cond ? "active" : "";
+    bool havalehOpen = IsCtrl("Havalehs") || IsCtrl("HavalehTransportPlans") || IsCtrl("HavalehTransportPlanDays");
+    bool systemOpen = IsCtrl("AdminUsers") || IsCtrl("Drivers") || IsCtrl("TankerOwners");
+    var tankersOpen = IsCtrl("Tankers");
+
+}
+
+<aside class="tms-sidebar">
+    <div class="px-2 pt-2 pb-1">
+        <div class="fw-bold" style="font-size:16px;">TMS</div>
+        <div class="text-muted" style="font-size:12px;">سیستم مدیریت حمل</div>
+    </div>
+
+    <ul class="tms-menu mt-2">
+        <li class="tms-item">
+            <a class="tms-link @ActiveIf(IsCtrl("Home") && action == "Index")"
+               asp-controller="Home" asp-action="Index">
+                <span class="tms-icon"><i class="bi bi-speedometer2"></i></span>
+                <span class="tms-text">داشبورد</span>
+            </a>
+        </li>
+
+        <li class="tms-section">عملیات</li>
+
+        @* حواله‌ها *@
+        <li class="tms-item">
+            <button class="tms-link tms-toggle @(havalehOpen ? "" : "collapsed")"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#menu-havaleh"
+                    aria-expanded="@(havalehOpen.ToString().ToLower())"
+                    aria-controls="menu-havaleh">
+                <span class="tms-icon"><i class="bi bi-receipt"></i></span>
+                <span class="tms-text">حواله‌ها</span>
+                <span class="tms-chevron"><i class="bi bi-chevron-left"></i></span>
+            </button>
+
+            <ul class="tms-submenu collapse @(havalehOpen ? "show" : "")" id="menu-havaleh">
+                <li>
+                    <a class="tms-sublink @ActiveIf(IsCtrl("Havalehs") && (action == "Create" || action == "New"))"
+                       asp-controller="Havalehs" asp-action="Create">
+                        ثبت حواله
+                    </a>
+                </li>
+                <li>
+                    <a class="tms-sublink @ActiveIf(IsCtrl("Havalehs") && action == "Index")"
+                       asp-controller="Havalehs" asp-action="Index">
+                        لیست حواله‌ها
+                    </a>
+                </li>
+                <li>
+                    <a class="tms-sublink @ActiveIf(IsCtrl("Havalehs") && action == "Open")"
+                       asp-controller="Havalehs" asp-action="Open">
+                        حواله‌های باز
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        @* تانکرها *@
+        <li class="tms-item">
+            <button class="tms-link tms-toggle @(tankersOpen ? "" : "collapsed")"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#menu-tankers"
+                    aria-expanded="@(tankersOpen.ToString().ToLower())"
+                    aria-controls="menu-tankers">
+                <span class="tms-icon"><i class="bi bi-droplet"></i></span>
+                <span class="tms-text">تانکرها</span>
+                <span class="tms-chevron"><i class="bi bi-chevron-left"></i></span>
+            </button>
+
+            <ul class="tms-submenu collapse @(tankersOpen ? "show" : "")" id="menu-tankers">
+                <li>
+                    <a class="tms-sublink @ActiveIf(IsCtrl("Tankers") && (action == "Create" || action == "New"))"
+                       asp-controller="Tankers" asp-action="Create">
+                        ثبت تانکر
+                    </a>
+                </li>
+                <li>
+                    <a class="tms-sublink @ActiveIf(IsCtrl("Tankers") && action == "Index")"
+                       asp-controller="Tankers" asp-action="Index">
+                        لیست تانکرها
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li class="tms-section">گزارش‌ها</li>
+        <li class="tms-item">
+            <a class="tms-link" asp-controller="Reports" asp-action="Index">
+                <span class="tms-icon"><i class="bi bi-bar-chart"></i></span>
+                <span class="tms-text">گزارش‌ها</span>
+            </a>
+        </li>
+
+        <li class="tms-section">سیستم / کاربران</li>
+
+        @* سیستم / کاربران *@
+        <li class="tms-item">
+            <button class="tms-link tms-toggle @(systemOpen ? "" : "collapsed")"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#menu-system"
+                    aria-expanded="@(systemOpen.ToString().ToLower())"
+                    aria-controls="menu-system">
+                <span class="tms-icon"><i class="bi bi-person"></i></span>
+                <span class="tms-text">کاربران</span>
+                <span class="tms-chevron"><i class="bi bi-chevron-left"></i></span>
+            </button>
+
+            <ul class="tms-submenu collapse @(systemOpen ? "show" : "")" id="menu-system">
+                <li>
+                    <a class="tms-sublink @ActiveIf(IsCtrl("AdminUsers") && (action == "Index"))"
+                       asp-controller="AdminUsers" asp-action="Index">
+                        لیست کاربران
+                    </a>
+                </li>
+                <li >
+                    <a class="tms-sublink @ActiveIf(IsCtrl("Drivers") && string.Equals(action, "Index"))"
+                       asp-controller="Drivers" asp-action="Index">
+                        لیست رانندگان
+                    </a>
+                </li>
+                <li>
+                    <a class="tms-sublink @ActiveIf(IsCtrl("TankerOwners") && string.Equals(action, "Index"))"
+                       asp-controller="TankerOwners" asp-action="Index">
+                        لیست مالکین ماشین ها
+                    </a>
+                </li>
+
+            </ul>
+        </li>
+
+        @* تیکت ها *@
+        <li class="tms-item">
+            <a class="tms-link @ActiveIf(IsCtrl("Tickets") && action == "Index")"
+               asp-controller="Tickets" asp-action="Index">
+                <span class="tms-icon"><i class="bi bi-ticket-perforated"></i></span>
+                <span class="tms-text">تیکت‌ها</span>
+            </a>
+        </li>
+    </ul>
+</aside>

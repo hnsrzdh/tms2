@@ -1,0 +1,220 @@
+﻿@model TMS.MVC.ViewModels.LegalEntityIndexVm
+
+@{
+    ViewData["Title"] = "فهرست اشخاص حقوقی";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">اشخاص حقوقی</li>
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success">@TempData["Ok"]</div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <a asp-action="Create" class="btn btn-primary">تعریف شخص حقوقی جدید</a>
+        </div>
+
+        <div class="card-body">
+            <form method="get" class="row g-2 mb-3">
+                <input type="hidden" name="page" value="1" />
+
+                <div class="col-md-9">
+                    <input name="search" value="@Model.Search" class="form-control" placeholder="جستجو..." />
+                </div>
+
+                <div class="col-md-2">
+                    <select name="pageSize" class="form-select">
+                        @foreach (var size in new[] { 10, 20, 50, 100 })
+                        {
+                            if (Model.PageSize == size)
+                            {
+                                <option value="@size" selected>@size رکورد</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size رکورد</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-1 d-grid">
+                    <button type="submit" class="btn btn-primary">جستجو</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>نام شرکت</th>
+                            <th>نوع</th>
+                            <th>شهر</th>
+                            <th>آدرس اول</th>
+                            <th style="width: 220px;">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>@item.CompanyName</td>
+                                    <td>@item.CompanyType</td>
+                                    <td>@item.City</td>
+                                    <td>@item.FirstAddress</td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">
+                                                جزئیات
+                                            </a>
+
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                                ویرایش
+                                            </a>
+
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#deleteModal_@item.Id">
+                                                حذف
+                                            </button>
+                                        </div>
+
+                                        <div class="modal fade" id="deleteModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="Delete" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">تایید حذف</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-2">آیا از حذف این شخص حقوقی مطمئن هستید؟</p>
+                                                            <div class="text-muted">
+                                                                <div><strong>نام شرکت:</strong> @item.CompanyName</div>
+                                                                <div><strong>نوع:</strong> @item.CompanyType</div>
+                                                                <div><strong>شهر:</strong> @item.City</div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-danger">حذف</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center">داده‌ای یافت نشد.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                    <div class="text-muted small">
+                        صفحه @Model.Page از @Model.TotalPages
+                        -
+                        تعداد کل: @Model.TotalItems
+                    </div>
+
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-primary">
+                            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="1"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    اول
+                                </a>
+                            </li>
+
+                            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@(Model.Page - 1)"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    قبلی
+                                </a>
+                            </li>
+
+                            @{
+                                var startPage = Math.Max(1, Model.Page - 2);
+                                var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                            }
+
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link"
+                                       asp-action="Index"
+                                       asp-route-page="@i"
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.Search">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+
+                            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@(Model.Page + 1)"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    بعدی
+                                </a>
+                            </li>
+
+                            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@Model.TotalPages"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search">
+                                    آخر
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+</div>

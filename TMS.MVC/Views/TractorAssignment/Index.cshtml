@@ -1,0 +1,186 @@
+﻿@model TMS.MVC.ViewModels.TractorAssignmentIndexViewModel
+
+@{
+    ViewData["Title"] = "لیست کشنده‌های تخصیص داده شده";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">حواله‌ها</li>
+                    <li class="breadcrumb-item">زیرحواله‌ها</li>
+                    <li class="breadcrumb-item">کشنده‌ها</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success">@TempData["Ok"]</div>
+    }
+
+    <div class="card shadow-sm">
+
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">
+                    <span class="text-muted" style="font-size: 0.9rem;">حواله شماره:</span>
+                    <span class="fw-bold">@Model.HavalehNumber</span>
+                    <span class="mx-2 text-muted">|</span>
+                    <span class="text-muted" style="font-size: 0.9rem;">زیرحواله:</span>
+                    <span>@Model.SubHavalehTitle</span>
+                </h5>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-action="Assign" asp-route-subHavalehId="@Model.SubHavalehId" class="btn btn-primary btn-sm">
+                    تخصیص کشنده جدید
+                </a>
+                <a asp-controller="Havalehs" asp-action="SubHavalehDetails" asp-route-id="@Model.SubHavalehId" class="btn btn-secondary btn-sm">بازگشت</a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form id="filterForm" method="get" class="row g-2 mb-3">
+                <input type="hidden" name="subHavalehId" value="@Model.SubHavalehId" />
+
+                <div class="col-md-5">
+                    <input type="text" name="search" value="@Model.Search" class="form-control"
+                           placeholder="جستجوی پلاک یا راننده..." />
+                </div>
+
+                <div class="col-md-3">
+                    <select name="statusFilter" class="form-select">
+                        <option value="">همه وضعیت‌ها</option>
+                        <option value="Assigned" selected="@(Model.StatusFilter == "Assigned")">تخصیص داده شده</option>
+                        <option value="ArrivedAtOrigin" selected="@(Model.StatusFilter == "ArrivedAtOrigin")">رسیده به مبدا</option>
+                        <option value="Loading" selected="@(Model.StatusFilter == "Loading")">در حال بارگیری</option>
+                        <option value="Loaded" selected="@(Model.StatusFilter == "Loaded")">بارگیری شده</option>
+                        <option value="InTransit" selected="@(Model.StatusFilter == "InTransit")">در راه</option>
+                        <option value="ArrivedAtDestination" selected="@(Model.StatusFilter == "ArrivedAtDestination")">رسیده به مقصد</option>
+                        <option value="Unloading" selected="@(Model.StatusFilter == "Unloading")">در حال تخلیه</option>
+                        <option value="Unloaded" selected="@(Model.StatusFilter == "Unloaded")">تخلیه شده</option>
+                        <option value="Completed" selected="@(Model.StatusFilter == "Completed")">تکمیل شده</option>
+                        <option value="CancellationRequested" selected="@(Model.StatusFilter == "CancellationRequested")">درخواست لغو</option>
+                        <option value="Cancelled" selected="@(Model.StatusFilter == "Cancelled")">لغو شده</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <select name="pageSize" class="form-select">
+                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                        <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary">فیلتر</button>
+                </div>
+            </form>
+
+            <div id="tractorAssignmentsList">
+                @await Html.PartialAsync("_TractorAssignmentsList", Model)
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusDisplay(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "تخصیص داده شده",
+        AssignmentStatus.ArrivedAtOrigin => "رسیده به مبدا",
+        AssignmentStatus.Loading => "در حال بارگیری",
+        AssignmentStatus.Loaded => "بارگیری شده",
+        AssignmentStatus.InTransit => "در راه",
+        AssignmentStatus.ArrivedAtDestination => "رسیده به مقصد",
+        AssignmentStatus.Unloading => "در حال تخلیه",
+        AssignmentStatus.Unloaded => "تخلیه شده",
+        AssignmentStatus.Completed => "تکمیل شده",
+        AssignmentStatus.CancellationRequested => "درخواست لغو",
+        AssignmentStatus.Cancelled => "لغو شده",
+        _ => "نامشخص"
+    };
+
+    string GetStatusBadgeClass(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "bg-secondary",
+        AssignmentStatus.ArrivedAtOrigin => "bg-info",
+        AssignmentStatus.Loading => "bg-warning text-dark",
+        AssignmentStatus.Loaded => "bg-primary",
+        AssignmentStatus.InTransit => "bg-primary",
+        AssignmentStatus.ArrivedAtDestination => "bg-success",
+        AssignmentStatus.Unloading => "bg-warning text-dark",
+        AssignmentStatus.Unloaded => "bg-warning text-dark",
+        AssignmentStatus.Completed => "bg-success",
+        AssignmentStatus.CancellationRequested => "bg-warning text-dark",
+        AssignmentStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById('filterForm');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                loadAssignments(1);
+            });
+
+            // اضافه کردن event listener به لینک‌های صفحه‌بندی بعد از لود اولیه
+            attachPaginationEvents();
+        });
+
+        function loadAssignments(page = 1) {
+            const form = document.getElementById('filterForm');
+            const formData = new FormData(form);
+
+            let url = `/TractorAssignment/GetAssignmentsList?subHavalehId=${@Model.SubHavalehId}&page=${page}`;
+            url += `&search=${encodeURIComponent(formData.get('search') || '')}`;
+            url += `&statusFilter=${encodeURIComponent(formData.get('statusFilter') || '')}`;
+            url += `&pageSize=${formData.get('pageSize') || 10}`;
+
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById("tractorAssignmentsList").innerHTML = html;
+                    attachPaginationEvents();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById("tractorAssignmentsList").innerHTML = `
+                        <div class="alert alert-danger text-center">
+                            خطا در بارگذاری اطلاعات. لطفاً مجدداً تلاش کنید.
+                        </div>
+                    `;
+                });
+        }
+
+        function attachPaginationEvents() {
+            document.querySelectorAll("#tractorAssignmentsList .page-link").forEach(link => {
+                link.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute("data-page");
+                    if (page && !isNaN(page)) {
+                        loadAssignments(parseInt(page));
+                    }
+                });
+            });
+        }
+
+        // تابع رفرش برای استفاده در جای دیگر
+        function refreshTractorAssignments() {
+            loadAssignments(1);
+        }
+    </script>
+}

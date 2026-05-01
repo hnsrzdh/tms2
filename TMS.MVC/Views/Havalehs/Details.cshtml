@@ -1,0 +1,265 @@
+﻿@using System.Globalization
+@using TMS.MVC.ViewModels
+@model HavalehDetailsViewModel
+
+@{
+    ViewData["Title"] = "مشخصات کامل حواله";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">حواله‌ها</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success">@TempData["Ok"]</div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>اطلاعات کلی</h5>
+            <div class="d-flex gap-2">
+                <a asp-action="Index" class="btn btn-secondary btn-sm">بازگشت</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">شماره حواله</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@Model.Entity.HavalehNumber</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">شماره قرارداد</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.ContractNumber ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">نوع حواله</small>
+                        <span class="badge bg-info mt-2 d-block">@(Model.Entity.HavalehType ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">نیازمند اخذ مجوز ورود ناوگان</small>
+                        <span class="badge mt-2 d-block @(Model.Entity.RequiresFleetEntryPermit ? "bg-success" : "bg-secondary")">@(Model.Entity.RequiresFleetEntryPermit ? "بلی" : "خیر")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">محصول</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.Product?.Name ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">پیمانکار حمل</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.TransportContractorLegalEntity?.CompanyName ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">صاحب کالا</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.GoodsOwnerLegalEntity?.CompanyName ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">فی کسری مقدار به ازای هر @Model.Entity.Unit</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.ShortagePenaltyPerUnit.HasValue? Model.Entity.ShortagePenaltyPerUnit.Value.ToString("N0") : "-") ریال</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">مبدا</small>
+                        <span class="fw-bold text-muted mt-2 d-block">
+                            @(Model.Entity.OriginCity == null ? "-" : $"{Model.Entity.OriginCity.CountryName} / {Model.Entity.OriginCity.ProvinceName} / {Model.Entity.OriginCity.Name}")
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">مقدار محصول</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.ProductAmount.HasValue ? $"{Model.Entity.ProductAmount:N0} {Model.Entity.Unit}" : "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">تاریخ خرید</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@ToJalali(Model.Entity.PurchaseDate)</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">تاریخ مجاز بارگیری</small>
+                        <span class="fw-bold text-muted mt-2 d-block">@ToJalali(Model.Entity.AllowedLoadingDate)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>ریزحواله‌ها</h5>
+            <a asp-action="AddSubHavaleh" asp-route-havalehId="@Model.Entity.Id" class="btn btn-primary btn-sm">افزودن ریزحواله</a>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>عنوان</th>
+                        <th>مقصد</th>
+                        <th>میزان محموله</th>
+                        <th>تاریخ شروع</th>
+                        <th>تاریخ پایان</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.SubItems.Any())
+                    {
+                        var rowNo = Model.SubRowNumberStart;
+                        foreach (var item in Model.SubItems)
+                        {
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.Title) ? "-" : item.Title)</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.DestinationCityDisplayName) ? "-" : item.DestinationCityDisplayName)</td>
+                                <td>
+                                    @(item.RequestedCargoAmount.HasValue
+                                                                ? $"{item.RequestedCargoAmount:N0} {(string.IsNullOrWhiteSpace(item.RequestedCargoAmountType) ? "" : $"({item.RequestedCargoAmountType})")}"
+                                                                : (item.RequestedCargoAmountType ?? "-"))
+                                </td>
+                                <td>@ToJalali(item.StartDate)</td>
+                                <td>@ToJalali(item.EndDate)</td>
+                                <td>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <a asp-action="EditSubHavaleh" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">ویرایش</a>
+                                        <a asp-action="SubHavalehDetails" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteSubModal_@item.Id">
+                                            حذف
+                                        </button>
+                                    </div>
+
+                                    <div class="modal fade" id="deleteSubModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form asp-action="DeleteSubHavaleh" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <input type="hidden" name="havalehId" value="@Model.Entity.Id" />
+
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">حذف ریزحواله</h5>
+                                                        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                    </div>
+
+                                                    <div class="modal-body">
+                                                        <p class="mb-0">آیا از حذف این ریزحواله مطمئن هستید؟</p>
+                                                        <div class="mt-2 text-muted">
+                                                            @(string.IsNullOrWhiteSpace(item.Title) ? "بدون عنوان" : item.Title)
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="modal-footer">
+                                                        <button type="submit" class="btn btn-danger">حذف</button>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4">موردی ثبت نشده است.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (Model.SubTotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                    <div class="text-muted small">
+                        صفحه @Model.SubPage از @Model.SubTotalPages - تعداد کل: @Model.SubTotalItems
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-primary">
+                            <li class="page-item @(Model.SubPage == 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-route-id="@Model.Entity.Id"
+                                   asp-route-subPage="1"
+                                   asp-route-subPageSize="@Model.SubPageSize">اول</a>
+                            </li>
+                            <li class="page-item @(Model.SubPage == 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-route-id="@Model.Entity.Id"
+                                   asp-route-subPage="@(Model.SubPage - 1)"
+                                   asp-route-subPageSize="@Model.SubPageSize">قبلی</a>
+                            </li>
+                            @{
+                                var startPage = Math.Max(1, Model.SubPage - 2);
+                                var endPage = Math.Min(Model.SubTotalPages, Model.SubPage + 2);
+                            }
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.SubPage ? "active" : "")">
+                                    <a class="page-link"
+                                       asp-route-id="@Model.Entity.Id"
+                                       asp-route-subPage="@i"
+                                       asp-route-subPageSize="@Model.SubPageSize">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.SubPage == Model.SubTotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-route-id="@Model.Entity.Id"
+                                   asp-route-subPage="@(Model.SubPage + 1)"
+                                   asp-route-subPageSize="@Model.SubPageSize">بعدی</a>
+                            </li>
+                            <li class="page-item @(Model.SubPage == Model.SubTotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-route-id="@Model.Entity.Id"
+                                   asp-route-subPage="@Model.SubTotalPages"
+                                   asp-route-subPageSize="@Model.SubPageSize">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,122 @@
+﻿@using TMS.MVC.Models.ViewModels
+@model UserCreateViewModel
+
+@{
+    ViewData["Title"] = "تعریف کاربر جدید";
+}
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">کاربران</li>
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Email" class="form-label">ایمیل / نام کاربری</label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                    <div class="form-text">ایمیل فقط هنگام ایجاد کاربر تعیین می‌شود و بعدا قابل تغییر نیست.</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="FirstName" class="form-label"></label>
+                    <input asp-for="FirstName" class="form-control" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="LastName" class="form-label"></label>
+                    <input asp-for="LastName" class="form-control" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Password" class="form-label">رمز عبور</label>
+                    <input asp-for="Password" class="form-control" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ConfirmPassword" class="form-label">تکرار رمز عبور</label>
+                    <input asp-for="ConfirmPassword" class="form-control" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+
+                    <div class="col-12">
+                        <label class="form-label">رول‌های کاربر</label>
+
+                        <div class="border rounded p-3">
+                            <div class="row g-2">
+                                @if (Model.AvailableRoles != null && Model.AvailableRoles.Any())
+                                {
+                                    for (int i = 0; i < Model.AvailableRoles.Count; i++)
+                                    {
+                                        var role = Model.AvailableRoles[i];
+                                        var isBaseUserRole = role.Name == "User";
+
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                @if (isBaseUserRole)
+                                                {
+                                                    <input type="hidden" name="SelectedRoles" value="@role.Name" />
+                                                }
+
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       name="SelectedRoles"
+                                                       value="@role.Name"
+                                                       id="role_@i"
+                                                       @(isBaseUserRole || role.Selected ? "checked" : null)
+                                                       @(isBaseUserRole ? "disabled" : null) />
+
+                                                <label class="form-check-label" for="role_@i">
+                                                    @role.Title
+                                                    <span class="text-muted small">(@role.Name)</span>
+                                                    @if (isBaseUserRole)
+                                                    {
+                                                        <span class="badge bg-secondary ms-1">اجباری</span>
+                                                    }
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="col-12">
+                                        <div class="text-muted">رولی برای نمایش وجود ندارد.</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">ذخیره</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>

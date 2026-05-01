@@ -1,0 +1,1725 @@
+﻿﻿@using System.Globalization
+@using TMS.MVC.ViewModels
+@model TMS.MVC.ViewModels.TractorAssignmentDetailsViewModel
+
+@{
+    ViewData["Title"] = "جزئیات سفر کشنده";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    var unit = Model.Assignment.SubHavaleh?.Havaleh?.Unit ?? "کیلوگرم";
+    var pricePerTon = Model.Assignment.SubHavaleh?.DriverPricePerTon ?? 0;
+    var penaltyPerUnit = Model.Assignment.SubHavaleh?.Havaleh?.ShortagePenaltyPerUnit ?? 0;
+    var currencyType = Model.Assignment.SubHavaleh?.DriverCurrencyType ?? "ریال";
+    
+    // محاسبه مبلغ کل
+    var totalFare = (Model.Assignment.UnloadedAmount ?? 0) / 1000 * pricePerTon
+        + (Model.Assignment.SubHavaleh?.DriverTip ?? 0)
+        + (Model.Assignment.SubHavaleh?.DriverStopFee ?? 0)
+        - (Model.ShortagePenalty ?? 0)
+        - (Model.Assignment.DelayPenalty ?? 0);
+}
+@functions {
+    private DateTime? GetDocumentApprovalDate(TractorAssignment assignment)
+    {
+        var unloadingApprovedDates = assignment.UnloadingDocuments
+            .Where(d => d.IsApproved && d.ApprovalDate.HasValue)
+            .Select(d => d.ApprovalDate!.Value)
+            .ToList();
+
+        var loadingApprovedDates = assignment.LoadingDocuments
+            .Where(d => d.IsApproved && d.ApprovalDate.HasValue)
+            .Select(d => d.ApprovalDate!.Value)
+            .ToList();
+
+        if (unloadingApprovedDates.Any())
+            return unloadingApprovedDates.Max();
+
+        if (loadingApprovedDates.Any())
+            return loadingApprovedDates.Max();
+
+        return null;
+    }
+
+    public class TimelineStep
+    {
+        public int StatusValue { get; set; }
+        public string Title { get; set; } = "";
+        public string SubTitle { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public DateTime? Date { get; set; }
+        public string Description { get; set; } = "";
+        public string? CancelledBy { get; set; }
+    }
+}
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">داشبورد</li>
+                    <li class="breadcrumb-item">کشنده‌ها</li>
+                    <li class="breadcrumb-item">جزئیات سفر</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid row">
+    <!-- کارت اطلاعات پایه -->
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">اطلاعات پایه</h5>
+            <div class="d-flex gap-2">
+                <a asp-controller="Chat" asp-action="Index" asp-route-assignmentId="@Model.Assignment.Id"
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-chat-dots"></i> صحبت با راننده
+                </a>
+                <a asp-action="Index" asp-route-subHavalehId="@Model.SubHavalehId" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-arrow-right"></i> بازگشت
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- ردیف اول: اطلاعات اصلی -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">شماره حواله</small>
+                        <span class="fw-bold text-muted d-block mt-2">@Model.HavalehNumber</span>
+                    </div>
+                </div>
+                <div class="col-md-3 ">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">زیرحواله</small>
+                        <span class="fw-bold text-muted d-block mt-2">@Model.SubHavalehTitle</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">پلاک کشنده</small>
+                        <span class="fw-bold text-muted d-block mt-2">@Model.TractorPlateNumber</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">راننده</small>
+                        <span class="fw-bold text-muted d-block mt-2">@Model.DriverFullName</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ردیف دوم: مسیر و تاریخ -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">مبدا</small>
+                        <span class="fw-bold text-muted d-block mt-2">@Model.OriginCityDisplay</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">مقصد</small>
+                        <span class="fw-bold text-muted d-block mt-2">@Model.DestinationCityDisplay</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">تاریخ تخصیص</small>
+                        <span class="fw-bold text-muted d-block mt-2">@ToJalali(Model.Assignment.AssignmentDate)</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 bg-light text-center">
+                        <small class="text-muted d-block">وضعیت</small>
+                        <span class="badge @GetStatusBadgeClass(Model.Assignment.Status) mt-2 d-inline-block">@GetStatusDisplay(Model.Assignment.Status)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- بخش لغو (در صورت وجود) -->
+            @if (Model.Assignment.Status == AssignmentStatus.CancellationRequested || Model.Assignment.Status == AssignmentStatus.Cancelled)
+            {
+                <div class="row">
+                    <div class="col-12">
+                        <div class="border @(Model.Assignment.Status == AssignmentStatus.Cancelled ? "border-danger" : "border-warning") rounded-3 p-3"
+                             style="border-width: 2px !important; background-color: rgba(0,0,0,0.02);">
+
+                            @if (Model.Assignment.Status == AssignmentStatus.Cancelled)
+                            {
+                                <div class="row g-2">
+                                    <div class="col-md-12">
+                                        <strong class="text-danger">دلیل لغو:</strong>
+                                        <span>@(Model.Assignment.CancellationReason ?? "دلیلی ثبت نشده")</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>لغو توسط:</strong>
+                                        <span>@Model.Assignment.CancelledBy</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>تاریخ لغو:</strong>
+                                        <span>@ToJalali(Model.Assignment.CancellationDate)</span>
+                                    </div>
+                                </div>
+                            }
+                            else if (Model.Assignment.Status == AssignmentStatus.CancellationRequested)
+                            {
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                            <div class="flex-grow-1">
+                                                <div class="alert alert-warning py-2 mb-2">
+                                                    <i class="bi bi-exclamation-triangle"></i>
+                                                    <strong>دلیل درخواست لغو:</strong>
+                                                    <span>@(Model.Assignment.CancellationReason ?? "دلیلی ثبت نشده")</span>
+                                                </div>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-hourglass-split"></i>
+                                                    @(Model.Assignment.IsCancellationRequestedByDriver ? "درخواست لغو توسط راننده - منتظر تایید ادمین" : "منتظر تایید ادمین")
+                                                </small>
+                                                @if (Model.Assignment.CancellationRequestDate.HasValue)
+                                                {
+                                                    <br />
+                                                    <small class="text-muted">
+                                                        تاریخ درخواست: @ToJalali(Model.Assignment.CancellationRequestDate.Value) - @Model.Assignment.CancellationRequestDate.Value.ToString("HH:mm")
+                                                    </small>
+                                                }
+                                            </div>
+
+                                            @if (Model.ShowCancellationActions)
+                                            {
+                                                <div class="d-flex gap-2 flex-shrink-0">
+                                                    <!-- دکمه تایید لغو -->
+                                                    <button type="button" class="btn btn-success btn-sm"
+                                                            data-bs-toggle="modal" data-bs-target="#approveCancellationModal">
+                                                        <i class="bi bi-check-circle"></i> تایید لغو
+                                                    </button>
+
+                                                    <!-- دکمه رد درخواست -->
+                                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                                            data-bs-toggle="modal" data-bs-target="#rejectCancellationModal">
+                                                        <i class="bi bi-x-circle"></i> رد درخواست
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- مودال تایید لغو -->
+                                <div class="modal fade" id="approveCancellationModal" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form asp-action="ApproveCancellation" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">تایید درخواست لغو</h5>
+                                                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+                                                    <p class="mb-0">آیا از تایید درخواست لغو این سفر اطمینان دارید؟</p>
+                                                    <div class="mt-2 text-muted">@Model.TractorPlateNumber</div>
+                                                    @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                                                    {
+                                                        <div class="text-muted">راننده: @Model.DriverFullName</div>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace(Model.Assignment.CancellationReason))
+                                                    {
+                                                        <div class="mt-2 alert alert-warning py-2 mb-0">
+                                                            <small><strong>دلیل درخواست:</strong> @Model.Assignment.CancellationReason</small>
+                                                        </div>
+                                                    }
+                                                </div>
+
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-success">تایید لغو</button>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- مودال رد درخواست لغو -->
+                                <div class="modal fade" id="rejectCancellationModal" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form asp-action="RejectCancellation" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">رد درخواست لغو</h5>
+                                                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+                                                    <p class="mb-3">لطفاً دلیل رد درخواست را وارد کنید:</p>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">دلیل رد</label>
+                                                        <textarea name="reason" class="form-control" rows="2"
+                                                          placeholder="دلیل رد درخواست لغو..."></textarea>
+                                                    </div>
+
+                                                    <div class="mt-2 text-muted">@Model.TractorPlateNumber</div>
+                                                    @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                                                    {
+                                                        <div class="text-muted">راننده: @Model.DriverFullName</div>
+                                                    }
+                                                </div>
+
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-danger">رد درخواست</button>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <!--  تایم لاین -->
+    <div class="col-md-6 mx-0 pe-2">
+        <div class="card shadow-sm border-0 mx-0 px-0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>خلاصه سفر</h5>
+                @if (Model.Assignment.Status == AssignmentStatus.Cancelled)
+                {
+                    <span class="badge bg-danger fs-6">
+                        <i class="bi bi-x-circle"></i> لغو شده
+                    </span>
+                }
+                else if (Model.Assignment.Status == AssignmentStatus.Completed)
+                {
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-check-circle"></i> تکمیل شده
+                    </span>
+                }
+                else if (Model.Assignment.Status == AssignmentStatus.CancellationRequested)
+                {
+                    <span class="badge bg-warning fs-6">
+                        <i class="bi bi-hourglass-split"></i> درخواست لغو
+                    </span>
+                }
+            </div>
+            <div class="card-body">
+                @{
+                    /* --- تعریف مراحل - بدون تغییر --- */
+                    var isCancelled = Model.Assignment.Status == AssignmentStatus.Cancelled;
+                    var isCancellationRequested = Model.Assignment.Status == AssignmentStatus.CancellationRequested;
+
+                    var allSteps = new List<TimelineStep>
+                                {
+                                new() { StatusValue = 0, Title = "تخصیص کشنده", SubTitle = "Tractor Assignment", Icon = "bi-truck-front-fill", Date = Model.Assignment.AssignmentDate, Description = $"کشنده «{Model.TractorPlateNumber}» تخصیص داده شد" + (Model.DriverFullName != "تعیین نشده" ? $" - راننده: {Model.DriverFullName}" : "") },
+                                new() { StatusValue = 1, Title = "رسیدن به مبدا", SubTitle = "Arrival at Origin", Icon = "bi-geo-alt-fill", Date = Model.Assignment.ArrivalAtOriginDate, Description = "کشنده به محل بارگیری رسید" },
+                                new() { StatusValue = 3, Title = "بارگیری", SubTitle = "Loading", Icon = "bi-box-seam-fill", Date = Model.Assignment.LoadingEndDate, Description = Model.Assignment.LoadedAmount.HasValue ? $"بارگیری: {Model.Assignment.LoadedAmount.Value:N0} {unit}" : "عملیات بارگیری انجام شد" },
+                                new() { StatusValue = 5, Title = "رسیدن به مقصد", SubTitle = "Arrival at Destination", Icon = "bi-geo-alt-fill", Date = Model.Assignment.ArrivalAtDestinationDate, Description = "کشنده به مقصد رسید" },
+                                new() { StatusValue = 7, Title = "تخلیه", SubTitle = "Unloading", Icon = "bi-droplet-fill", Date = Model.Assignment.UnloadingEndDate, Description = Model.Assignment.UnloadedAmount.HasValue ? $"تخلیه: {Model.Assignment.UnloadedAmount.Value:N0} {unit}" : "عملیات تخلیه انجام شد" },
+                                new() { StatusValue = 8, Title = "تایید مدارک", SubTitle = "Documents Approved", Icon = "bi-file-earmark-check-fill", Date = GetDocumentApprovalDate(Model.Assignment), Description = "مدارک توسط اپراتور تایید شد" }
+                                };
+
+                    var cancellationRequestStep = new TimelineStep { StatusValue = 9, Title = "درخواست لغو", SubTitle = "Cancellation Request", Icon = "bi-exclamation-triangle-fill", Date = Model.Assignment.CancellationRequestDate, Description = Model.Assignment.CancellationReason ?? "-" };
+                    var cancelledStep = new TimelineStep { StatusValue = 10, Title = "لغو شده", SubTitle = "Cancelled", Icon = "bi-x-circle-fill", Date = Model.Assignment.CancellationDate, Description = Model.Assignment.CancellationReason ?? "-", CancelledBy = Model.Assignment.CancelledBy };
+                }
+
+                <div class="advanced-timeline">
+                    @if (isCancelled || isCancellationRequested)
+                    {
+                        var lastCompletedIndex = -1;
+                        for (int i = 0; i < allSteps.Count; i++)
+                        {
+                            var step = allSteps[i];
+                            var isCompleted = step.Date.HasValue;
+                            if (isCompleted) lastCompletedIndex = i;
+                            if (!isCompleted && !isCancellationRequested) continue;
+
+                            var hasCancelledStep = cancelledStep.Date.HasValue;
+
+                            var isLastVisibleStep = (!hasCancelledStep) && (
+                            (i == allSteps.Count - 1) ||
+                            (isCancellationRequested && i == lastCompletedIndex + 1 && !allSteps[i + 1].Date.HasValue) ||
+                            (!isCancellationRequested && i == lastCompletedIndex)
+                            );
+
+                            <div class="timeline-item @(isLastVisibleStep ? "timeline-item-last" : "")">
+                                @if (!isLastVisibleStep && isCompleted)
+                                {
+                                    <div class="timeline-connector completed"></div>
+                                }
+                                <div class="timeline-node-wrapper @(isCompleted ? "completed" : "pending")">
+                                    <div class="timeline-node">
+                                        <i class="bi @(isCompleted ? "bi-check-lg text-white" : step.Icon + " text-muted")"></i>
+                                    </div>
+                                    <div class="timeline-content @(isCompleted ? "" : "opacity-50")">
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <h6 class="mb-0 @(isCompleted ? "text-success" : "text-muted")">@step.Title</h6>
+                                            <span class="badge @(isCompleted ? "bg-success" : "bg-light text-muted") rounded-pill">@(isCompleted ? "انجام" : "در انتظار")</span>
+                                        </div>
+                                        <small class="text-muted d-block">@step.SubTitle</small>
+                                        @if (step.Date.HasValue)
+                                        {
+                                            <small class="text-muted"><i class="bi bi-calendar3"></i> @ToJalali(step.Date.Value) - @step.Date.Value.ToString("HH:mm")</small>
+                                        }
+                                        @if (isCompleted)
+                                        {
+                                            <p class="description"><i class="bi bi-info-circle"></i> @step.Description</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (cancellationRequestStep.Date.HasValue)
+                        {
+                            <div class="timeline-item @(isCancelled ? "" : "timeline-item-last")">
+                                @if (isCancelled)
+                                {
+                                    <div class="timeline-connector completed"></div>
+                                }
+                                <div class="timeline-node-wrapper @(isCancelled ? "completed" : "current pulse-animation")">
+                                    <div class="timeline-node">
+                                        <i class="bi @cancellationRequestStep.Icon text-white"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <h6 class="mb-0 @(isCancelled ? "text-success" : "text-warning")">@cancellationRequestStep.Title</h6>
+                                            <span class="badge @(isCancelled ? "bg-success" : "bg-warning text-dark") rounded-pill">@(isCancelled ? "بررسی شده" : "در انتظار")</span>
+                                        </div>
+                                        <small class="text-muted d-block">@cancellationRequestStep.SubTitle</small>
+                                        <small class="text-muted"><i class="bi bi-calendar3"></i> @ToJalali(cancellationRequestStep.Date.Value) - @cancellationRequestStep.Date.Value.ToString("HH:mm")</small>
+                                        <p class="description"><i class="bi bi-info-circle"></i> @cancellationRequestStep.Description</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (isCancelled && cancelledStep.Date.HasValue)
+                        {
+                            <div class="timeline-item timeline-item-last">
+                                <div class="timeline-node-wrapper cancelled">
+                                    <div class="timeline-node">
+                                        <i class="bi @cancelledStep.Icon text-white"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <h6 class="mb-0 text-danger">@cancelledStep.Title</h6>
+                                            <span class="badge bg-danger rounded-pill">Cancelled</span>
+                                        </div>
+                                        <small class="text-muted d-block">@cancelledStep.SubTitle</small>
+                                        <small class="text-muted"><i class="bi bi-calendar3"></i> @ToJalali(cancelledStep.Date.Value) - @cancelledStep.Date.Value.ToString("HH:mm")</small>
+                                        <p class="description"><i class="bi bi-info-circle"></i> @cancelledStep.Description</p>
+                                        @if (!string.IsNullOrEmpty(cancelledStep.CancelledBy))
+                                        {
+                                            <small class="text-muted"><i class="bi bi-person"></i> لغو توسط: @cancelledStep.CancelledBy</small>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        /* --- حالت عادی --- */
+                        var currentStatusValue = (int)Model.Assignment.Status;
+                        for (int i = 0; i < allSteps.Count; i++)
+                        {
+                            var step = allSteps[i];
+                            var stepStatusValue = step.StatusValue;
+                            var isCompleted = stepStatusValue <= currentStatusValue;
+                            var isNextStep = !isCompleted && stepStatusValue > currentStatusValue && (i == 0 || allSteps[i - 1].StatusValue <= currentStatusValue);
+                            var isPending = !isCompleted && !isNextStep;
+                            var isLast = i == allSteps.Count - 1;
+
+                            <div class="timeline-item @(isLast ? "timeline-item-last" : "")">
+                                @if (!isLast)
+                                {
+                                    <div class="timeline-connector @(isCompleted ? "completed" : "") @(isNextStep ? "next-step" : "")"></div>
+                                }
+                                @{
+                                    var nodeClass = isCompleted ? "completed" : isNextStep ? "current pulse-animation" : "pending";
+                                    var iconClass = isCompleted ? "bi-check-lg text-white" : $"{step.Icon} {(isNextStep ? "text-white" : "text-muted")}";
+                                    var titleClass = isCompleted ? "text-success" : isNextStep ? "text-warning" : "text-muted";
+                                    var badgeClass = isCompleted ? "bg-success" : isNextStep ? "bg-warning text-dark" : "bg-light text-muted";
+                                    var badgeText = isCompleted ? "تکمیل" : isNextStep ? "اقدام بعدی" : "در انتظار";
+                                    var contentClass = isPending ? "opacity-50" : "";
+                                }
+                                <div class="timeline-node-wrapper @nodeClass">
+                                    <div class="timeline-node">
+                                        <i class="bi @iconClass"></i>
+                                    </div>
+                                    <div class="timeline-content @contentClass">
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <h6 class="mb-0 @titleClass">@step.Title</h6>
+                                            <span class="badge @badgeClass rounded-pill">@badgeText</span>
+                                        </div>
+                                        <small class="text-muted d-block">@step.SubTitle</small>
+                                        @if (step.Date.HasValue)
+                                        {
+                                            <small class="text-muted"><i class="bi bi-calendar3"></i> @ToJalali(step.Date.Value) - @step.Date.Value.ToString("HH:mm")</small>
+                                        }
+                                        else if (isNextStep)
+                                        {
+
+                                            <small class="text-muted fst-italic"><i class="bi bi-hourglass-top"></i> در انتظار انجام</small>
+                                        }
+                                        @if (isCompleted || isNextStep)
+                                        {
+                                            <p class="description"><i class="bi bi-info-circle"></i> @step.Description</p>
+                                        }
+                                        @if (step.StatusValue == 8 && (isCompleted || isNextStep))
+                                        {
+                                            var ld = Model.Assignment.LoadingDocuments.Any() && Model.Assignment.LoadingDocuments.All(d => d.IsApproved);
+                                            var ud = Model.Assignment.UnloadingDocuments.Any() && Model.Assignment.UnloadingDocuments.All(d => d.IsApproved);
+                                            <div class="mt-1">
+                                                <small class="d-block @(ld ? "text-success" : "text-warning")"><i class="bi @(ld ? "bi-check-circle-fill" : "bi-exclamation-circle")"></i> مدارک بارگیری: @(ld ? "تایید" : "در انتظار")</small>
+                                                <small class="d-block @(ud ? "text-success" : "text-warning")"><i class="bi @(ud ? "bi-check-circle-fill" : "bi-exclamation-circle")"></i> مدارک تخلیه: @(ud ? "تایید" : "در انتظار")</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 pe-0 mx-0">
+        <div class="row">
+            <!-- دکمه‌های عملیات -->
+            <div class="m-0">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>عملیات</h5>
+                    </div>
+                    <div class="card-body p-3">
+                        @* --- عملیات اصلی سفر --- *@
+                        @if (Model.CanConfirmArrival || Model.CanConfirmLoading || Model.CanConfirmDestinationArrival || Model.CanConfirmUnloading)
+                        {
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-2 fw-bold">
+                                    <i class="bi bi-arrow-right-circle"></i> روند سفر
+                                </small>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    @if (Model.CanConfirmArrival)
+                                    {
+                                        <button type="button" class="btn btn-outline-primary"
+                                                data-bs-toggle="modal" data-bs-target="#arrivalModal"
+                                                title="ثبت رسیدن کشنده به مبدا بارگیری">
+                                            <i class="bi bi-geo-alt-fill fs-5"></i>
+                                            <span class="d-block" style="font-size: 0.7rem;">رسیدن به مبدا</span>
+                                        </button>
+
+                                        @* مودال تایید رسیدن به مبدا *@
+                                        <div class="modal fade" id="arrivalModal" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="ConfirmArrivalAtOrigin" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">ثبت رسیدن به مبدا</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-0">آیا از ثبت رسیدن کشنده به مبدا اطمینان دارید؟</p>
+                                                            <div class="mt-2 text-muted">@Model.TractorPlateNumber</div>
+                                                            @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                                                            {
+                                                                <div class="text-muted">راننده: @Model.DriverFullName</div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-primary">تایید</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                 
+                                    @if (Model.CanConfirmLoading)
+                                    {
+                                        <button type="button" class="btn btn-outline-success"
+                                                data-bs-toggle="modal" data-bs-target="#loadingModal"
+                                                title="ثبت عملیات بارگیری محموله">
+                                            <i class="bi bi-box-seam-fill fs-5"></i>
+                                            <span class="d-block" style="font-size: 0.7rem;">بارگیری</span>
+                                        </button>
+
+                                        @* مودال تایید بارگیری *@
+                                        <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="ConfirmLoading" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">ثبت بارگیری</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-3">لطفاً مقدار بارگیری شده را وارد کنید:</p>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">مقدار بارگیری شده <span class="text-danger">*</span></label>
+                                                                <div class="input-group">
+                                                                    <input type="number" name="loadedAmount" class="form-control text-start"
+                                                                           step="0.001" min="0" required
+                                                                           placeholder="مقدار را وارد کنید..." />
+                                                                    <span class="input-group-text">
+                                                                        @(Model.Assignment.SubHavaleh?.Havaleh?.Unit ?? "کیلوگرم")
+                                                                    </span>
+                                                                </div>
+                                                                <small class="text-muted">واحد: @(Model.Assignment.SubHavaleh?.Havaleh?.Unit ?? "کیلوگرم")</small>
+                                                            </div>
+
+                                                            <div class="mt-2 text-muted">
+                                                                <i class="bi bi-truck"></i> @Model.TractorPlateNumber
+                                                            </div>
+                                                            @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                                                            {
+                                                                <div class="text-muted">راننده: @Model.DriverFullName</div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-success">تایید بارگیری</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                 
+                                    @if (Model.CanConfirmDestinationArrival)
+                                    {
+                                        <button type="button" class="btn btn-outline-info"
+                                                data-bs-toggle="modal" data-bs-target="#destinationArrivalModal"
+                                                title="ثبت رسیدن کشنده به مقصد">
+                                            <i class="bi bi-flag-fill fs-5"></i>
+                                            <span class="d-block" style="font-size: 0.7rem;">رسیدن به مقصد</span>
+                                        </button>
+
+                                        @* مودال تایید رسیدن به مقصد *@
+                                        <div class="modal fade" id="destinationArrivalModal" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="ConfirmArrivalAtDestination" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">ثبت رسیدن به مقصد</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-0">آیا از ثبت رسیدن کشنده به مقصد اطمینان دارید؟</p>
+                                                            <div class="mt-2 text-muted">@Model.TractorPlateNumber</div>
+                                                            @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                                                            {
+                                                                <div class="text-muted">راننده: @Model.DriverFullName</div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-info">تایید</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                               
+                                    @if (Model.CanConfirmUnloading)
+                                    {
+                                        <button type="button" class="btn btn-outline-warning"
+                                                data-bs-toggle="modal" data-bs-target="#unloadingModal"
+                                                title="ثبت عملیات تخلیه محموله">
+                                            <i class="bi bi-droplet-fill fs-5"></i>
+                                            <span class="d-block" style="font-size: 0.7rem;">تخلیه</span>
+                                        </button>
+
+                                        @* مودال تایید تخلیه *@
+                                        <div class="modal fade" id="unloadingModal" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="ConfirmUnloading" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">ثبت تخلیه</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-3">لطفاً مقدار تخلیه شده را وارد کنید:</p>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">مقدار تخلیه شده <span class="text-danger">*</span></label>
+                                                                <div class="input-group">
+                                                                    <input type="number" name="unloadedAmount" class="form-control text-start"
+                                                                           step="0.001" min="0" required
+                                                                           placeholder="مقدار را وارد کنید..." />
+                                                                    <span class="input-group-text">
+                                                                        @(Model.Assignment.SubHavaleh?.Havaleh?.Unit ?? "کیلوگرم")
+                                                                    </span>
+                                                                </div>
+                                                                <small class="text-muted">واحد: @(Model.Assignment.SubHavaleh?.Havaleh?.Unit ?? "کیلوگرم")</small>
+                                                            </div>
+
+                                                            @if (Model.Assignment.LoadedAmount.HasValue)
+                                                            {
+                                                                <div class="alert alert-info py-2">
+                                                                    <small>مقدار بارگیری شده: <strong>@Model.Assignment.LoadedAmount.Value.ToString("N3")</strong> @(Model.Assignment.SubHavaleh?.Havaleh?.Unit ?? "کیلوگرم")</small>
+                                                                </div>
+                                                            }
+
+                                                            <div class="mt-2 text-muted">
+                                                                <i class="bi bi-truck"></i> @Model.TractorPlateNumber
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-warning">تایید تخلیه</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                            
+                                </div>
+                            </div>
+                        }
+
+                        @* --- عملیات لغو --- *@
+                        @if (Model.CanRequestCancellation || Model.CanCancelByAdmin)
+                        {
+                            <div>
+                                <small class="text-muted d-block mb-2 fw-bold">
+                                    <i class="bi bi-exclamation-triangle"></i> لغو سفر
+                                </small>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    @if (Model.CanRequestCancellation)
+                                    {
+                                        <button type="button" class="btn btn-outline-danger"
+                                                data-bs-toggle="modal" data-bs-target="#cancellationRequestModal"
+                                                title="درخواست لغو این سفر - نیاز به تایید ادمین">
+                                            <i class="bi bi-x-circle fs-5"></i>
+                                            <span class="d-block" style="font-size: 0.7rem;">درخواست لغو</span>
+                                        </button>
+
+                                        @* مودال درخواست لغو *@
+                                        <div class="modal fade" id="cancellationRequestModal" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="RequestCancellation" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">درخواست لغو سفر</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-3">لطفاً دلیل درخواست لغو را وارد کنید:</p>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">دلیل لغو <span class="text-danger">*</span></label>
+                                                                <textarea name="reason" class="form-control" rows="3" required
+                                                                  placeholder="دلیل درخواست لغو را توضیح دهید..."></textarea>
+                                                            </div>
+
+                                                            <div class="alert alert-warning py-2 mb-0">
+                                                                <small><i class="bi bi-info-circle"></i> این درخواست باید توسط ادمین تایید شود.</small>
+                                                            </div>
+
+                                                            <div class="mt-2 text-muted">
+                                                                <i class="bi bi-truck"></i> @Model.TractorPlateNumber
+                                                            </div>
+                                                            @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                                                            {
+                                                                <div class="text-muted">راننده: @Model.DriverFullName</div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-danger">ارسال درخواست لغو</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (Model.CanCancelByAdmin)
+                                    {
+                                        <button type="button" class="btn btn-danger"
+                                                data-bs-toggle="modal" data-bs-target="#cancelByAdminModal"
+                                                title="لغو مستقیم سفر توسط ادمین">
+                                            <i class="bi bi-x-octagon-fill fs-5"></i>
+                                            <span class="d-block" style="font-size: 0.7rem;">لغو مستقیم</span>
+                                        </button>
+
+                                        @* مودال لغو مستقیم توسط ادمین *@
+                                        <div class="modal fade" id="cancelByAdminModal" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form asp-action="CancelAssignment" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">لغو مستقیم سفر</h5>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body">
+                                                            <p class="mb-3">لطفاً دلیل لغو سفر را وارد کنید:</p>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">دلیل لغو <span class="text-danger">*</span></label>
+                                                                <textarea name="reason" class="form-control" rows="3" required
+                                                                  placeholder="دلیل لغو سفر را وارد کنید..."></textarea>
+                                                            </div>
+
+                                                            <div class="alert alert-danger py-2 mb-0">
+                                                                <small><i class="bi bi-exclamation-triangle"></i> با این کار سفر بلافاصله لغو خواهد شد.</small>
+                                                            </div>
+
+                                                            <div class="mt-2 text-muted">
+                                                                <i class="bi bi-truck"></i> @Model.TractorPlateNumber
+                                                            </div>
+                                                            @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                                                            {
+                                                                <div class="text-muted">راننده: @Model.DriverFullName</div>
+                                                            }
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-danger">تایید لغو سفر</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @* --- حالت بدون عملیات --- *@
+                        @if (!Model.CanConfirmArrival && !Model.CanConfirmLoading && !Model.CanConfirmDestinationArrival &&
+                                            !Model.CanConfirmUnloading && !Model.CanRequestCancellation && !Model.CanCancelByAdmin)
+                        {
+                            <div class="text-center text-muted py-2">
+                                <i class="bi bi-check-circle text-success fs-4"></i>
+                                <p class="mb-0 mt-1">عملیات این سفر به پایان رسیده است</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!-- مدارک -->
+            <div class="m-0">
+                @* ========== مدارک بارگیری ========== *@
+                <div>
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5> مدارک بارگیری</h5>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                        data-bs-toggle="modal" data-bs-target="#approveAllLoadingDocsModal">
+                                    تایید همه                                   </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" data-bs-target="#rejectAllLoadingDocsModal">
+                                    رد همه                           </button>
+                                <button type="button" class="btn btn-sm btn-primary"
+                                        data-bs-toggle="modal" data-bs-target="#uploadLoadingDocModal">
+                                    آپلود مدارک
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            @if (!Model.LoadingDocuments.Any())
+                            {
+                                <p class="text-muted text-center py-3 mb-0"><i class="bi bi-folder2-open"></i> مدرکی ثبت نشده است</p>
+                            }
+                            else
+                            {
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr><th>عنوان</th><th>تاریخ</th><th>وضعیت</th><th class="text-end">عملیات</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var doc in Model.LoadingDocuments)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a href="@doc.FilePath" target="_blank" class="text-decoration-none">
+                                                        <i class="bi bi-file-earmark"></i> @doc.Title
+                                                    </a>
+                                                    @if (doc.RejectionNote != null)
+                                                    {
+                                                        <br />
+                                            
+                                                        <small class="text-danger">@doc.RejectionNote</small>
+                                                    }
+                                                </td>
+                                                <td><small>@ToJalali(doc.UploadDate) - @doc.UploadDate.ToString("HH:mm")</small></td>
+                                                <td>
+                                                    @if (doc.IsApproved)
+                                                    {
+                                                        <span class="badge bg-success">تأیید</span>
+                                                    }
+                                                    else if (doc.RejectionNote != null)
+                                                    {
+                                                        <span class="badge bg-danger">رد</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark">در انتظار</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                data-bs-toggle="modal" data-bs-target="#deleteDocModal_@doc.Id">
+                                                            حذف
+                                                        </button>
+                                                    </div>
+
+                                                    @* مودال حذف *@
+                                                    <div class="modal fade" id="deleteDocModal_@doc.Id" tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog modal-sm">
+                                                            <div class="modal-content">
+                                                                <form asp-action="DeleteDocument" method="post">
+                                                                    @Html.AntiForgeryToken()
+                                                                    <input type="hidden" name="documentId" value="@doc.Id" />
+                                                                    <input type="hidden" name="documentType" value="Loading" />
+                                                                    <div class="modal-header"><h6 class="modal-title">حذف مدرک</h6><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button></div>
+                                                                    <div class="modal-body"><p class="mb-0">آیا از حذف این مدرک اطمینان دارید؟</p><small class="text-muted">@doc.Title</small></div>
+                                                                    <div class="modal-footer"><button type="submit" class="btn btn-sm btn-danger">حذف</button><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">انصراف</button></div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+
+                    @* مودال تایید همه مدارک بارگیری *@
+                    <div class="modal fade" id="approveAllLoadingDocsModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <form asp-action="ApproveAllDocuments" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+                                    <input type="hidden" name="documentType" value="Loading" />
+                                    <div class="modal-header"><h6 class="modal-title">تایید همه مدارک بارگیری</h6><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button></div>
+                                    <div class="modal-body"><p class="mb-0">آیا از تایید همه مدارک بارگیری اطمینان دارید؟</p></div>
+                                    <div class="modal-footer"><button type="submit" class="btn btn-sm btn-success">تایید همه</button><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">انصراف</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    @* مودال رد همه مدارک بارگیری *@
+                    <div class="modal fade" id="rejectAllLoadingDocsModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form asp-action="RejectAllDocuments" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+                                    <input type="hidden" name="documentType" value="Loading" />
+                                    <div class="modal-header">
+                                        <h6 class="modal-title">رد همه مدارک بارگیری</h6>
+                                        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="mb-1">آیا از رد همه مدارک بارگیری اطمینان دارید؟</p>
+                                        <div class="mb-3 mt-2">
+                                            <label class="form-label">دلیل رد <span class="text-danger">*</span></label>
+                                            <textarea name="rejectionNote" class="form-control" rows="2" required
+                                                      placeholder="دلیل رد همه مدارک را وارد کنید..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-sm btn-danger">رد همه</button>
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ========== مدارک تخلیه ========== *@
+                <div>
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5> مدارک تخلیه</h5>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                        data-bs-toggle="modal" data-bs-target="#approveAllUnloadingDocsModal">
+                                    تایید همه
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" data-bs-target="#rejectAllUnloadingDocsModal">
+                                    رد همه
+                                </button>
+                                <button type="button" class="btn btn-sm btn-primary"
+                                        data-bs-toggle="modal" data-bs-target="#uploadUnloadingDocModal">
+                                    آپلود مدارک
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            @if (!Model.UnloadingDocuments.Any())
+                            {
+                                <p class="text-muted text-center py-3 mb-0"><i class="bi bi-folder2-open"></i> مدرکی ثبت نشده است</p>
+                            }
+                            else
+                            {
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr><th>عنوان</th><th>تاریخ</th><th>وضعیت</th><th class="text-end">عملیات</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var doc in Model.UnloadingDocuments)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a href="@doc.FilePath" target="_blank" class="text-decoration-none">
+                                                        <i class="bi bi-file-earmark"></i> @doc.Title
+                                                    </a>
+                                                    @if (doc.RejectionNote != null)
+                                                    {
+                                                        <br />
+                                                        <small class="text-danger">@doc.RejectionNote</small>
+                                                    }
+                                                </td>
+                                                <td><small>@ToJalali(doc.UploadDate) - @doc.UploadDate.ToString("HH:mm")</small></td>
+                                                <td>
+                                                    @if (doc.IsApproved)
+                                                    {
+                                                        <span class="badge bg-success">تأیید</span>
+                                                    }
+                                                    else if (doc.RejectionNote != null)
+                                                    {
+                                                        <span class="badge bg-danger">رد</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark">در انتظار</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                data-bs-toggle="modal" data-bs-target="#deleteDocModal_@doc.Id">
+                                                            حذف
+                                                        </button>
+                                                    </div>
+
+                                                    @* مودال حذف *@
+                                                    <div class="modal fade" id="deleteDocModal_@doc.Id" tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog modal-sm">
+                                                            <div class="modal-content">
+                                                                <form asp-action="DeleteDocument" method="post">
+                                                                    @Html.AntiForgeryToken()
+                                                                    <input type="hidden" name="documentId" value="@doc.Id" />
+                                                                    <input type="hidden" name="documentType" value="Unloading" />
+                                                                    <div class="modal-header"><h6 class="modal-title">حذف مدرک</h6><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button></div>
+                                                                    <div class="modal-body"><p class="mb-0">آیا از حذف این مدرک اطمینان دارید؟</p><small class="text-muted">@doc.Title</small></div>
+                                                                    <div class="modal-footer"><button type="submit" class="btn btn-sm btn-danger">حذف</button><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">انصراف</button></div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+
+                    @* مودال تایید همه مدارک تخلیه *@
+                    <div class="modal fade" id="approveAllUnloadingDocsModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <form asp-action="ApproveAllDocuments" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+                                    <input type="hidden" name="documentType" value="Unloading" />
+                                    <div class="modal-header"><h6 class="modal-title">تایید همه مدارک تخلیه</h6><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button></div>
+                                    <div class="modal-body"><p class="mb-0">آیا از تایید همه مدارک تخلیه اطمینان دارید؟</p></div>
+                                    <div class="modal-footer"><button type="submit" class="btn btn-sm btn-success">تایید همه</button><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">انصراف</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    @* مودال رد همه مدارک تخلیه *@
+                    <div class="modal fade" id="rejectAllUnloadingDocsModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form asp-action="RejectAllDocuments" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+                                    <input type="hidden" name="documentType" value="Unloading" />
+                                    <div class="modal-header">
+                                        <h6 class="modal-title">رد همه مدارک تخلیه</h6>
+                                        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="mb-1">آیا از رد همه مدارک تخلیه اطمینان دارید؟</p>
+                                        <div class="mb-3 mt-2">
+                                            <label class="form-label">دلیل رد <span class="text-danger">*</span></label>
+                                            <textarea name="rejectionNote" class="form-control" rows="2" required
+                                                      placeholder="دلیل رد همه مدارک را وارد کنید..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-sm btn-danger">رد همه</button>
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ========== مودال‌های آپلود ========== *@
+            <div class="modal fade" id="uploadLoadingDocModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form asp-action="UploadDocument" method="post" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+                            <input type="hidden" name="documentType" value="Loading" />
+                            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-file-text"></i> آپلود مدرک بارگیری</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button></div>
+                            <div class="modal-body">
+                                <div class="mb-3"><label class="form-label">عنوان مدرک</label><input type="text" name="title" class="form-control" placeholder="مثلاً: بارنامه" /></div>
+                                <div class="mb-3"><label class="form-label">انتخاب فایل <span class="text-danger">*</span></label><input type="file" name="document" class="form-control" required /></div>
+                            </div>
+                            <div class="modal-footer"><button type="submit" class="btn btn-success">آپلود</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="uploadUnloadingDocModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form asp-action="UploadDocument" method="post" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+                            <input type="hidden" name="documentType" value="Unloading" />
+                            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-file-check"></i> آپلود مدرک تخلیه</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button></div>
+                            <div class="modal-body">
+                                <div class="mb-3"><label class="form-label">عنوان مدرک</label><input type="text" name="title" class="form-control" placeholder="مثلاً: رسید تخلیه" /></div>
+                                <div class="mb-3"><label class="form-label">انتخاب فایل <span class="text-danger">*</span></label><input type="file" name="document" class="form-control" required /></div>
+                            </div>
+                            <div class="modal-footer"><button type="submit" class="btn btn-warning text-dark">آپلود</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- محاسبات مالی -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>محاسبات مالی - @currencyType</h5>
+        </div>
+        <div class="card-body p-4">
+            @if (!Model.Assignment.LoadedAmount.HasValue && !Model.Assignment.UnloadedAmount.HasValue)
+            {
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-hourglass-split fs-3"></i>
+                    <p class="mt-2 mb-0">محاسبات مالی پس از ثبت بارگیری و تخلیه نمایش داده می‌شود.</p>
+                </div>
+            }
+            else
+            {
+                @* --- جدول اطلاعات پایه --- *@
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center bg-light">
+                            <small class="text-muted d-block mb-1">مقدار بارگیری شده</small>
+                            <span class="fs-4 fw-bold text-primary">
+                                @(Model.Assignment.LoadedAmount?.ToString("N0") ?? "-")
+                            </span>
+                            <small class="d-block text-muted">@unit</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center bg-light">
+                            <small class="text-muted d-block mb-1">مقدار تخلیه شده</small>
+                            <span class="fs-4 fw-bold text-info">
+                                @(Model.Assignment.UnloadedAmount?.ToString("N0") ?? "-")
+                            </span>
+                            <small class="d-block text-muted">@unit</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center  bg-light @(Model.ShortageAmount > 0 ? "border-danger" : "")">
+                            <small class="text-muted d-block mb-1">مقدار کسری</small>
+                            <span class="fs-4 fw-bold @(Model.ShortageAmount > 0 ? "text-danger" : "text-success")">
+                                @(Model.ShortageAmount?.ToString("N0") ?? "۰")
+                            </span>
+                            <small class="d-block text-muted">@unit</small>
+                        </div>
+                    </div>
+                </div>
+
+                @* --- جدول محاسبات مالی --- *@
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th class="text-start" style="width: 25%;">شرح</th>
+                                <th class="text-center" style="width: 50%;">فرمول محاسبه</th>
+                                <th class="text-center" style="width: 25%;">مبلغ (@currencyType)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @* کرایه پایه *@
+                            <tr>
+                                <td class="text-start">
+                                    <strong>کرایه حمل</strong>
+                                    <br />
+                                    <small class="text-muted">بر اساس مقدار تخلیه شده</small>
+                                </td>
+                                <td class="text-center text-muted">
+                                        @pricePerTon.ToString("N0")
+                                        × (۱۰۰۰ ÷ @(Model.Assignment.UnloadedAmount?.ToString("N0") ?? "۰") @unit)
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        var baseFare = (Model.Assignment.UnloadedAmount ?? 0) / 1000 * pricePerTon;
+                                    }
+                                    <span class="fw-bold text-primary">@baseFare.ToString("N0")</span>
+                                </td>
+                            </tr>
+
+                            @* کسری بار *@
+                            @if (Model.ShortageAmount > 0)
+                            {
+                                <tr>
+                                    <td class="text-start">
+                                        <strong class="text-danger">کسری بار</strong>
+                                        <br />
+                                        <small class="text-muted">
+                                            @Model.ShortageAmount?.ToString("N0") @unit کسری
+                                        </small>
+                                    </td>
+                                    <td class="text-center text-muted">
+                                            @penaltyPerUnit.ToString("N0")
+                                            × @Model.ShortageAmount?.ToString("N0") @unit
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold text-danger">@(Model.ShortagePenalty?.ToString("N0") ?? "۰")</span>
+                                    </td>
+                                </tr>
+                            }
+
+                            @* انعام راننده *@
+                            @if (Model.Assignment.SubHavaleh?.DriverTip > 0)
+                            {
+                                <tr>
+                                    <td class="text-start">
+                                        <strong class="text-success">انعام راننده</strong>
+                                    </td>
+                                    <td class="text-center text-muted">
+                                        مبلغ ثابت
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold text-success">@Model.Assignment.SubHavaleh.DriverTip.Value.ToString("N0")</span>
+                                    </td>
+                                </tr>
+                            }
+
+                            @* حق توقف *@
+                            @if (Model.Assignment.SubHavaleh?.DriverStopFee > 0)
+                            {
+                                <tr>
+                                    <td class="text-end">
+                                        <strong class="text-warning">حق توقف</strong>
+                                        <br />
+                                        <small class="text-muted">فی حق توقف راننده</small>
+                                    </td>
+                                    <td class="text-center text-muted">
+                                       مبلغ ثابت
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold text-warning">@Model.Assignment.SubHavaleh.DriverStopFee.Value.ToString("N0")</span>
+                                    </td>
+                                </tr>
+                            }
+
+                            @* جریمه تاخیر *@
+                            @if (Model.Assignment.DelayPenalty > 0)
+                            {
+                                <tr>
+                                    <td class="text-end">
+                                        <strong class="text-danger">جریمه تأخیر</strong>
+                                    </td>
+                                    <td class="text-center text-muted">
+                                        -
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold text-danger">@Model.Assignment.DelayPenalty.Value.ToString("N0")</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+
+                        @* --- ردیف جمع کل --- *@
+                        <tfoot>
+                            <tr class="table-success" style="font-size: 1.1rem;">
+                                <td class="text-start fw-bold">
+                                    <i class="bi bi-cash-stack"></i> مبلغ قابل پرداخت
+                                </td>
+                                <td class="text-center text-muted">
+                                    جمع کل
+                                </td>
+                                <td class="text-center fw-bold text-success">
+                                    @totalFare.ToString("N0")
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                @* --- اطلاعات تکمیلی --- *@
+                @if (Model.Assignment.SubHavaleh != null)
+                {
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-6">
+                            <div class="alert alert-light border mb-0 py-2">
+                                <small class="text-muted">
+                                    <strong>قرارداد:</strong> @(Model.Assignment.SubHavaleh.ContractType ?? "نامشخص") |
+                                    <strong>مبنای تسویه:</strong> @(Model.Assignment.SubHavaleh.SettlementBase ?? "نامشخص") |
+                                    <strong>نوع حمل:</strong> @(Model.Assignment.SubHavaleh.TransportType ?? "نامشخص")
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-light border mb-0 py-2 text-center">
+                                <small class="text-muted">
+                                    <strong>فی هر تن:</strong> @pricePerTon.ToString("N0") @currencyType
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-light border mb-0 py-2 text-center">
+                                <small class="text-muted">
+                                    <strong>فی کسری:</strong> @penaltyPerUnit.ToString("N0") @currencyType / @unit
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @* --- وضعیت تسویه --- *@
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        @if (Model.Assignment.IsSettled)
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success fs-6">
+                                    <i class="bi bi-check-circle"></i> تسویه شده
+                                </span>
+                                <small class="text-muted">
+                                    @if (Model.Assignment.SettledDate.HasValue)
+                                    {
+                                        <span>در تاریخ <strong>@ToJalali(Model.Assignment.SettledDate.Value) - @Model.Assignment.SettledDate.Value.ToString("HH:mm")</strong></span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(Model.Assignment.SettledBy))
+                                    {
+                                        <span> توسط <strong>@Model.Assignment.SettledBy</strong></span>
+                                    }
+                                    @if (Model.Assignment.SettledTo == "Driver")
+                                    {
+                                        <span> به کیف پول <strong class="text-success">راننده (@Model.DriverFullName)</strong> واریز شد</span>
+                                    }
+                                    else if (Model.Assignment.SettledTo == "Tractor")
+                                    {
+                                        <span> به کیف پول <strong class="text-primary">کشنده (@Model.TractorPlateNumber)</strong> واریز شد</span>
+                                    }
+                                </small>
+                            </div>
+                        }
+                        else if (Model.Assignment.UnloadedAmount.HasValue)
+                        {
+                            <span class="badge bg-warning text-dark fs-6">
+                                <i class="bi bi-hourglass-split"></i> در انتظار تسویه
+                            </span>
+                        }
+                    </div>
+                    @if (Model.Assignment.UnloadedAmount.HasValue && !Model.Assignment.IsSettled)
+                    {
+                        <div class="d-flex gap-2">
+                            @if (Model.Assignment.DriverProfileId.HasValue)
+                            {
+                                <button type="button" class="btn btn-success btn-sm"
+                                        data-bs-toggle="modal" data-bs-target="#payToDriverModal">
+                                    <i class="bi bi-person-check"></i> واریز به کیف پول راننده
+                                </button>
+                            }
+                            <button type="button" class="btn btn-primary btn-sm"
+                                    data-bs-toggle="modal" data-bs-target="#payToTractorModal">
+                                <i class="bi bi-truck"></i> واریز به کیف پول کشنده
+                            </button>
+                        </div>
+
+                        @* مودال واریز به راننده *@
+                        <div class="modal fade" id="payToDriverModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form asp-action="SettleToDriver" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">واریز به کیف پول راننده</h5>
+                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                        </div>
+
+                                        <div class="modal-body">
+                                            <p class="mb-2">آیا از واریز این مبلغ به کیف پول راننده اطمینان دارید؟</p>
+
+                                            <div class="border rounded p-3 bg-light">
+                                                <div class="row mb-2">
+                                                    <div class="col-6 text-muted">راننده:</div>
+                                                    <div class="col-6 text-primary text-end fw-bold">@Model.DriverFullName</div>
+                                                </div>
+                                                <div class="row mb-2">
+                                                    <div class="col-6 text-muted">مبلغ قابل پرداخت:</div>
+                                                    <div class="col-6 text-end fw-bold text-primary">
+                                                        @{
+                                                            var totalFare = (Model.Assignment.UnloadedAmount ?? 0) / 1000 * (Model.Assignment.SubHavaleh?.DriverPricePerTon ?? 0)
+                                                            + (Model.Assignment.SubHavaleh?.DriverTip ?? 0)
+                                                            + (Model.Assignment.SubHavaleh?.DriverStopFee ?? 0)
+                                                            - (Model.ShortagePenalty ?? 0)
+                                                            - (Model.Assignment.DelayPenalty ?? 0);
+                                                        }
+                                                        @totalFare.ToString("N0") @(Model.Assignment.SubHavaleh?.DriverCurrencyType ?? "ریال")
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-check-lg"></i> تایید و واریز
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* مودال واریز به کشنده *@
+                        <div class="modal fade" id="payToTractorModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form asp-action="SettleToTractor" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="assignmentId" value="@Model.Assignment.Id" />
+
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">واریز به کیف پول کشنده</h5>
+                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                        </div>
+
+                                        <div class="modal-body">
+                                            <p class="mb-2">آیا از واریز این مبلغ به کیف پول کشنده اطمینان دارید؟</p>
+
+                                            <div class="border rounded p-3 bg-light">
+                                                <div class="row mb-2">
+                                                    <div class="col-6 text-muted">کشنده:</div>
+                                                    <div class="col-6 text-primary text-end fw-bold">@Model.TractorPlateNumber</div>
+                                                </div>
+                                                <div class="row mb-2">
+                                                    <div class="col-6 text-muted">مبلغ قابل پرداخت:</div>
+                                                    <div class="col-6 text-end fw-bold text-primary">
+                                                        @totalFare.ToString("N0") @(Model.Assignment.SubHavaleh?.DriverCurrencyType ?? "ریال")
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-lg"></i> تایید و واریز
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+               
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- نقشه -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 > رهگیری مسیر</h5>
+            <button class="btn btn-sm btn-outline-primary" onclick="refreshMap()"> به‌روزرسانی</button>
+        </div>
+        <div class="card-body"><div id="map" style="height: 400px;"></div></div>
+    </div>
+</div>
+
+@{
+    ViewBag.AssignmentId = Model.Assignment.Id;
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="~/assets/css/persianDatepicker-default.css">
+    <script src="~/assets/js/persianDatepicker.min.js"></script>
+
+    <script>
+        var assignmentId = @Model.Assignment.Id;
+        var map; var markers = [];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            initMap(); loadLocationHistory();
+            setupJalaliDateField("LoadingStartDate", "LoadingStartDate_shamsi");
+            setupJalaliDateField("LoadingEndDate", "LoadingEndDate_shamsi");
+            setupJalaliDateField("UnloadingStartDate", "UnloadingStartDate_shamsi");
+            setupJalaliDateField("UnloadingEndDate", "UnloadingEndDate_shamsi");
+            setupJalaliDateField("ArrivalDate", "ArrivalDate_shamsi");
+            setupJalaliDateField("DestArrivalDate", "DestArrivalDate_shamsi");
+        });
+
+        function setupJalaliDateField(hiddenId, shamsiId) {
+            const hidden = document.getElementById(hiddenId);
+            const shamsi = document.getElementById(shamsiId);
+            if (!hidden || !shamsi) return;
+            if (typeof $ !== "undefined" && typeof $(shamsi).persianDatepicker === "function") {
+                $(shamsi).persianDatepicker({ formatDate: "YYYY/0M/0D", autoClose: true, onSelect: function () { syncShamsiToGregorian(hidden, shamsi); } });
+            }
+            shamsi.addEventListener("change", function () { syncShamsiToGregorian(hidden, shamsi); });
+            if (!hidden.value) hidden.value = new Date().toISOString().split('T')[0];
+            const g = hidden.value.split('-').map(Number);
+            const j = gregorianToJalali(g[0], g[1], g[2]);
+            shamsi.value = j.y + "/" + pad2(j.m) + "/" + pad2(j.d);
+        }
+
+        function syncShamsiToGregorian(hidden, shamsi) {
+            let value = (shamsi.value || "").trim().replace(/-/g, "/");
+            const parts = value.split("/");
+            if (parts.length !== 3) return;
+            const jy = parseInt(parts[0]), jm = parseInt(parts[1]), jd = parseInt(parts[2]);
+            if (isNaN(jy) || isNaN(jm) || isNaN(jd)) return;
+            const g = jalaliToGregorian(jy, jm, jd);
+            hidden.value = g.y + "-" + pad2(g.m) + "-" + pad2(g.d);
+        }
+
+        function pad2(n) { return n < 10 ? "0" + n : n.toString(); }
+
+        function gregorianToJalali(gy, gm, gd) {
+            var g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+            var gy2 = (gm > 2) ? (gy + 1) : gy;
+            var days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
+            var jy = -1595 + (33 * Math.floor(days / 12053)); days %= 12053;
+            jy += 4 * Math.floor(days / 1461); days %= 1461;
+            if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+            var jm, jd;
+            if (days < 186) { jm = 1 + Math.floor(days / 31); jd = 1 + (days % 31); }
+            else { jm = 7 + Math.floor((days - 186) / 30); jd = 1 + ((days - 186) % 30); }
+            return { y: jy, m: jm, d: jd };
+        }
+
+        function jalaliToGregorian(jy, jm, jd) {
+            jy += 1595;
+            var days = -355668 + (365 * jy) + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4) + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+            var gy = 400 * Math.floor(days / 146097); days %= 146097;
+            if (days > 36524) { gy += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
+            gy += 4 * Math.floor(days / 1461); days %= 1461;
+            if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+            var gd = days + 1;
+            var sal_a = [0,31,((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28,31,30,31,30,31,31,30,31,30,31];
+            var gm;
+            for (gm = 1; gm <= 12 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
+            return { y: gy, m: gm, d: gd };
+        }
+
+        function initMap() { map = L.map('map').setView([35.6892, 51.3890], 6); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); }
+        function loadLocationHistory() {
+            fetch(`/TractorAssignment/GetLocationHistory?assignmentId=${assignmentId}`)
+                .then(r => r.json()).then(data => {
+                    clearMarkers(); if (data.length > 0) { var bounds = []; data.forEach(loc => {
+                        var marker = L.marker([loc.latitude, loc.longitude]).bindPopup(`${loc.formattedTimestamp}<br>${loc.notes || ''}`).addTo(map);
+                        markers.push(marker); bounds.push([loc.latitude, loc.longitude]);
+                    }); map.fitBounds(bounds); }
+                });
+        }
+        function clearMarkers() { markers.forEach(m => map.removeLayer(m)); markers = []; }
+        function refreshMap() { loadLocationHistory(); }
+        function showArrivalModal() { new bootstrap.Modal(document.getElementById('arrivalModal')).show(); }
+        function showLoadingModal() { new bootstrap.Modal(document.getElementById('loadingModal')).show(); }
+        function showDestinationArrivalModal() { new bootstrap.Modal(document.getElementById('destinationArrivalModal')).show(); }
+        function showUnloadingModal() { new bootstrap.Modal(document.getElementById('unloadingModal')).show(); }
+
+        // توابع لغو
+        function showCancellationRequestModal() { new bootstrap.Modal(document.getElementById('cancellationRequestModal')).show(); }
+        function showCancelByAdminModal() { new bootstrap.Modal(document.getElementById('cancelByAdminModal')).show(); }
+        function showRejectCancellationModal() { new bootstrap.Modal(document.getElementById('rejectCancellationModal')).show(); }
+
+        function approveCancellation() {
+            if (confirm('آیا از تایید لغو این حمل اطمینان دارید؟')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/TractorAssignment/ApproveCancellation';
+                const antiForgery = document.createElement('input');
+                antiForgery.type = 'hidden';
+                antiForgery.name = '__RequestVerificationToken';
+                antiForgery.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'assignmentId';
+                idInput.value = assignmentId;
+                form.appendChild(antiForgery);
+                form.appendChild(idInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // توابع تایید/رد مدارک
+        function approveDocument(documentId, documentType) {
+            if (confirm('آیا از تأیید این مدرک اطمینان دارید؟')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/TractorAssignment/ApproveDocument';
+                const antiForgery = document.createElement('input');
+                antiForgery.type = 'hidden';
+                antiForgery.name = '__RequestVerificationToken';
+                antiForgery.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                form.appendChild(antiForgery);
+                form.appendChild(createHiddenInput('documentId', documentId));
+                form.appendChild(createHiddenInput('documentType', documentType));
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        var rejectDocId = 0;
+        var rejectDocType = '';
+
+        function showRejectDocumentModal(documentId, documentType) {
+            rejectDocId = documentId;
+            rejectDocType = documentType;
+            document.getElementById('rejectionNote').value = '';
+            new bootstrap.Modal(document.getElementById('rejectDocumentModal')).show();
+        }
+
+        function submitRejectDocument() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/TractorAssignment/RejectDocument';
+            const antiForgery = document.createElement('input');
+            antiForgery.type = 'hidden';
+            antiForgery.name = '__RequestVerificationToken';
+            antiForgery.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            form.appendChild(antiForgery);
+            form.appendChild(createHiddenInput('documentId', rejectDocId));
+            form.appendChild(createHiddenInput('documentType', rejectDocType));
+            form.appendChild(createHiddenInput('rejectionNote', document.getElementById('rejectionNote').value));
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function createHiddenInput(name, value) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            return input;
+        }
+    </script>
+}
+
+@functions {
+    string GetStatusDisplay(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "تخصیص داده شده",
+        AssignmentStatus.ArrivedAtOrigin => "رسیده به مبدا",
+        AssignmentStatus.Loading => "در حال بارگیری",
+        AssignmentStatus.Loaded => "بارگیری شده",
+        AssignmentStatus.InTransit => "در راه",
+        AssignmentStatus.ArrivedAtDestination => "رسیده به مقصد",
+        AssignmentStatus.Unloading => "در حال تخلیه",
+        AssignmentStatus.Unloaded => "تخلیه شده",
+        AssignmentStatus.Completed => "تکمیل شده",
+        AssignmentStatus.CancellationRequested => "درخواست لغو",
+        AssignmentStatus.Cancelled => "لغو شده",
+        _ => "نامشخص"
+    };
+
+    string GetStatusBadgeClass(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "bg-secondary",
+        AssignmentStatus.ArrivedAtOrigin => "bg-info",
+        AssignmentStatus.Loaded => "bg-primary",
+        AssignmentStatus.ArrivedAtDestination => "bg-success",
+        AssignmentStatus.Unloaded => "bg-warning text-dark",
+        AssignmentStatus.Completed => "bg-success",
+        AssignmentStatus.CancellationRequested => "bg-warning text-dark",
+        AssignmentStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}

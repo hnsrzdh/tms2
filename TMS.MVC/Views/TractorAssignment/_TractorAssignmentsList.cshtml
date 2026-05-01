@@ -1,0 +1,118 @@
+﻿@model TMS.MVC.ViewModels.TractorAssignmentIndexViewModel
+
+@{
+    // تعریف توابع در Partial View
+    string GetStatusDisplay(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "تخصیص داده شده",
+        AssignmentStatus.ArrivedAtOrigin => "رسیده به مبدا",
+        AssignmentStatus.Loading => "در حال بارگیری",
+        AssignmentStatus.Loaded => "بارگیری شده",
+        AssignmentStatus.InTransit => "در راه",
+        AssignmentStatus.ArrivedAtDestination => "رسیده به مقصد",
+        AssignmentStatus.Unloading => "در حال تخلیه",
+        AssignmentStatus.Unloaded => "تخلیه شده",
+        AssignmentStatus.Completed => "تکمیل شده",
+        AssignmentStatus.CancellationRequested => "درخواست لغو",
+        AssignmentStatus.Cancelled => "لغو شده",
+        _ => "نامشخص"
+    };
+
+    string GetStatusBadgeClass(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "bg-secondary",
+        AssignmentStatus.ArrivedAtOrigin => "bg-info",
+        AssignmentStatus.Loading => "bg-warning text-dark",
+        AssignmentStatus.Loaded => "bg-primary",
+        AssignmentStatus.InTransit => "bg-primary",
+        AssignmentStatus.ArrivedAtDestination => "bg-success",
+        AssignmentStatus.Unloading => "bg-warning text-dark",
+        AssignmentStatus.Unloaded => "bg-warning text-dark",
+        AssignmentStatus.Completed => "bg-success",
+        AssignmentStatus.CancellationRequested => "bg-warning text-dark",
+        AssignmentStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>پلاک کشنده</th>
+                <th>راننده</th>
+                <th>وضعیت</th>
+                <th>تاریخ تخصیص</th>
+                <th>مقدار بارگیری</th>
+                <th>مقدار تخلیه</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Items.Any())
+            {
+                var rowNo = Model.RowNumberStart;
+                foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@rowNo</td>
+                        <td>@item.PolicePlateNumber</td>
+                        <td>@(item.DriverName ?? "-")</td>
+                        <td>
+                            <span class="badge rounded-pill @GetStatusBadgeClass(item.Status) px-3 py-2">
+                                @GetStatusDisplay(item.Status)
+                            </span>
+                        </td>
+                        <td>@item.AssignmentDate.ToShortDateString()</td>
+                        <td>@(item.LoadedAmount?.ToString("N0") ?? "-")</td>
+                        <td>@(item.UnloadedAmount?.ToString("N0") ?? "-")</td>
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
+                            </div>
+                        </td>
+                    </tr>
+                    rowNo++;
+                }
+            }
+            else
+            {
+                <tr><td colspan="8" class="text-center py-4">هیچ کشنده‌ای تخصیص داده نشده است.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+        <div class="text-muted small">صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems</div>
+        <nav>
+            <ul class="pagination pagination-primary">
+                <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                    <a class="page-link" href="#" data-page="1">اول</a>
+                </li>
+                <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                    <a class="page-link" href="#" data-page="@(Model.Page - 1)">قبلی</a>
+                </li>
+                @{
+                    var startPage = Math.Max(1, Model.Page - 2);
+                    var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                }
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    <li class="page-item @(i == Model.Page ? "active" : "")">
+                        <a class="page-link" href="#" data-page="@i">@i</a>
+                    </li>
+                }
+                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="#" data-page="@(Model.Page + 1)">بعدی</a>
+                </li>
+                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="#" data-page="@Model.TotalPages">آخر</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}

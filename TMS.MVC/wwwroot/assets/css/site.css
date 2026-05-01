@@ -1,0 +1,309 @@
+﻿.field-validation {
+    display: block;
+    min-height: 18px;
+    margin-top: 4px;
+    font-size: 0.875rem;
+    color: #dc3545;
+}
+
+    .field-validation:empty {
+        min-height: 0;
+        margin-top: 0;
+    }
+
+/* Hide browser built-in password reveal icons */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+
+input[type="password"]::-webkit-password-toggle-button,
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+    display: none !important;
+}
+
+.tractor-plate-wrap {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.tractor-plate-main {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #111;
+    background: #f8f9fa;
+    width: 400px;
+    max-width: 100%;
+    min-height: 120px;
+    overflow: hidden;
+    direction: ltr;
+}
+
+.tractor-plate-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 2px;
+    background: #f8f9fa;
+}
+
+.tractor-plate-fields {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+}
+
+.tractor-plate-right {
+    width: 100px;
+    border-left: 1px solid #111;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+.tractor-plate-iran {
+    flex: 0 0 50px;
+    background: #f8f9fa;
+    color: #000;
+    font-weight: 600;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #111;
+    text-shadow: 1px 1px 0 #fff;
+    letter-spacing: 1px;
+}
+
+.tractor-plate-code {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    background: #f8f9fa;
+}
+
+.plate-box {
+    border: 1px solid #111 !important;
+    border-radius: 22px !important;
+    height: 50px;
+    font-size: 18px;
+    font-weight: 600;
+    background: #fff;
+    box-shadow: none !important;
+}
+
+    .plate-box:focus {
+        border-color: #111 !important;
+        box-shadow: none !important;
+    }
+
+.plate-box-3 {
+    width: 100px;
+}
+
+.plate-box-letter {
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    text-align: center;
+    text-align-last: center;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.plate-box-1 {
+    width: 80px;
+}
+
+.plate-box-2 {
+    width: 80px;
+}
+
+@media (max-width: 768px) {
+    .tractor-plate-main {
+        width: 100%;
+        min-height: 100px;
+    }
+
+    .tractor-plate-right {
+        width: 100px;
+    }
+
+    .tractor-plate-iran {
+        flex-basis: 75px;
+        font-size: 18px;
+    }
+
+    .tractor-plate-fields {
+        gap: 8px;
+    }
+
+    .plate-box {
+        height: 66px;
+        font-size: 18px;
+        border-radius: 18px !important;
+    }
+
+    .plate-box-3 {
+        width: 80px;
+    }
+
+    .plate-box-letter {
+        width: 90px;
+        min-width: 90px;
+        max-width: 90px;
+    }
+
+    .plate-box-1 {
+        width: 40px;
+    }
+
+    .plate-box-2 {
+        width: 40px;
+    }
+}
+
+/* ============================================
+   Timeline - Minimal & Clean
+   Uses Bootstrap 5 utilities as much as possible
+   ============================================ */
+
+/* تنظیمات base */
+.advanced-timeline {
+    position: relative;
+    padding: 0;
+}
+
+/* هر آیتم تایم‌لاین */
+.timeline-item {
+    position: relative;
+    padding-right: 38px; /* فضای کافی برای دایره */
+    min-height: 60px;
+}
+
+    .timeline-item:not(.timeline-item-last) {
+        padding-bottom: 16px;
+    }
+
+/* خط عمودی اتصال */
+.timeline-connector {
+    position: absolute;
+    right: 12px; /* وسط دایره (24px / 2) */
+    top: 28px; /* ارتفاع دایره + فاصله */
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+    border-radius: 1px;
+    z-index: 0;
+}
+
+    .timeline-connector.completed {
+        background: #198754;
+    }
+
+    .timeline-connector.next-step {
+        background: linear-gradient(to bottom, #fd7e14 30%, #e9ecef 30%);
+        opacity: 0.5;
+    }
+
+/* دایره آیکون */
+.timeline-node-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.timeline-node {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+    .timeline-node i {
+        font-size: 0.65rem;
+        line-height: 1;
+    }
+
+/* Node States */
+.timeline-node-wrapper.completed .timeline-node {
+    background: #198754 !important;
+    border-color: #198754;
+}
+
+.timeline-node-wrapper.current .timeline-node {
+    background: #fd7e14 !important;
+    border-color: #fd7e14;
+    box-shadow: 0 0 0 4px rgba(253, 126, 20, 0.2);
+}
+
+.timeline-node-wrapper.pending .timeline-node {
+    background: #e9ecef !important;
+    border-color: #dee2e6;
+}
+
+.timeline-node-wrapper.cancelled .timeline-node {
+    background: #dc3545 !important;
+    border-color: #dc3545;
+}
+
+/* پالس فقط برای مرحله بعدی */
+.pulse-animation .timeline-node {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(253, 126, 20, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(253, 126, 20, 0);
+    }
+}
+
+/* محتوا */
+.timeline-content {
+    flex: 1;
+    padding-top: 1px;
+}
+
+    .timeline-content h6 {
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+
+    .timeline-content .badge {
+        font-size: 0.65rem;
+        padding: 2px 8px;
+    }
+
+    .timeline-content small {
+        font-size: 0.72rem;
+    }
+
+    .timeline-content .description {
+        font-size: 0.78rem;
+        color: #6c757d;
+        line-height: 1.5;
+        margin-top: 6px;
+    }
+
+    /* opacity برای مراحل در انتظار */
+    .timeline-content.opacity-50 {
+        opacity: 0.45;
+    }

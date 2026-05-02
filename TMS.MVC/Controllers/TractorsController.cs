@@ -230,6 +230,94 @@ namespace TMS.MVC.Controllers
             if (entity == null)
                 return NotFound();
 
+            var assignments = await _context.TractorAssignments
+                .Include(x => x.DriverProfile)
+                    .ThenInclude(x => x.ApplicationUser)
+                .Include(x => x.SubHavaleh)
+                    .ThenInclude(x => x.Havaleh)
+                        .ThenInclude(x => x.OriginPlace)
+                .Include(x => x.SubHavaleh)
+                    .ThenInclude(x => x.DestinationPlace)
+                .Where(x => x.TractorId == id)
+                .OrderByDescending(x => x.AssignmentDate)
+                .ToListAsync();
+
+            var totalAssignments = assignments.Count;
+
+            var activeAssignments = assignments.Count(x =>
+                x.Status != AssignmentStatus.Completed &&
+                x.Status != AssignmentStatus.Cancelled &&
+                x.Status != AssignmentStatus.Unloaded);
+
+            var completedAssignments = assignments.Count(x =>
+                x.Status == AssignmentStatus.Completed ||
+                x.Status == AssignmentStatus.Unloaded);
+
+            var cancelledAssignments = assignments.Count(x =>
+                x.Status == AssignmentStatus.Cancelled);
+
+            var totalAssignedAmount = assignments
+                .Where(x => x.Status != AssignmentStatus.Cancelled)
+                .Sum(x => x.AssignedCargoAmount ?? 0);
+
+            var totalLoadedAmount = assignments
+                .Where(x => x.Status != AssignmentStatus.Cancelled)
+                .Sum(x => x.LoadedAmount ?? 0);
+
+            var totalUnloadedAmount = assignments
+                .Where(x => x.Status != AssignmentStatus.Cancelled)
+                .Sum(x => x.UnloadedAmount ?? 0);
+
+            var totalPaidAmount = assignments
+                .Where(x => x.IsSettled && x.SettledTo == "Tractor")
+                .Sum(x => x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0);
+
+            var depositTransactions = assignments
+                .Where(x => x.IsSettled && x.SettledTo == "Tractor")
+                .Select(x => new TractorWalletTransactionVm
+                {
+                    Date = x.SettledDate ?? x.AssignmentDate,
+                    Type = "واریز به کیف پول",
+                    Amount = x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0,
+                    Description = $"تسویه حمل حواله {x.SubHavaleh.Havaleh.HavalehNumber}",
+                    ReferenceId = x.Id,
+                    IsWithdraw = false
+                })
+                .ToList();
+
+            var withdrawalTransactions = await _context.TractorWalletWithdrawalRequests
+                .Where(x => x.TractorId == id &&
+                            x.Status == TractorWalletWithdrawalRequestStatus.Paid)
+                .Select(x => new TractorWalletTransactionVm
+                {
+                    Date = x.PaidAt ?? x.RejectedAt ?? x.CreatedAt,
+                    Type = "برداشت از کیف پول",
+                    Amount = -x.Amount,
+                    Description = string.IsNullOrWhiteSpace(x.PaymentReceiptNote)
+                        ? "برداشت پرداخت‌شده از کیف پول"
+                        : x.PaymentReceiptNote,
+                    ReferenceId = x.Id,
+                    IsWithdraw = true
+                })
+                .ToListAsync();
+
+            var walletTransactions = depositTransactions
+                .Concat(withdrawalTransactions)
+                .OrderByDescending(x => x.Date)
+                .ToList();
+
+            ViewBag.Assignments = assignments;
+            ViewBag.WalletTransactions = walletTransactions;
+
+            ViewBag.TotalAssignments = totalAssignments;
+            ViewBag.ActiveAssignments = activeAssignments;
+            ViewBag.CompletedAssignments = completedAssignments;
+            ViewBag.CancelledAssignments = cancelledAssignments;
+            ViewBag.TotalAssignedAmount = totalAssignedAmount;
+            ViewBag.TotalLoadedAmount = totalLoadedAmount;
+            ViewBag.TotalUnloadedAmount = totalUnloadedAmount;
+            ViewBag.TotalPaidAmount = totalPaidAmount;
+
             return View(entity);
         }
 

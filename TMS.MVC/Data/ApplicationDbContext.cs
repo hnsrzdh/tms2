@@ -47,6 +47,7 @@ namespace TMS.MVC.Data
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<CargoAnnouncement> CargoAnnouncements => Set<CargoAnnouncement>();
         public DbSet<DriverWalletWithdrawalRequest> DriverWalletWithdrawalRequests { get; set; }
+        public DbSet<TractorWalletWithdrawalRequest> TractorWalletWithdrawalRequests { get; set; }
 
         public DbSet<Ticket> Tickets => Set<Ticket>();
         public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>();
@@ -301,6 +302,30 @@ namespace TMS.MVC.Data
 
             builder.Entity<CargoAnnouncement>()
                 .HasIndex(x => x.ContactMobile);
+
+            builder.Entity<DriverWalletWithdrawalRequest>()
+                .HasOne(x => x.DriverProfile)
+                .WithMany()
+                .HasForeignKey(x => x.DriverProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<DriverWalletWithdrawalRequest>()
+                .HasIndex(x => new { x.DriverProfileId, x.Status });
+
+            builder.Entity<DriverWalletWithdrawalRequest>()
+                .HasIndex(x => new { x.Status, x.CreatedAt });
+
+            builder.Entity<TractorWalletWithdrawalRequest>()
+                .HasOne(x => x.Tractor)
+                .WithMany()
+                .HasForeignKey(x => x.TractorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<TractorWalletWithdrawalRequest>()
+                .HasIndex(x => new { x.TractorId, x.Status });
+
+            builder.Entity<TractorWalletWithdrawalRequest>()
+                .HasIndex(x => new { x.Status, x.CreatedAt });
             builder.Entity<Ticket>()
                 .HasIndex(x => x.Code)
                 .IsUnique();

@@ -1,18 +1,9 @@
-﻿@using System.Globalization
+@using System.Globalization
+@using TMS.MVC.Models
 @model TMS.MVC.Models.Tractor
 
 @{
     ViewData["Title"] = "مشخصات کامل کشنده";
-
-    string ToJalali(DateTime? date)
-    {
-        if (!date.HasValue)
-            return "-";
-
-        var pc = new PersianCalendar();
-        var d = date.Value;
-        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
-    }
 
     var ownerName = Model.OwnerApplicationUser == null
         ? "-"
@@ -28,26 +19,141 @@
         : statusText == "غیرفعال"
             ? "bg-danger"
             : "bg-secondary";
+
+    var assignments = ViewBag.Assignments as List<TractorAssignment> ?? new List<TractorAssignment>();
+    var walletTransactions = ViewBag.WalletTransactions as List<TMS.MVC.ViewModels.TractorWalletTransactionVm>
+        ?? new List<TMS.MVC.ViewModels.TractorWalletTransactionVm>();
+
+    int totalAssignments = ViewBag.TotalAssignments ?? 0;
+    int activeAssignments = ViewBag.ActiveAssignments ?? 0;
+    int completedAssignments = ViewBag.CompletedAssignments ?? 0;
+    int cancelledAssignments = ViewBag.CancelledAssignments ?? 0;
+
+    decimal totalAssignedAmount = ViewBag.TotalAssignedAmount ?? 0;
+    decimal totalLoadedAmount = ViewBag.TotalLoadedAmount ?? 0;
+    decimal totalUnloadedAmount = ViewBag.TotalUnloadedAmount ?? 0;
+    decimal totalPaidAmount = ViewBag.TotalPaidAmount ?? 0;
+
+    int ReadPage(string key)
+    {
+        var value = Context.Request.Query[key].ToString();
+        return int.TryParse(value, out var page) && page > 0 ? page : 1;
+    }
+
+    const int walletPageSize = 10;
+    const int assignmentPageSize = 10;
+
+    int walletPage = ReadPage("walletPage");
+    int assignmentPage = ReadPage("assignmentPage");
+
+    var walletTransactionsAll = walletTransactions.OrderByDescending(x => x.Date).ToList();
+    var assignmentsAll = assignments.OrderByDescending(x => x.AssignmentDate).ToList();
+
+    int walletTotalItems = walletTransactionsAll.Count;
+    int assignmentTotalItems = assignmentsAll.Count;
+
+    int walletTotalPages = Math.Max(1, (int)Math.Ceiling((double)walletTotalItems / walletPageSize));
+    int assignmentTotalPages = Math.Max(1, (int)Math.Ceiling((double)assignmentTotalItems / assignmentPageSize));
+
+    walletPage = Math.Min(walletPage, walletTotalPages);
+    assignmentPage = Math.Min(assignmentPage, assignmentTotalPages);
+
+    var walletItems = walletTransactionsAll
+        .Skip((walletPage - 1) * walletPageSize)
+        .Take(walletPageSize)
+        .ToList();
+
+    var assignmentItems = assignmentsAll
+        .Skip((assignmentPage - 1) * assignmentPageSize)
+        .Take(assignmentPageSize)
+        .ToList();
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string Amount(decimal? amount, string? unit = null)
+    {
+        if (!amount.HasValue) return "-";
+        return string.IsNullOrWhiteSpace(unit)
+            ? amount.Value.ToString("N0")
+            : $"{amount.Value:N0} {unit}";
+    }
+
+    string StatusText(AssignmentStatus status)
+    {
+        return status switch
+        {
+            AssignmentStatus.Assigned => "تخصیص داده شده",
+            AssignmentStatus.ArrivedAtOrigin => "رسیده به مبدا",
+            AssignmentStatus.Loading => "در حال بارگیری",
+            AssignmentStatus.Loaded => "بارگیری شده",
+            AssignmentStatus.InTransit => "در راه",
+            AssignmentStatus.ArrivedAtDestination => "رسیده به مقصد",
+            AssignmentStatus.Unloading => "در حال تخلیه",
+            AssignmentStatus.Unloaded => "تخلیه شده",
+            AssignmentStatus.Completed => "تکمیل شده",
+            AssignmentStatus.CancellationRequested => "درخواست لغو",
+            AssignmentStatus.Cancelled => "لغو شده",
+            _ => status.ToString()
+        };
+    }
+
+    string StatusBadge(AssignmentStatus status)
+    {
+        return status switch
+        {
+            AssignmentStatus.Assigned => "bg-secondary",
+            AssignmentStatus.ArrivedAtOrigin => "bg-info",
+            AssignmentStatus.Loading => "bg-warning",
+            AssignmentStatus.Loaded => "bg-primary",
+            AssignmentStatus.InTransit => "bg-primary",
+            AssignmentStatus.ArrivedAtDestination => "bg-info",
+            AssignmentStatus.Unloading => "bg-warning",
+            AssignmentStatus.Unloaded => "bg-success",
+            AssignmentStatus.Completed => "bg-success",
+            AssignmentStatus.CancellationRequested => "bg-warning",
+            AssignmentStatus.Cancelled => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
 }
 
 <style>
-    .tractor-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
-    .tractor-compact .form-control,
-    .tractor-compact .form-select,
-    .tractor-compact .btn,
-    .tractor-compact .table,
-    .tractor-compact .badge,
-    .tractor-compact .form-check-label,
-    .tractor-compact .form-text { font-size: 0.82rem; }
-    .tractor-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
-    .tractor-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
-    .tractor-compact .card-body { padding-top: 0.85rem; }
-    .tractor-compact .pagination .page-link { padding: 0.22rem 0.48rem; font-size: 0.78rem; }
-    .tractor-compact .small-muted { font-size: 0.78rem; }
-    .tractor-compact .field-validation-valid,
-    .tractor-compact .field-validation-error { font-size: 0.75rem; }
-    .tractor-compact .form-check { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0; }
-    .tractor-compact .form-check-input { margin-top: 0; }
+    .tractor-details-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .tractor-details-compact .form-control,
+    .tractor-details-compact .form-select,
+    .tractor-details-compact .btn,
+    .tractor-details-compact .table,
+    .tractor-details-compact .badge { font-size: 0.82rem; }
+    .tractor-details-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
+    .tractor-details-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .tractor-details-compact .card-body { padding-top: 0.85rem; }
+    .tractor-details-compact .pagination .page-link { padding: 0.22rem 0.48rem; font-size: 0.78rem; }
+    .tractor-details-compact .small-muted { font-size: 0.78rem; }
+    .tractor-details-compact .info-item { font-size: 0.84rem; margin-bottom: 0.45rem; }
+    .tractor-details-compact .detail-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .tractor-details-compact .summary-box { border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 0.7rem 0.8rem; background: #f8f9fa; height: 100%; }
+    .tractor-details-compact .summary-box small { display: block; color: #6c757d; font-size: 0.76rem; margin-bottom: 0.2rem; }
+    .tractor-details-compact .summary-box .value { display: block; font-size: 0.95rem; font-weight: 700; color: #343a40; }
+    .tractor-details-compact .wallet-balance-box { border: 1px solid rgba(25, 135, 84, 0.25); background: rgba(25, 135, 84, 0.06); }
+    .tractor-details-compact .wallet-balance-box .value { color: #198754; font-size: 1.15rem; }
+    .tractor-details-compact .tractor-status-box.active { border-color: rgba(25, 135, 84, 0.25); background: rgba(25, 135, 84, 0.06); }
+    .tractor-details-compact .tractor-status-box.inactive { border-color: rgba(220, 53, 69, 0.25); background: rgba(220, 53, 69, 0.06); }
+    .tractor-details-compact .route-mini { display: flex; flex-direction: column; gap: 0.25rem; min-width: 190px; }
+    .tractor-details-compact .route-point { display: flex; align-items: center; gap: 0.45rem; line-height: 1.35; }
+    .tractor-details-compact .route-point strong { display: block; font-size: 0.82rem; color: #343a40; font-weight: 600; }
+    .tractor-details-compact .route-label { display: inline-block; font-size: 0.68rem; color: #6c757d; margin-bottom: 0.05rem; }
+    .tractor-details-compact .route-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; flex: 0 0 0.55rem; }
+    .tractor-details-compact .route-origin .route-dot { background: #198754; box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.12); }
+    .tractor-details-compact .route-destination .route-dot { background: #dc3545; box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12); }
+    .tractor-details-compact .route-line { width: 1px; height: 0.55rem; margin-right: 0.25rem; background: repeating-linear-gradient(to bottom, #adb5bd 0, #adb5bd 3px, transparent 3px, transparent 6px); }
+    .tractor-details-compact .amount-cell { white-space: nowrap; }
+    .tractor-details-compact .activity-note { font-size: 0.76rem; color: #6c757d; }
 </style>
 
 <div class="container-fluid">
@@ -60,218 +166,300 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
                     <li class="breadcrumb-item"><a asp-action="Index">کشنده‌ها</a></li>
+                    <li class="breadcrumb-item active">جزئیات</li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid tractor-compact">
+<div class="container-fluid tractor-details-compact">
     @if (TempData["Ok"] != null)
     {
         <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
 
-    <div class="card mb-2">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>اطلاعات کلی</h4>
-            <div class="d-flex gap-2 mt-2">
-                <a asp-action="Index" class="btn btn-secondary btn-sm">بازگشت</a>
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <div class="summary-box tractor-status-box @(statusText == "فعال" ? "active" : "inactive")">
+                <small>وضعیت کشنده</small>
+                <span class="value @(statusText == "فعال" ? "text-success" : "text-danger")">@statusText</span>
             </div>
         </div>
+
+        <div class="col-md-3">
+            <div class="summary-box wallet-balance-box">
+                <small>موجودی کیف پول</small>
+                <span class="value">@Amount(Model.WalletBalance, "ریال")</span>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>کل تخصیص‌ها</small>
+                <span class="value">@totalAssignments</span>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>مبلغ واریزشده به کیف پول</small>
+                <span class="value text-success">@Amount(totalPaidAmount, "ریال")</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">اطلاعات کلی</h6>
+                <small class="text-muted small-muted">اطلاعات مالک، پلاک، ظرفیت و وضعیت کشنده</small>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-controller="TractorWalletWithdrawalRequests"
+                   asp-action="Create"
+                   asp-route-tractorId="@Model.Id"
+                   class="btn btn-outline-success btn-sm px-3">
+                    درخواست برداشت از کیف پول
+                </a>
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm px-3">ویرایش</a>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-3">بازگشت</a>
+            </div>
+        </div>
+
         <div class="card-body row">
-            <div class="col-md-4 mb-2"><strong>پلاک انتظامی:</strong> @Model.PolicePlateNumber</div>
-            <div class="col-md-4 mb-2"><strong>مالک:</strong> @ownerName</div>
-            <div class="col-md-4 mb-2">
-                <strong>وضعیت:</strong>
-                <span class="badge rounded-pill @statusClass px-3 py-2">@statusText</span>
+            <div class="col-md-4 info-item"><strong>پلاک:</strong> @Model.PolicePlateNumber</div>
+            <div class="col-md-4 info-item"><strong>مالک:</strong> @ownerName</div>
+            <div class="col-md-4 info-item"><strong>کد ملی مالک:</strong> @(Model.OwnerApplicationUser?.NationalId ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>موبایل مالک:</strong> @(Model.OwnerApplicationUser?.PhoneNumber ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>شماره کارت هوشمند:</strong> @(Model.TractorSmartCardNumber ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>شماره پرونده:</strong> @(Model.FileNumber ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>نوع کشنده:</strong> @(Model.TractorType ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>شناسه کشنده:</strong> @(Model.TractorIdentifier ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>ظرفیت:</strong> @Amount(Model.MaxLoadCapacity, Model.CapacityUnit)</div>
+            <div class="col-md-4 info-item"><strong>سال تولید:</strong> @(Model.ProductionYear?.ToString() ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>تعداد محور:</strong> @(Model.AxleCount?.ToString() ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>وضعیت:</strong> <span class="badge @statusClass">@statusText</span></div>
+            <div class="col-md-4 info-item"><strong>معاینه فنی:</strong> @ToJalali(Model.TechnicalInspectionExpireDate)</div>
+            <div class="col-md-4 info-item"><strong>بیمه شخص ثالث:</strong> @ToJalali(Model.ThirdPartyInsuranceExpireDate)</div>
+            <div class="col-md-4 info-item"><strong>پلاک ترانزیت:</strong> @(Model.TransitPlateNumber ?? "-")</div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">خلاصه فعالیت کشنده</h6>
+            <small class="text-muted small-muted">خلاصه وضعیت حمل‌ها، مقدار بار و عملکرد کلی کشنده</small>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-3"><div class="summary-box"><small>حمل‌های فعال</small><span class="value text-primary">@activeAssignments</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>حمل‌های تکمیل / تخلیه شده</small><span class="value text-success">@completedAssignments</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>حمل‌های لغو شده</small><span class="value text-danger">@cancelledAssignments</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>جمع مقدار تخصیص</small><span class="value">@Amount(totalAssignedAmount)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>جمع مقدار بارگیری</small><span class="value">@Amount(totalLoadedAmount)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>جمع مقدار تخلیه</small><span class="value">@Amount(totalUnloadedAmount)</span></div></div>
+                <div class="col-md-6"><div class="summary-box"><small>توضیح</small><span class="activity-note">این خلاصه بر اساس تخصیص‌هایی محاسبه شده که این کشنده در آن‌ها ثبت شده است. تخصیص‌های لغو شده در مقدار بار لحاظ نشده‌اند.</span></div></div>
             </div>
-
-            <div class="col-md-4 mb-2"><strong>شناسه ملی:</strong> @(string.IsNullOrWhiteSpace(Model.NationalId) ? "-" : Model.NationalId)</div>
-            <div class="col-md-4 mb-2"><strong>شماره هوشمند:</strong> @(string.IsNullOrWhiteSpace(Model.TractorSmartCardNumber) ? "-" : Model.TractorSmartCardNumber)</div>
-            <div class="col-md-4 mb-2"><strong>شماره پرونده:</strong> @(string.IsNullOrWhiteSpace(Model.FileNumber) ? "-" : Model.FileNumber)</div>
-
-            <div class="col-md-4 mb-2"><strong>شناسه کشنده:</strong> @(string.IsNullOrWhiteSpace(Model.TractorIdentifier) ? "-" : Model.TractorIdentifier)</div>
-            <div class="col-md-4 mb-2"><strong>حداکثر ظرفیت:</strong> @(Model.MaxLoadCapacity.HasValue ? string.Format("{0:N0}", Model.MaxLoadCapacity) : "-")</div>
-            <div class="col-md-4 mb-2"><strong>معاینه فنی:</strong> @ToJalali(Model.TechnicalInspectionExpireDate)</div>
-
-            <div class="col-md-4 mb-2"><strong>بیمه ثالث:</strong> @ToJalali(Model.ThirdPartyInsuranceExpireDate)</div>
-            <div class="col-md-4 mb-2"><strong>سال تولید:</strong> @(Model.ProductionYear?.ToString() ?? "-")</div>
-            <div class="col-md-4 mb-2"><strong>تعداد محور:</strong> @(Model.AxleCount?.ToString() ?? "-")</div>
-
-            <div class="col-md-4 mb-2"><strong>سیستم:</strong> @(string.IsNullOrWhiteSpace(Model.SystemName) ? "-" : Model.SystemName)</div>
-            <div class="col-md-4 mb-2"><strong>نوع کشنده:</strong> @(string.IsNullOrWhiteSpace(Model.TractorType) ? "-" : Model.TractorType)</div>
-            <div class="col-md-4 mb-2"><strong>پلاک ترانزیت:</strong> @(string.IsNullOrWhiteSpace(Model.TransitPlateNumber) ? "-" : Model.TransitPlateNumber)</div>
         </div>
     </div>
 
-    <div class="card mb-2">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>اطلاعات بانکی</h4>
-            <a asp-action="AddBankAccount" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm">افزودن</a>
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div><h6 class="mb-0">راه‌های ارتباطی</h6><small class="text-muted small-muted">شماره تماس، ایمیل، واتساپ و سایر مسیرهای ارتباطی</small></div>
+            <a asp-action="AddContact" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm px-3">افزودن</a>
         </div>
         <div class="card-body table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>نام صاحب حساب</th>
-                        <th>نام بانک</th>
-                        <th>شماره حساب</th>
-                        <th>شماره کارت</th>
-                        <th>شماره شبا</th>
-                        <th>پیش فرض</th>
-                        <th>توضیحات</th>
-                        <th style="width:145px">عملیات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.BankAccounts.Any())
-                    {
-                        @foreach (var item in Model.BankAccounts.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id))
-                        {
-                            <tr>
-                                <td>@(string.IsNullOrWhiteSpace(item.AccountOwnerName) ? "-" : item.AccountOwnerName)</td>
-                                <td>@(string.IsNullOrWhiteSpace(item.BankName) ? "-" : item.BankName)</td>
-                                <td>@(string.IsNullOrWhiteSpace(item.AccountNumber) ? "-" : item.AccountNumber)</td>
-                                <td>@(string.IsNullOrWhiteSpace(item.CardNumber) ? "-" : item.CardNumber)</td>
-                                <td>@(string.IsNullOrWhiteSpace(item.ShebaNumber) ? "-" : item.ShebaNumber)</td>
-                                <td class="text-center">
-                                    @if (item.IsDefault)
-                                    {
-                                        <span class="text-success fw-bold fs-5">✓</span>
-                                    }
-                                    else
-                                    {
-                                        <span>-</span>
-                                    }
-                                </td>
-                                <td>@(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)</td>
-                                <td>
-                                    <div class="d-flex gap-2">
-                                        <a asp-action="EditBankAccount" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
-                                        <form asp-action="DeleteBankAccount" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@item.Id" />
-                                            <input type="hidden" name="tractorId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="8" class="text-center py-4">موردی ثبت نشده است.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card mb-2">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>شماره تماس‌ها</h4>
-            <a asp-action="AddContact" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm">افزودن</a>
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>عنوان</th>
-                        <th>راه ارتباطی</th>
-                        <th>پیامک</th>
-                        <th>واتساپ</th>
-                        <th>فکس</th>
-                        <th>تلفن</th>
-                        <th>ایمیل</th>
-                        <th style="width:145px">عملیات</th>
-                    </tr>
-                </thead>
+            <table class="table table-hover table-sm align-middle">
+                <thead><tr><th>عنوان</th><th>راه ارتباطی</th><th>پیامک</th><th>واتساپ</th><th>فکس</th><th>تلفن</th><th>ایمیل</th><th style="width:145px">عملیات</th></tr></thead>
                 <tbody>
                     @if (Model.Contacts.Any())
                     {
-                        @foreach (var item in Model.Contacts.OrderBy(x => x.Id))
+                        foreach (var item in Model.Contacts.OrderBy(x => x.Id))
                         {
                             <tr>
-                                <td>@item.Title</td>
-                                <td>@item.ContactValue</td>
-                                <td>@(item.HasSms ? "بله" : "-")</td>
-                                <td>@(item.HasWhatsApp ? "بله" : "-")</td>
-                                <td>@(item.IsFax ? "بله" : "-")</td>
-                                <td>@(item.IsPhone ? "بله" : "-")</td>
-                                <td>@(item.IsEmail ? "بله" : "-")</td>
-                                <td>
-                                    <div class="d-flex gap-2">
-                                        <a asp-action="EditContact" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
-                                        <form asp-action="DeleteContact" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@item.Id" />
-                                            <input type="hidden" name="tractorId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
-                                        </form>
-                                    </div>
-                                </td>
+                                <td>@item.Title</td><td>@item.ContactValue</td><td>@(item.HasSms ? "بله" : "-")</td><td>@(item.HasWhatsApp ? "بله" : "-")</td><td>@(item.IsFax ? "بله" : "-")</td><td>@(item.IsPhone ? "بله" : "-")</td><td>@(item.IsEmail ? "بله" : "-")</td>
+                                <td><div class="detail-actions"><a asp-action="EditContact" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a><form asp-action="DeleteContact" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" /><input type="hidden" name="tractorId" value="@Model.Id" /><button type="submit" class="btn btn-sm btn-outline-danger">حذف</button></form></div></td>
                             </tr>
                         }
                     }
-                    else
-                    {
-                        <tr>
-                            <td colspan="8" class="text-center py-4">موردی ثبت نشده است.</td>
-                        </tr>
-                    }
+                    else { <tr><td colspan="8" class="text-center text-muted py-4">موردی ثبت نشده است.</td></tr> }
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="card mb-2">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>آدرس‌ها</h4>
-            <a asp-action="AddAddress" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm">افزودن</a>
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div><h6 class="mb-0">آدرس‌ها</h6><small class="text-muted small-muted">آدرس‌های ثبت‌شده برای کشنده</small></div>
+            <a asp-action="AddAddress" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm px-3">افزودن</a>
         </div>
         <div class="card-body table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>عنوان</th>
-                        <th>آدرس</th>
-                        <th style="width:145px">عملیات</th>
-                    </tr>
-                </thead>
+            <table class="table table-hover table-sm align-middle">
+                <thead><tr><th>عنوان</th><th>آدرس</th><th style="width:145px">عملیات</th></tr></thead>
                 <tbody>
                     @if (Model.Addresses.Any())
                     {
-                        @foreach (var item in Model.Addresses.OrderBy(x => x.Id))
+                        foreach (var item in Model.Addresses.OrderBy(x => x.Id))
+                        {
+                            <tr><td>@item.Title</td><td>@item.AddressText</td><td><div class="detail-actions"><a asp-action="EditAddress" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a><form asp-action="DeleteAddress" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" /><input type="hidden" name="tractorId" value="@Model.Id" /><button type="submit" class="btn btn-sm btn-outline-danger">حذف</button></form></div></td></tr>
+                        }
+                    }
+                    else { <tr><td colspan="3" class="text-center text-muted py-4">موردی ثبت نشده است.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div><h6 class="mb-0">حساب‌های بانکی</h6><small class="text-muted small-muted">لیست حساب‌ها و شماره‌های بانکی کشنده</small></div>
+            <a asp-action="AddBankAccount" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm px-3">افزودن</a>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead><tr><th>نام صاحب حساب</th><th>نام بانک</th><th>شماره حساب</th><th>شماره کارت</th><th>شماره شبا</th><th>پیش فرض</th><th>توضیحات</th><th style="width:145px">عملیات</th></tr></thead>
+                <tbody>
+                    @if (Model.BankAccounts.Any())
+                    {
+                        foreach (var item in Model.BankAccounts.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id))
                         {
                             <tr>
-                                <td>@(string.IsNullOrWhiteSpace(item.Title) ? "-" : item.Title)</td>
-                                <td>@(string.IsNullOrWhiteSpace(item.AddressText) ? "-" : item.AddressText)</td>
-                                <td>
-                                    <div class="d-flex gap-2">
-                                        <a asp-action="EditAddress" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
-                                        <form asp-action="DeleteAddress" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@item.Id" />
-                                            <input type="hidden" name="tractorId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
-                                        </form>
-                                    </div>
-                                </td>
+                                <td>@(item.AccountOwnerName ?? "-")</td><td>@(item.BankName ?? "-")</td><td>@(item.AccountNumber ?? "-")</td><td>@(item.CardNumber ?? "-")</td><td>@(item.ShebaNumber ?? "-")</td><td class="text-center">@(item.IsDefault ? Html.Raw("<span class=\"badge bg-success\">بله</span>") : Html.Raw("<span class=\"text-muted\">-</span>"))</td><td>@(item.Description ?? "-")</td>
+                                <td><div class="detail-actions"><a asp-action="EditBankAccount" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a><form asp-action="DeleteBankAccount" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" /><input type="hidden" name="tractorId" value="@Model.Id" /><button type="submit" class="btn btn-sm btn-outline-danger">حذف</button></form></div></td>
                             </tr>
                         }
                     }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-4">موردی ثبت نشده است.</td>
-                        </tr>
-                    }
+                    else { <tr><td colspan="8" class="text-center text-muted py-4">موردی ثبت نشده است.</td></tr> }
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">تراکنش‌های کیف پول</h6>
+            <small class="text-muted small-muted">واریزها و برداشت‌های کیف پول کشنده</small>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead><tr><th>#</th><th>تاریخ</th><th>نوع تراکنش</th><th>مبلغ</th><th>شرح</th><th style="width:120px;">ارجاع</th></tr></thead>
+                <tbody>
+                    @if (walletItems.Any())
+                    {
+                        var rowNo = ((walletPage - 1) * walletPageSize) + 1;
+                        foreach (var item in walletItems)
+                        {
+                            var badgeClass = item.IsWithdraw ? "bg-danger" : "bg-success";
+                            var amountClass = item.IsWithdraw ? "text-danger" : "text-success";
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@ToJalali(item.Date)</td>
+                                <td><span class="badge @badgeClass">@item.Type</span></td>
+                                <td class="amount-cell fw-bold @amountClass">@($"{Math.Abs(item.Amount):N0} ریال")</td>
+                                <td>@(item.Description ?? "-")</td>
+                                <td>
+                                    @if (item.ReferenceId > 0)
+                                    {
+                                        if (item.IsWithdraw)
+                                        {
+                                            <a asp-controller="TractorWalletWithdrawalRequests" asp-action="Index" class="btn btn-outline-info btn-sm">جزئیات</a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.ReferenceId" class="btn btn-outline-info btn-sm">جزئیات</a>
+                                        }
+                                    }
+                                    else { <span class="text-muted">-</span> }
+                                </td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else { <tr><td colspan="6" class="text-center text-muted py-4">تراکنشی برای کیف پول این کشنده ثبت نشده است.</td></tr> }
+                </tbody>
+            </table>
+
+            @if (walletTotalItems > walletPageSize)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @walletPage از @walletTotalPages - تعداد کل: @walletTotalItems</div>
+                    <nav><ul class="pagination pagination-primary mb-0">
+                        <li class="page-item @(walletPage <= 1 ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="1" asp-route-assignmentPage="@assignmentPage">اول</a></li>
+                        <li class="page-item @(walletPage <= 1 ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@(walletPage - 1)" asp-route-assignmentPage="@assignmentPage">قبلی</a></li>
+                        @{ var walletStart = Math.Max(1, walletPage - 2); var walletEnd = Math.Min(walletTotalPages, walletPage + 2); }
+                        @for (int i = walletStart; i <= walletEnd; i++) { <li class="page-item @(i == walletPage ? "active" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@i" asp-route-assignmentPage="@assignmentPage">@i</a></li> }
+                        <li class="page-item @(walletPage >= walletTotalPages ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@(walletPage + 1)" asp-route-assignmentPage="@assignmentPage">بعدی</a></li>
+                        <li class="page-item @(walletPage >= walletTotalPages ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@walletTotalPages" asp-route-assignmentPage="@assignmentPage">آخر</a></li>
+                    </ul></nav>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">تخصیص‌های کشنده</h6>
+            <small class="text-muted small-muted">تمام تخصیص‌هایی که این کشنده در آن‌ها ثبت شده است</small>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead><tr><th>#</th><th>حواله</th><th>ریزحواله</th><th>راننده</th><th>مسیر</th><th>تاریخ تخصیص</th><th>تخصیص</th><th>بارگیری</th><th>تخلیه</th><th>وضعیت</th><th style="width:105px;">عملیات</th></tr></thead>
+                <tbody>
+                    @if (assignmentItems.Any())
+                    {
+                        var rowNo = ((assignmentPage - 1) * assignmentPageSize) + 1;
+                        foreach (var item in assignmentItems)
+                        {
+                            var unit = item.SubHavaleh?.Havaleh?.Unit;
+                            var driverName = item.DriverProfile?.ApplicationUser == null ? "-" : ($"{item.DriverProfile.ApplicationUser.FirstName} {item.DriverProfile.ApplicationUser.LastName}".Trim());
+                            if (string.IsNullOrWhiteSpace(driverName)) driverName = item.DriverProfile?.ApplicationUser?.Email ?? "-";
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@(item.SubHavaleh?.Havaleh?.HavalehNumber ?? "-")</td>
+                                <td>@(item.SubHavaleh?.Title ?? "-")</td>
+                                <td>@driverName</td>
+                                <td>
+                                    <div class="route-mini">
+                                        <div class="route-point route-origin"><span class="route-dot"></span><div><span class="route-label">مبدا</span><strong>@(item.SubHavaleh?.Havaleh?.OriginPlace?.Name ?? "-")</strong></div></div>
+                                        <div class="route-line"></div>
+                                        <div class="route-point route-destination"><span class="route-dot"></span><div><span class="route-label">مقصد</span><strong>@(item.SubHavaleh?.DestinationPlace?.Name ?? "-")</strong></div></div>
+                                    </div>
+                                </td>
+                                <td>@ToJalali(item.AssignmentDate)</td>
+                                <td class="amount-cell">@Amount(item.AssignedCargoAmount, unit)</td>
+                                <td class="amount-cell">@Amount(item.LoadedAmount, unit)</td>
+                                <td class="amount-cell">@Amount(item.UnloadedAmount, unit)</td>
+                                <td><span class="badge @StatusBadge(item.Status)">@StatusText(item.Status)</span></td>
+                                <td><a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a></td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else { <tr><td colspan="11" class="text-center text-muted py-4">تخصیصی برای این کشنده ثبت نشده است.</td></tr> }
+                </tbody>
+            </table>
+
+            @if (assignmentTotalItems > assignmentPageSize)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @assignmentPage از @assignmentTotalPages - تعداد کل: @assignmentTotalItems</div>
+                    <nav><ul class="pagination pagination-primary mb-0">
+                        <li class="page-item @(assignmentPage <= 1 ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@walletPage" asp-route-assignmentPage="1">اول</a></li>
+                        <li class="page-item @(assignmentPage <= 1 ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@(assignmentPage - 1)">قبلی</a></li>
+                        @{ var assignmentStart = Math.Max(1, assignmentPage - 2); var assignmentEnd = Math.Min(assignmentTotalPages, assignmentPage + 2); }
+                        @for (int i = assignmentStart; i <= assignmentEnd; i++) { <li class="page-item @(i == assignmentPage ? "active" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@i">@i</a></li> }
+                        <li class="page-item @(assignmentPage >= assignmentTotalPages ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@(assignmentPage + 1)">بعدی</a></li>
+                        <li class="page-item @(assignmentPage >= assignmentTotalPages ? "disabled" : "")"><a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentTotalPages">آخر</a></li>
+                    </ul></nav>
+                </div>
+            }
         </div>
     </div>
 </div>

@@ -12,6 +12,11 @@
         return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
     }
 
+    string GregorianValue(DateTime? date)
+    {
+        return date.HasValue ? date.Value.ToString("yyyy-MM-dd") : "";
+    }
+
     string Amount(decimal amount, string? unit) => $"{amount:N0} {unit}";
 }
 
@@ -33,6 +38,7 @@
     .assignment-request-compact .summary-box { border: 1px solid #e5e7eb; border-radius: .75rem; padding: .65rem .75rem; background: #f8f9fa; height: 100%; }
     .assignment-request-compact .summary-box small { font-size: .76rem; color: #6c757d; }
     .assignment-request-compact .summary-box .value { display: block; margin-top: .25rem; font-weight: 600; color: #495057; }
+    .assignment-request-compact .driver-note { border: 1px solid rgba(13, 110, 253, .18); background: rgba(13, 110, 253, .06); border-radius: .75rem; padding: .65rem .75rem; font-size: .8rem; color: #495057; }
 </style>
 
 <div class="container-fluid">
@@ -51,6 +57,15 @@
 </div>
 
 <div class="container-fluid assignment-request-compact">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
+    }
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
@@ -61,6 +76,10 @@
         </div>
 
         <div class="card-body">
+            <div class="driver-note mb-3">
+                این درخواست با حساب کاربری فعلی شما ثبت می‌شود و راننده درخواست، به‌صورت خودکار از پروفایل راننده همین کاربر تعیین می‌شود.
+            </div>
+
             <div class="row g-2 mb-3">
                 <div class="col-md-3"><div class="summary-box"><small>شماره حواله</small><span class="value">@(Model.HavalehNumber ?? "-")</span></div></div>
                 <div class="col-md-3"><div class="summary-box"><small>ریزحواله</small><span class="value">@(Model.SubHavalehTitle ?? "-")</span></div></div>
@@ -109,7 +128,8 @@
 
                     <div class="col-md-3">
                         <label asp-for="RequestedLoadingDate" class="form-label"></label>
-                        <input asp-for="RequestedLoadingDate" class="form-control form-control-sm" type="date" />
+                        <input type="hidden" asp-for="RequestedLoadingDate" id="RequestedLoadingDate" value="@GregorianValue(Model.RequestedLoadingDate)" />
+                        <input id="RequestedLoadingDate_shamsi" class="form-control form-control-sm jalali-date" autocomplete="off" placeholder="مثلاً 1405/02/15" />
                         <span asp-validation-for="RequestedLoadingDate" class="text-danger"></span>
                     </div>
 
@@ -172,8 +192,20 @@
 </div>
 
 @section Scripts {
+    <link rel="stylesheet" href="~/assets/css/persianDatepicker-default.css">
+    <script src="~/assets/js/persianDatepicker.min.js"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("assignmentRequestForm");
+            setupJalaliDateField("RequestedLoadingDate", "RequestedLoadingDate_shamsi");
+
+            if (form) {
+                form.addEventListener("submit", function () {
+                    syncShamsiToGregorian(document.getElementById("RequestedLoadingDate"), document.getElementById("RequestedLoadingDate_shamsi"));
+                });
+            }
+
             const tractorModal = new bootstrap.Modal(document.getElementById("tractorModal"));
             const tractorSearchInput = document.getElementById("tractorSearchInput");
             const tractorResults = document.getElementById("tractorSearchResults");
@@ -194,14 +226,6 @@
                 tractorTimeout = setTimeout(() => loadTractors(term), 350);
             });
 
-            function htmlEscape(value) {
-                return (value ?? "").toString()
-                    .replaceAll("&", "&amp;")
-                    .replaceAll("<", "&lt;")
-                    .replaceAll(">", "&gt;")
-                    .replaceAll('"', "&quot;");
-            }
-
             function loadTractors(term) {
                 fetch(`/OpenSubHavalehs/SearchRequestTractors?term=${encodeURIComponent(term)}`)
                     .then(r => r.json())
@@ -211,24 +235,30 @@
                             return;
                         }
 
-                        tractorResults.innerHTML = data.map(x => `
-                            <tr>
-                                <td>${htmlEscape(x.policePlateNumber)}</td>
-                                <td>${htmlEscape(x.tractorType || "-")}</td>
-                                <td>${x.capacity ?? "-"} ${htmlEscape(x.capacityUnit || "")}</td>
-                                <td>${x.usedCapacity ?? 0} ${htmlEscape(x.capacityUnit || "")}</td>
-                                <td>${x.freeCapacity ?? "-"} ${htmlEscape(x.capacityUnit || "")}</td>
-                                <td style="min-width:220px; white-space:normal;">${htmlEscape(x.usedCapacityDescription || "-")}</td>
-                                <td>
-                                    <button type="button"
-                                            class="btn btn-primary btn-sm js-select-tractor"
-                                            data-id="${x.id}"
-                                            data-text="${htmlEscape(x.policePlateNumber)}">
-                                        انتخاب
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join("");
+                        tractorResults.innerHTML = data.map(x => {
+                            const plate = htmlEscape(x.policePlateNumber || "");
+                            const type = htmlEscape(x.tractorType || "-");
+                            const unit = htmlEscape(x.capacityUnit || "");
+                            const description = htmlEscape(x.usedCapacityDescription || "-");
+
+                            return `
+                                <tr>
+                                    <td>${plate || "-"}</td>
+                                    <td>${type}</td>
+                                    <td>${x.capacity ?? "-"} ${unit}</td>
+                                    <td>${x.usedCapacity ?? 0} ${unit}</td>
+                                    <td>${x.freeCapacity ?? "-"} ${unit}</td>
+                                    <td style="min-width:220px; white-space:normal;">${description}</td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-primary btn-sm js-select-tractor"
+                                                data-id="${x.id}"
+                                                data-text="${plate}">
+                                            انتخاب
+                                        </button>
+                                    </td>
+                                </tr>`;
+                        }).join("");
 
                         tractorResults.querySelectorAll(".js-select-tractor").forEach(btn => {
                             btn.addEventListener("click", function () {
@@ -241,6 +271,147 @@
                     .catch(() => {
                         tractorResults.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">خطا در جستجو.</td></tr>';
                     });
+            }
+
+            function setupJalaliDateField(hiddenInputId, shamsiInputId) {
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const shamsiInput = document.getElementById(shamsiInputId);
+                if (!hiddenInput || !shamsiInput) return;
+
+                if (typeof $ !== "undefined" && typeof $(shamsiInput).persianDatepicker === "function") {
+                    $(shamsiInput).persianDatepicker({
+                        formatDate: "YYYY/0M/0D",
+                        autoClose: true,
+                        onSelect: function () {
+                            syncShamsiToGregorian(hiddenInput, shamsiInput);
+                        }
+                    });
+                }
+
+                if (hiddenInput.value) {
+                    const g = normalizeGregorianDate(hiddenInput.value);
+                    if (g) {
+                        const j = gregorianToJalali(g.y, g.m, g.d);
+                        shamsiInput.value = j.y + "/" + pad2(j.m) + "/" + pad2(j.d);
+                    }
+                }
+
+                shamsiInput.addEventListener("change", function () { syncShamsiToGregorian(hiddenInput, shamsiInput); });
+                shamsiInput.addEventListener("blur", function () { syncShamsiToGregorian(hiddenInput, shamsiInput); });
+            }
+
+            function syncShamsiToGregorian(hiddenInput, shamsiInput) {
+                if (!hiddenInput || !shamsiInput) return;
+
+                let value = (shamsiInput.value || "").trim();
+                value = toEnglishDigits(value);
+
+                if (!value) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const parts = value.replace(/-/g, "/").split("/");
+                if (parts.length !== 3) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const jy = parseInt(parts[0], 10);
+                const jm = parseInt(parts[1], 10);
+                const jd = parseInt(parts[2], 10);
+
+                if (isNaN(jy) || isNaN(jm) || isNaN(jd)) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const g = jalaliToGregorian(jy, jm, jd);
+                hiddenInput.value = g.y + "-" + pad2(g.m) + "-" + pad2(g.d);
+            }
+
+            function normalizeGregorianDate(value) {
+                if (!value) return null;
+                value = toEnglishDigits(value).trim();
+                if (value.includes("T")) value = value.split("T")[0];
+                const parts = value.split("-");
+                if (parts.length !== 3) return null;
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const d = parseInt(parts[2], 10);
+                if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+                return { y, m, d };
+            }
+
+            function toEnglishDigits(str) {
+                if (!str) return str;
+                const fa = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+                const ar = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+                for (let i = 0; i < 10; i++) {
+                    str = str.replaceAll(fa[i], i.toString());
+                    str = str.replaceAll(ar[i], i.toString());
+                }
+                return str;
+            }
+
+            function pad2(n) { return n < 10 ? "0" + n : n.toString(); }
+
+            function htmlEscape(value) {
+                return (value ?? "").toString()
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll('"', "&quot;");
+            }
+
+            function gregorianToJalali(gy, gm, gd) {
+                var g_d_m, jy, jm, jd, gy2, days;
+                g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+                gy2 = (gm > 2) ? (gy + 1) : gy;
+                days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
+                jy = -1595 + (33 * Math.floor(days / 12053));
+                days %= 12053;
+                jy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+                if (days > 365) {
+                    jy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+                if (days < 186) {
+                    jm = 1 + Math.floor(days / 31);
+                    jd = 1 + (days % 31);
+                } else {
+                    jm = 7 + Math.floor((days - 186) / 30);
+                    jd = 1 + ((days - 186) % 30);
+                }
+                return { y: jy, m: jm, d: jd };
+            }
+
+            function jalaliToGregorian(jy, jm, jd) {
+                var sal_a, gy, gm, gd, days;
+                jy += 1595;
+                days = -355668 + (365 * jy) + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4) + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+                gy = 400 * Math.floor(days / 146097);
+                days %= 146097;
+
+                if (days > 36524) {
+                    gy += 100 * Math.floor(--days / 36524);
+                    days %= 36524;
+                    if (days >= 365) days++;
+                }
+
+                gy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+
+                if (days > 365) {
+                    gy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+
+                gd = days + 1;
+                sal_a = [0,31,((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28,31,30,31,30,31,31,30,31,30,31];
+                for (gm = 1; gm <= 12 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
+                return { y: gy, m: gm, d: gd };
             }
         });
     </script>

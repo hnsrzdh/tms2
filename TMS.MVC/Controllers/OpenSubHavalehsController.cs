@@ -141,6 +141,13 @@ namespace TMS.MVC.Controllers
         [HttpGet]
         public async Task<IActionResult> Request(long subHavalehId)
         {
+            var driverProfileId = await GetCurrentDriverProfileIdAsync();
+            if (!driverProfileId.HasValue)
+            {
+                TempData["Err"] = "فقط کاربرانی که پروفایل راننده دارند می‌توانند درخواست تخصیص ثبت کنند.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var vm = await BuildRequestVmAsync(subHavalehId, new AssignmentRequestCreateViewModel
             {
                 SubHavalehId = subHavalehId,
@@ -167,6 +174,17 @@ namespace TMS.MVC.Controllers
             var filledVm = await BuildRequestVmAsync(vm.SubHavalehId, vm);
             if (filledVm == null)
                 return NotFound();
+
+            var currentUserId = _userManager.GetUserId(User);
+            if (string.IsNullOrWhiteSpace(currentUserId))
+                return Challenge();
+
+            var driverProfileId = await GetCurrentDriverProfileIdAsync();
+            if (!driverProfileId.HasValue)
+            {
+                ModelState.AddModelError(string.Empty, "فقط کاربرانی که پروفایل راننده دارند می‌توانند درخواست تخصیص ثبت کنند.");
+                return View(filledVm);
+            }
 
             if (!ModelState.IsValid)
                 return View(filledVm);
@@ -225,15 +243,6 @@ namespace TMS.MVC.Controllers
                 return View(filledVm);
             }
 
-            var currentUserId = _userManager.GetUserId(User);
-            if (string.IsNullOrWhiteSpace(currentUserId))
-                return Challenge();
-
-            var driverProfileId = await _context.DriverProfiles
-                .Where(x => x.ApplicationUserId == currentUserId)
-                .Select(x => (int?)x.Id)
-                .FirstOrDefaultAsync();
-
             var hasPendingSameRequest = await _context.SubHavalehAssignmentRequests.AnyAsync(x =>
                 x.SubHavalehId == vm.SubHavalehId &&
                 x.TractorId == vm.TractorId &&
@@ -251,7 +260,7 @@ namespace TMS.MVC.Controllers
                 SubHavalehId = vm.SubHavalehId,
                 TractorId = vm.TractorId,
                 RequesterUserId = currentUserId,
-                DriverProfileId = driverProfileId,
+                DriverProfileId = driverProfileId.Value,
                 RequestedCargoAmount = requestedAmount,
                 IsTruckCapacityFull = vm.IsTruckCapacityFull,
                 RequestedLoadingDate = vm.RequestedLoadingDate.Value.Date,
@@ -270,6 +279,10 @@ namespace TMS.MVC.Controllers
         [HttpGet]
         public async Task<IActionResult> SearchRequestTractors(string? term)
         {
+            var driverProfileId = await GetCurrentDriverProfileIdAsync();
+            if (!driverProfileId.HasValue)
+                return Json(Array.Empty<TractorSearchResultViewModel>());
+
             term = (term ?? string.Empty).Trim();
 
             var query = _context.Tractors
@@ -389,13 +402,28 @@ namespace TMS.MVC.Controllers
             vm.RemainingAssignableAmount = Math.Max(0, (item.RequestedCargoAmount ?? 0) - item.AssignedAmount - item.PendingRequestedAmount);
             vm.StartDate = item.StartDate;
             vm.EndDate = item.EndDate;
+
             return vm;
+        }
+
+        private async Task<int?> GetCurrentDriverProfileIdAsync()
+        {
+            var currentUserId = _userManager.GetUserId(User);
+            if (string.IsNullOrWhiteSpace(currentUserId))
+                return null;
+
+            return await _context.DriverProfiles
+                .AsNoTracking()
+                .Where(x => x.ApplicationUserId == currentUserId)
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync();
         }
 
         private bool CanUserUseTractor(Tractor tractor)
         {
             var currentUserId = _userManager.GetUserId(User);
             var isOperator = User.IsInRole(AppRoles.SystemAdmin) || User.IsInRole(AppRoles.OperationsManager) || User.IsInRole(AppRoles.OperationsUser);
+
             if (isOperator)
                 return true;
 

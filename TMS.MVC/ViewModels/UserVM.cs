@@ -110,3 +110,9 @@ public class UserPermissionItemVm
     public string Title { get; set; } = null!;
     public bool Selected { get; set; }
 }
+public class PermissionSyncResultViewModel
+{
+    public int TotalActions { get; set; }
+    public int Added { get; set; }
+    public int Updated { get; set; }
+}

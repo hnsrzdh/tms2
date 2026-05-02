@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Infrastructure;
+using TMS.MVC.Infrastructure.Permissions;
 using TMS.MVC.Models;
 using TMS.MVC.Models.ViewModels;
 
@@ -13,15 +14,18 @@ public class UsersController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly ApplicationDbContext _context;
+    private readonly PermissionSyncService _permissionSyncService;
 
     public UsersController(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        PermissionSyncService permissionSyncService)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _context = context;
+        _permissionSyncService = permissionSyncService;
     }
 
     public async Task<IActionResult> Index(string? search, int page = 1, int pageSize = 10)
@@ -264,12 +268,24 @@ public class UsersController : Controller
         TempData["SuccessMessage"] = "رمز عبور کاربر با موفقیت تغییر یافت.";
         return RedirectToAction(nameof(Index));
     }
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [SkipPermission]
+    public async Task<IActionResult> SyncPermissions()
+    {
+        var result = await _permissionSyncService.SyncAsync();
+        TempData["SuccessMessage"] = $"دسترسی‌ها همگام‌سازی شد. تعداد اکشن‌ها: {result.TotalActions}، جدید: {result.Added}، بروزرسانی: {result.Updated}";
+        return RedirectToAction(nameof(Index));
+    }
+
     [HttpGet]
     public async Task<IActionResult> Permissions(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
         if (user == null)
             return NotFound();
+
+        await _permissionSyncService.SyncAsync();
 
         var allPermissions = await _context.PermissionDefinitions
             .OrderBy(x => x.Category)

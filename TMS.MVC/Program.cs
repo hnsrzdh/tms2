@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Infrastructure;
 using TMS.MVC.Models;
+using TMS.MVC.Infrastructure.Permissions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +27,14 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IPermissionAccessService, PermissionAccessService>();
+builder.Services.AddScoped<PermissionSyncService>();
+
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<PermissionAuthorizationFilter>();
+}); 
+
 builder.Services.AddRazorPages();
 
 builder.Services.AddAuthorization(options =>
@@ -38,6 +46,9 @@ builder.Services.AddHttpClient("Nominatim", client =>
     client.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
     client.DefaultRequestHeaders.UserAgent.ParseAdd("TMS-MVC/1.0 (contact: alinsr157@gmail.com)");
 });
+
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

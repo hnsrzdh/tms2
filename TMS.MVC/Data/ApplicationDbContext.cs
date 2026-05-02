@@ -46,6 +46,7 @@ namespace TMS.MVC.Data
         public DbSet<LocationTracking> LocationTrackings { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<CargoAnnouncement> CargoAnnouncements => Set<CargoAnnouncement>();
+        public DbSet<DriverWalletWithdrawalRequest> DriverWalletWithdrawalRequests { get; set; }
 
         public DbSet<Ticket> Tickets => Set<Ticket>();
         public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>();

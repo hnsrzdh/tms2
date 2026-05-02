@@ -32,53 +32,33 @@
         return int.TryParse(value, out var page) && page > 0 ? page : 1;
     }
 
-    int ReadPageSize(string key, int defaultValue = 10)
-    {
-        var value = Context.Request.Query[key].ToString();
-        return int.TryParse(value, out var pageSize) && pageSize > 0 ? pageSize : defaultValue;
-    }
+    const int walletPageSize = 10;
+    const int assignmentPageSize = 10;
 
-    int contactPage = ReadPage("contactPage");
-    int addressPage = ReadPage("addressPage");
-    int bankPage = ReadPage("bankPage");
     int walletPage = ReadPage("walletPage");
     int assignmentPage = ReadPage("assignmentPage");
 
-    int contactPageSize = ReadPageSize("contactPageSize", 10);
-    int addressPageSize = ReadPageSize("addressPageSize", 10);
-    int bankPageSize = ReadPageSize("bankPageSize", 10);
-    int walletPageSize = ReadPageSize("walletPageSize", 10);
-    int assignmentPageSize = ReadPageSize("assignmentPageSize", 10);
-
-    var contactsAll = Model.Contacts.OrderBy(x => x.Id).ToList();
-    var addressesAll = Model.Addresses.OrderBy(x => x.Id).ToList();
-    var bankAccountsAll = Model.BankAccounts.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id).ToList();
     var walletTransactionsAll = walletTransactions;
     var assignmentsAll = assignments.OrderByDescending(x => x.AssignmentDate).ToList();
 
-    int contactTotalItems = contactsAll.Count;
-    int addressTotalItems = addressesAll.Count;
-    int bankTotalItems = bankAccountsAll.Count;
     int walletTotalItems = walletTransactionsAll.Count;
     int assignmentTotalItems = assignmentsAll.Count;
 
-    int contactTotalPages = Math.Max(1, (int)Math.Ceiling((double)contactTotalItems / contactPageSize));
-    int addressTotalPages = Math.Max(1, (int)Math.Ceiling((double)addressTotalItems / addressPageSize));
-    int bankTotalPages = Math.Max(1, (int)Math.Ceiling((double)bankTotalItems / bankPageSize));
     int walletTotalPages = Math.Max(1, (int)Math.Ceiling((double)walletTotalItems / walletPageSize));
     int assignmentTotalPages = Math.Max(1, (int)Math.Ceiling((double)assignmentTotalItems / assignmentPageSize));
 
-    contactPage = Math.Min(contactPage, contactTotalPages);
-    addressPage = Math.Min(addressPage, addressTotalPages);
-    bankPage = Math.Min(bankPage, bankTotalPages);
     walletPage = Math.Min(walletPage, walletTotalPages);
     assignmentPage = Math.Min(assignmentPage, assignmentTotalPages);
 
-    var contacts = contactsAll.Skip((contactPage - 1) * contactPageSize).Take(contactPageSize).ToList();
-    var addresses = addressesAll.Skip((addressPage - 1) * addressPageSize).Take(addressPageSize).ToList();
-    var bankAccounts = bankAccountsAll.Skip((bankPage - 1) * bankPageSize).Take(bankPageSize).ToList();
-    var walletItems = walletTransactionsAll.Skip((walletPage - 1) * walletPageSize).Take(walletPageSize).ToList();
-    var assignmentItems = assignmentsAll.Skip((assignmentPage - 1) * assignmentPageSize).Take(assignmentPageSize).ToList();
+    var walletItems = walletTransactionsAll
+        .Skip((walletPage - 1) * walletPageSize)
+        .Take(walletPageSize)
+        .ToList();
+
+    var assignmentItems = assignmentsAll
+        .Skip((assignmentPage - 1) * assignmentPageSize)
+        .Take(assignmentPageSize)
+        .ToList();
 
     string ToJalali(DateTime? date)
     {
@@ -361,9 +341,24 @@
                 <h6 class="mb-0">اطلاعات کلی</h6>
                 <small class="text-muted small-muted">اطلاعات هویتی و وضعیت راننده</small>
             </div>
-            <div class="d-flex gap-2">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm px-3">ویرایش</a>
-                <a asp-action="Index" class="btn btn-secondary btn-sm px-3">بازگشت</a>
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-controller="DriverWalletWithdrawalRequests"
+                   asp-action="Create"
+                   asp-route-driverProfileId="@Model.Id"
+                   class="btn btn-outline-success btn-sm px-3">
+                    درخواست برداشت از کیف پول
+                </a>
+
+                <a asp-action="Edit"
+                   asp-route-id="@Model.Id"
+                   class="btn btn-outline-primary btn-sm px-3">
+                    ویرایش
+                </a>
+
+                <a asp-action="Index"
+                   class="btn btn-secondary btn-sm px-3">
+                    بازگشت
+                </a>
             </div>
         </div>
 
@@ -481,9 +476,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (contacts.Any())
+                    @if (Model.Contacts.Any())
                     {
-                        foreach (var item in contacts)
+                        foreach (var item in Model.Contacts.OrderBy(x => x.Id))
                         {
                             <tr>
                                 <td>@item.Title</td>
@@ -513,39 +508,6 @@
                     }
                 </tbody>
             </table>
-
-            @if (contactTotalItems > contactPageSize)
-            {
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
-                    <div class="text-muted small">صفحه @contactPage از @contactTotalPages - تعداد کل: @contactTotalItems</div>
-                    <nav>
-                        <ul class="pagination pagination-primary mb-0">
-                            <li class="page-item @(contactPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="1" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">اول</a>
-                            </li>
-                            <li class="page-item @(contactPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@(contactPage - 1)" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">قبلی</a>
-                            </li>
-                            @{
-                                var contactStart = Math.Max(1, contactPage - 2);
-                                var contactEnd = Math.Min(contactTotalPages, contactPage + 2);
-                            }
-                            @for (int i = contactStart; i <= contactEnd; i++)
-                            {
-                                <li class="page-item @(i == contactPage ? "active" : "")">
-                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@i" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">@i</a>
-                                </li>
-                            }
-                            <li class="page-item @(contactPage >= contactTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@(contactPage + 1)" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">بعدی</a>
-                            </li>
-                            <li class="page-item @(contactPage >= contactTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactTotalPages" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">آخر</a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            }
         </div>
     </div>
 
@@ -569,9 +531,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (addresses.Any())
+                    @if (Model.Addresses.Any())
                     {
-                        foreach (var item in addresses)
+                        foreach (var item in Model.Addresses.OrderBy(x => x.Id))
                         {
                             <tr>
                                 <td>@item.Title</td>
@@ -596,39 +558,6 @@
                     }
                 </tbody>
             </table>
-
-            @if (addressTotalItems > addressPageSize)
-            {
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
-                    <div class="text-muted small">صفحه @addressPage از @addressTotalPages - تعداد کل: @addressTotalItems</div>
-                    <nav>
-                        <ul class="pagination pagination-primary mb-0">
-                            <li class="page-item @(addressPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="1" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">اول</a>
-                            </li>
-                            <li class="page-item @(addressPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@(addressPage - 1)" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">قبلی</a>
-                            </li>
-                            @{
-                                var addressStart = Math.Max(1, addressPage - 2);
-                                var addressEnd = Math.Min(addressTotalPages, addressPage + 2);
-                            }
-                            @for (int i = addressStart; i <= addressEnd; i++)
-                            {
-                                <li class="page-item @(i == addressPage ? "active" : "")">
-                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@i" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">@i</a>
-                                </li>
-                            }
-                            <li class="page-item @(addressPage >= addressTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@(addressPage + 1)" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">بعدی</a>
-                            </li>
-                            <li class="page-item @(addressPage >= addressTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressTotalPages" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">آخر</a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            }
         </div>
     </div>
 
@@ -657,9 +586,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (bankAccounts.Any())
+                    @if (Model.BankAccounts.Any())
                     {
-                        foreach (var item in bankAccounts)
+                        foreach (var item in Model.BankAccounts.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id))
                         {
                             <tr>
                                 <td>@(item.AccountOwnerName ?? "-")</td>
@@ -698,39 +627,6 @@
                     }
                 </tbody>
             </table>
-
-            @if (bankTotalItems > bankPageSize)
-            {
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
-                    <div class="text-muted small">صفحه @bankPage از @bankTotalPages - تعداد کل: @bankTotalItems</div>
-                    <nav>
-                        <ul class="pagination pagination-primary mb-0">
-                            <li class="page-item @(bankPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="1" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">اول</a>
-                            </li>
-                            <li class="page-item @(bankPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@(bankPage - 1)" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">قبلی</a>
-                            </li>
-                            @{
-                                var bankStart = Math.Max(1, bankPage - 2);
-                                var bankEnd = Math.Min(bankTotalPages, bankPage + 2);
-                            }
-                            @for (int i = bankStart; i <= bankEnd; i++)
-                            {
-                                <li class="page-item @(i == bankPage ? "active" : "")">
-                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@i" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">@i</a>
-                                </li>
-                            }
-                            <li class="page-item @(bankPage >= bankTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@(bankPage + 1)" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">بعدی</a>
-                            </li>
-                            <li class="page-item @(bankPage >= bankTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankTotalPages" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">آخر</a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            }
         </div>
     </div>
 
@@ -757,23 +653,58 @@
                     @if (walletItems.Any())
                     {
                         var rowNo = ((walletPage - 1) * walletPageSize) + 1;
+
                         foreach (var item in walletItems)
                         {
+                            string typeText = item.Type?.ToString() ?? "-";
+                            decimal? amount = item.Amount;
+                            bool isWithdraw = typeText.Contains("برداشت") || (amount.HasValue && amount.Value < 0);
+                            var badgeClass = isWithdraw ? "bg-danger" : "bg-success";
+                            var amountClass = isWithdraw ? "text-danger" : "text-success";
+
                             <tr>
                                 <td>@rowNo</td>
+
                                 <td>@ToJalali(item.Date)</td>
-                                <td><span class="badge bg-success">@item.Type</span></td>
-                                <td class="amount-cell fw-bold text-success">@Amount(item.Amount, "ریال")</td>
-                                <td>@item.Description</td>
+
                                 <td>
-                                    <a asp-controller="TractorAssignment"
-                                       asp-action="Details"
-                                       asp-route-id="@item.ReferenceId"
-                                       class="btn btn-outline-info btn-sm">
-                                        جزئیات
-                                    </a>
+                                    <span class="badge @badgeClass">@typeText</span>
+                                </td>
+
+                                <td class="amount-cell fw-bold @amountClass">
+                                    @(amount.HasValue ? $"{Math.Abs(amount.Value):N0} ریال" : "-")
+                                </td>
+
+                                <td>@(item.Description ?? "-")</td>
+
+                                <td>
+                                    @if (item.ReferenceId != null && item.ReferenceId > 0)
+                                    {
+                                        if (isWithdraw)
+                                        {
+                                            <a asp-controller="DriverWalletWithdrawalRequests"
+                                               asp-action="Index"
+                                               class="btn btn-outline-info btn-sm">
+                                                جزئیات
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="TractorAssignment"
+                                               asp-action="Details"
+                                               asp-route-id="@item.ReferenceId"
+                                               class="btn btn-outline-info btn-sm">
+                                                جزئیات
+                                            </a>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
                                 </td>
                             </tr>
+
                             rowNo++;
                         }
                     }
@@ -791,42 +722,75 @@
             @if (walletTotalItems > walletPageSize)
             {
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
-                    <div class="text-muted small">صفحه @walletPage از @walletTotalPages - تعداد کل: @walletTotalItems</div>
+                    <div class="text-muted small">
+                        صفحه @walletPage از @walletTotalPages - تعداد کل: @walletTotalItems
+                    </div>
+
                     <nav>
                         <ul class="pagination pagination-primary mb-0">
                             <li class="page-item @(walletPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="1" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">اول</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="1"
+                                   asp-route-assignmentPage="@assignmentPage">
+                                    اول
+                                </a>
                             </li>
+
                             <li class="page-item @(walletPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@(walletPage - 1)" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">قبلی</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="@(walletPage - 1)"
+                                   asp-route-assignmentPage="@assignmentPage">
+                                    قبلی
+                                </a>
                             </li>
+
                             @{
                                 var walletStart = Math.Max(1, walletPage - 2);
                                 var walletEnd = Math.Min(walletTotalPages, walletPage + 2);
                             }
+
                             @for (int i = walletStart; i <= walletEnd; i++)
                             {
                                 <li class="page-item @(i == walletPage ? "active" : "")">
-                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@i" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">@i</a>
+                                    <a class="page-link"
+                                       asp-action="Details"
+                                       asp-route-id="@Model.Id"
+                                       asp-route-walletPage="@i"
+                                       asp-route-assignmentPage="@assignmentPage">
+                                        @i
+                                    </a>
                                 </li>
                             }
+
                             <li class="page-item @(walletPage >= walletTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@(walletPage + 1)" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">بعدی</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="@(walletPage + 1)"
+                                   asp-route-assignmentPage="@assignmentPage">
+                                    بعدی
+                                </a>
                             </li>
+
                             <li class="page-item @(walletPage >= walletTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletTotalPages" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">آخر</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="@walletTotalPages"
+                                   asp-route-assignmentPage="@assignmentPage">
+                                    آخر
+                                </a>
                             </li>
                         </ul>
                     </nav>
                 </div>
             }
-
-            <div class="alert alert-info py-2 small mb-0 mt-2">
-                برداشت از کیف پول زمانی نمایش داده می‌شود که برای کیف پول جدول تراکنش مستقل یا عملیات برداشت تعریف شود. در وضعیت فعلی، واریزهای ناشی از تسویه حمل نمایش داده می‌شوند.
-            </div>
         </div>
     </div>
-
     <!-- تخصیص‌های راننده -->
     <div class="card">
         <div class="card-header">
@@ -858,6 +822,7 @@
                         foreach (var item in assignmentItems)
                         {
                             var unit = item.SubHavaleh?.Havaleh?.Unit;
+
                             <tr>
                                 <td>@rowNo</td>
                                 <td>@(item.SubHavaleh?.Havaleh?.HavalehNumber ?? "-")</td>
@@ -904,6 +869,7 @@
                                     </a>
                                 </td>
                             </tr>
+
                             rowNo++;
                         }
                     }
@@ -921,30 +887,68 @@
             @if (assignmentTotalItems > assignmentPageSize)
             {
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
-                    <div class="text-muted small">صفحه @assignmentPage از @assignmentTotalPages - تعداد کل: @assignmentTotalItems</div>
+                    <div class="text-muted small">
+                        صفحه @assignmentPage از @assignmentTotalPages - تعداد کل: @assignmentTotalItems
+                    </div>
+
                     <nav>
                         <ul class="pagination pagination-primary mb-0">
                             <li class="page-item @(assignmentPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="1" asp-route-assignmentPageSize="@assignmentPageSize">اول</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="@walletPage"
+                                   asp-route-assignmentPage="1">
+                                    اول
+                                </a>
                             </li>
+
                             <li class="page-item @(assignmentPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@(assignmentPage - 1)" asp-route-assignmentPageSize="@assignmentPageSize">قبلی</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="@walletPage"
+                                   asp-route-assignmentPage="@(assignmentPage - 1)">
+                                    قبلی
+                                </a>
                             </li>
+
                             @{
                                 var assignmentStart = Math.Max(1, assignmentPage - 2);
                                 var assignmentEnd = Math.Min(assignmentTotalPages, assignmentPage + 2);
                             }
+
                             @for (int i = assignmentStart; i <= assignmentEnd; i++)
                             {
                                 <li class="page-item @(i == assignmentPage ? "active" : "")">
-                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@i" asp-route-assignmentPageSize="@assignmentPageSize">@i</a>
+                                    <a class="page-link"
+                                       asp-action="Details"
+                                       asp-route-id="@Model.Id"
+                                       asp-route-walletPage="@walletPage"
+                                       asp-route-assignmentPage="@i">
+                                        @i
+                                    </a>
                                 </li>
                             }
+
                             <li class="page-item @(assignmentPage >= assignmentTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@(assignmentPage + 1)" asp-route-assignmentPageSize="@assignmentPageSize">بعدی</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="@walletPage"
+                                   asp-route-assignmentPage="@(assignmentPage + 1)">
+                                    بعدی
+                                </a>
                             </li>
+
                             <li class="page-item @(assignmentPage >= assignmentTotalPages ? "disabled" : "")">
-                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentTotalPages" asp-route-assignmentPageSize="@assignmentPageSize">آخر</a>
+                                <a class="page-link"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.Id"
+                                   asp-route-walletPage="@walletPage"
+                                   asp-route-assignmentPage="@assignmentTotalPages">
+                                    آخر
+                                </a>
                             </li>
                         </ul>
                     </nav>

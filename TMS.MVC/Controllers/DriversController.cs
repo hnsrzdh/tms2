@@ -217,6 +217,7 @@ namespace TMS.MVC.Controllers
                 .ToListAsync();
 
             var totalAssignments = assignments.Count;
+
             var activeAssignments = assignments.Count(x =>
                 x.Status != AssignmentStatus.Completed &&
                 x.Status != AssignmentStatus.Cancelled &&
@@ -245,17 +246,38 @@ namespace TMS.MVC.Controllers
                 .Where(x => x.IsSettled && x.SettledTo == "Driver")
                 .Sum(x => x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0);
 
-            var walletTransactions = assignments
+            var depositTransactions = assignments
                 .Where(x => x.IsSettled && x.SettledTo == "Driver")
-                .OrderByDescending(x => x.SettledDate ?? x.AssignmentDate)
-                .Select(x => new
+                .Select(x => new DriverWalletTransactionVm
                 {
                     Date = x.SettledDate ?? x.AssignmentDate,
                     Type = "واریز به کیف پول",
                     Amount = x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0,
                     Description = $"تسویه حمل حواله {x.SubHavaleh.Havaleh.HavalehNumber}",
-                    ReferenceId = x.Id
+                    ReferenceId = x.Id,
+                    IsWithdraw = false
                 })
+                .ToList();
+
+            var withdrawalTransactions = await _context.DriverWalletWithdrawalRequests
+                .Where(x => x.DriverProfileId == id &&
+                            x.Status == DriverWalletWithdrawalRequestStatus.Paid)
+                .Select(x => new DriverWalletTransactionVm
+                {
+                    Date = x.PaidAt ?? x.RejectedAt ?? x.CreatedAt,
+                    Type = "برداشت از کیف پول",
+                    Amount = -x.Amount,
+                    Description = string.IsNullOrWhiteSpace(x.PaymentReceiptNote)
+                        ? "برداشت پرداخت‌شده از کیف پول"
+                        : x.PaymentReceiptNote,
+                    ReferenceId = x.Id,
+                    IsWithdraw = true
+                })
+                .ToListAsync();
+
+            var walletTransactions = depositTransactions
+                .Concat(withdrawalTransactions)
+                .OrderByDescending(x => x.Date)
                 .ToList();
 
             ViewBag.Assignments = assignments;
@@ -272,6 +294,7 @@ namespace TMS.MVC.Controllers
 
             return View(entity);
         }
+
         [HttpGet]
         public IActionResult AddBankAccount(int driverProfileId)
             => View(new DriverBankAccountUpsertViewModel { DriverProfileId = driverProfileId });

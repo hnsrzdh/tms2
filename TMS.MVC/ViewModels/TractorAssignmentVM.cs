@@ -32,6 +32,8 @@ namespace TMS.MVC.ViewModels
         public decimal? LoadedAmount { get; set; }
         public decimal? UnloadedAmount { get; set; }
         public bool IsCompleted { get; set; }
+        public decimal? AssignedCargoAmount { get; set; }
+        public bool IsTruckCapacityFull { get; set; }
     }
 
     // ========== ایجاد/ویرایش ==========
@@ -45,6 +47,13 @@ namespace TMS.MVC.ViewModels
         [Display(Name = "پلاک کشنده")] public string? TractorPlateNumber { get; set; }
         [Display(Name = "راننده")] public int? DriverProfileId { get; set; }
         [Display(Name = "نام راننده")] public string? DriverFullName { get; set; }
+
+        [Display(Name = "مقدار تخصیص داده شده")]
+        [Range(0.001, double.MaxValue, ErrorMessage = "مقدار تخصیص باید بزرگتر از صفر باشد.")]
+        public decimal? AssignedCargoAmount { get; set; }
+
+        [Display(Name = "ظرفیت کشنده کامل پر شده است")]
+        public bool IsTruckCapacityFull { get; set; } = true;
         [StringLength(500)] public string? Notes { get; set; }
     }
 
@@ -147,6 +156,10 @@ namespace TMS.MVC.ViewModels
         public string? TractorType { get; set; }
         public decimal? Capacity { get; set; }
         public string? CapacityUnit { get; set; }
+        public decimal UsedCapacity { get; set; }
+        public decimal? FreeCapacity { get; set; }
+        public bool HasFullCapacityActiveAssignment { get; set; }
+        public string? UsedCapacityDescription { get; set; }
     }
 
     public class DriverSearchResultViewModel

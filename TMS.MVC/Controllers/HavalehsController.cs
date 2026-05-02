@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Models;
@@ -204,30 +204,56 @@ namespace TMS.MVC.Controllers
                 .Include(x => x.DestinationPlace)
                 .Include(x => x.IntermediatePlaces)
                     .ThenInclude(x => x.Place)
+                .Include(x => x.TractorAssignments)
                 .AsQueryable();
 
             var subTotalItems = await subQuery.CountAsync();
 
-            var subItems = await subQuery
+            var totalHavalehAmount = entity.ProductAmount ?? 0;
+            var totalSubAmount = await _context.SubHavalehs
+                .Where(x => x.HavalehId == id)
+                .SumAsync(x => (decimal?)x.RequestedCargoAmount) ?? 0;
+
+            var allSubHavalehIds = await _context.SubHavalehs
+                .Where(x => x.HavalehId == id)
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            var activeAssignments = await _context.TractorAssignments
+                .Where(x => allSubHavalehIds.Contains(x.SubHavalehId) &&
+                            x.Status != AssignmentStatus.Cancelled)
+                .ToListAsync();
+
+            var subEntities = await subQuery
                 .OrderByDescending(x => x.Id)
                 .Skip((subPage - 1) * subPageSize)
                 .Take(subPageSize)
-                .Select(x => new SubHavalehIndexItemViewModel
-                {
-                    Id = x.Id,
-                    Title = x.Title,
-                    ContractType = x.ContractType,
-                    TransportType = x.TransportType,
-                    DestinationCityDisplayName = x.DestinationPlace != null ? x.DestinationPlace.Name : null,
-                    RouteSummary = x.IntermediatePlaces.OrderBy(c => c.SortOrder).Select(c => c.Place.Name).Any()
-                        ? string.Join(" ، ", x.IntermediatePlaces.OrderBy(c => c.SortOrder).Select(c => c.Place.Name))
-                        : "بدون شهر میانی",
-                    StartDate = x.StartDate,
-                    EndDate = x.EndDate,
-                    RequestedCargoAmount = x.RequestedCargoAmount,
-                    RequestedCargoAmountType = x.RequestedCargoAmountType
-                })
                 .ToListAsync();
+
+            var subItems = subEntities.Select(x => new SubHavalehIndexItemViewModel
+            {
+                Id = x.Id,
+                Title = x.Title,
+                ContractType = x.ContractType,
+                TransportType = x.TransportType,
+                DestinationCityDisplayName = x.DestinationPlace?.Name,
+                RouteSummary = x.IntermediatePlaces != null && x.IntermediatePlaces.Any()
+                    ? string.Join(" ، ", x.IntermediatePlaces.OrderBy(c => c.SortOrder).Select(c => c.Place.Name))
+                    : "بدون شهر میانی",
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
+                RequestedCargoAmount = x.RequestedCargoAmount,
+                RequestedCargoAmountType = x.RequestedCargoAmountType,
+                AssignedAmount = x.TractorAssignments
+                    .Where(a => a.Status != AssignmentStatus.Cancelled)
+                    .Sum(a => a.AssignedCargoAmount ?? 0),
+                LoadedAmount = x.TractorAssignments
+                    .Where(a => a.Status != AssignmentStatus.Cancelled)
+                    .Sum(a => a.LoadedAmount ?? 0),
+                UnloadedAmount = x.TractorAssignments
+                    .Where(a => a.Status != AssignmentStatus.Cancelled)
+                    .Sum(a => a.UnloadedAmount ?? 0)
+            }).ToList();
 
             return View(new HavalehDetailsViewModel
             {
@@ -235,7 +261,12 @@ namespace TMS.MVC.Controllers
                 SubItems = subItems,
                 SubPage = subPage,
                 SubPageSize = subPageSize,
-                SubTotalItems = subTotalItems
+                SubTotalItems = subTotalItems,
+                TotalHavalehAmount = totalHavalehAmount,
+                TotalSubHavalehAmount = totalSubAmount,
+                TotalAssignedAmount = activeAssignments.Sum(x => x.AssignedCargoAmount ?? 0),
+                TotalLoadedAmount = activeAssignments.Sum(x => x.LoadedAmount ?? 0),
+                TotalUnloadedAmount = activeAssignments.Sum(x => x.UnloadedAmount ?? 0)
             });
         }
 
@@ -303,6 +334,26 @@ namespace TMS.MVC.Controllers
 
             if (!ModelState.IsValid)
                 return View(vm);
+            var havalehAmount = havaleh.ProductAmount ?? 0;
+            var newSubAmount = vm.RequestedCargoAmount ?? 0;
+
+            if (newSubAmount <= 0)
+            {
+                ModelState.AddModelError(nameof(vm.RequestedCargoAmount), "مقدار محموله زیرحواله باید بزرگتر از صفر باشد.");
+                return View(vm);
+            }
+
+            var currentSubTotal = await _context.SubHavalehs
+                .Where(x => x.HavalehId == vm.HavalehId)
+                .SumAsync(x => (decimal?)x.RequestedCargoAmount) ?? 0;
+
+            if (currentSubTotal + newSubAmount > havalehAmount)
+            {
+                var remaining = havalehAmount - currentSubTotal;
+                ModelState.AddModelError(nameof(vm.RequestedCargoAmount),
+                    $"مجموع مقدار زیرحواله‌ها نباید بیشتر از مقدار حواله باشد. مقدار باقیمانده قابل تعریف: {remaining:N3} {havaleh.Unit}");
+                return View(vm);
+            }
 
             var entity = new SubHavaleh
             {
@@ -365,6 +416,8 @@ namespace TMS.MVC.Controllers
                 .Include(x => x.DestinationPlace)
                 .Include(x => x.IntermediatePlaces)
                     .ThenInclude(x => x.Place)
+                .Include(x => x.TractorAssignments)
+                    .ThenInclude(x => x.Tractor)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
@@ -444,6 +497,27 @@ namespace TMS.MVC.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
+            var havalehAmount = entity.Havaleh.ProductAmount ?? 0;
+            var newSubAmount = vm.RequestedCargoAmount ?? 0;
+
+            if (newSubAmount <= 0)
+            {
+                ModelState.AddModelError(nameof(vm.RequestedCargoAmount), "مقدار محموله زیرحواله باید بزرگتر از صفر باشد.");
+                return View(vm);
+            }
+
+            var otherSubTotal = await _context.SubHavalehs
+                .Where(x => x.HavalehId == entity.HavalehId && x.Id != entity.Id)
+                .SumAsync(x => (decimal?)x.RequestedCargoAmount) ?? 0;
+
+            if (otherSubTotal + newSubAmount > havalehAmount)
+            {
+                var remaining = havalehAmount - otherSubTotal;
+                ModelState.AddModelError(nameof(vm.RequestedCargoAmount),
+                    $"مجموع مقدار زیرحواله‌ها نباید بیشتر از مقدار حواله باشد. حداکثر مقدار مجاز برای این زیرحواله: {remaining:N3} {entity.Havaleh.Unit}");
+                return View(vm);
+            }
+
             entity.Title = vm.Title;
             entity.ContractType = vm.ContractType;
             entity.SettlementBase = vm.SettlementBase;
@@ -502,6 +576,8 @@ namespace TMS.MVC.Controllers
                 .Include(x => x.DestinationPlace)
                 .Include(x => x.IntermediatePlaces)
                     .ThenInclude(x => x.Place)
+                .Include(x => x.TractorAssignments)
+                    .ThenInclude(x => x.Tractor)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)

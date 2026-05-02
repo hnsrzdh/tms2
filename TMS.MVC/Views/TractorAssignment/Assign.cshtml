@@ -1,84 +1,39 @@
-﻿@model TMS.MVC.ViewModels.TractorAssignmentUpsertViewModel
+@model TMS.MVC.ViewModels.TractorAssignmentUpsertViewModel
 
 @{
     ViewData["Title"] = "تخصیص کشنده جدید";
 }
 
 <style>
-    .assignment-form-compact .form-label {
-        margin-bottom: 0.25rem;
-        font-size: 0.82rem;
-    }
-
+    .assignment-form-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
     .assignment-form-compact .form-control,
     .assignment-form-compact .form-select,
     .assignment-form-compact .input-group-text,
     .assignment-form-compact .btn,
     .assignment-form-compact .table,
-    .assignment-form-compact .badge {
-        font-size: 0.82rem;
-    }
-
-    .assignment-form-compact .table > :not(caption) > * > * {
-        padding: 0.45rem 0.55rem;
-    }
-
-    .assignment-form-compact .card-header {
-        padding-top: 0.65rem;
-        padding-bottom: 0.65rem;
-    }
-
-    .assignment-form-compact .card-body {
-        padding-top: 0.85rem;
-    }
-
-    .assignment-form-compact .small-muted {
-        font-size: 0.78rem;
-    }
-
+    .assignment-form-compact .badge,
+    .assignment-form-compact .form-check-label { font-size: 0.82rem; }
+    .assignment-form-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
+    .assignment-form-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .assignment-form-compact .card-body { padding-top: 0.85rem; }
+    .assignment-form-compact .small-muted { font-size: 0.78rem; }
     .assignment-form-compact .field-validation-valid,
     .assignment-form-compact .field-validation-error,
-    .assignment-form-compact span.text-danger {
-        font-size: 0.75rem;
-    }
-
-    .assignment-form-compact .summary-box {
-        border: 1px solid #e5e7eb;
-        border-radius: 0.75rem;
-        padding: 0.65rem 0.75rem;
-        background: #f8f9fa;
-        height: 100%;
-    }
-
-    .assignment-form-compact .summary-box small {
-        font-size: 0.76rem;
-    }
-
-    .assignment-form-compact .summary-box .value {
-        display: block;
-        margin-top: 0.25rem;
-        font-weight: 600;
-        color: #495057;
-    }
+    .assignment-form-compact span.text-danger { font-size: 0.75rem; }
+    .assignment-form-compact .summary-box { border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 0.65rem 0.75rem; background: #f8f9fa; height: 100%; }
+    .assignment-form-compact .summary-box small { font-size: 0.76rem; }
+    .assignment-form-compact .summary-box .value { display: block; margin-top: 0.25rem; font-weight: 600; color: #495057; }
 </style>
 
 <div class="container-fluid">
     <div class="page-title">
         <div class="row">
-            <div class="col-sm-6 col-12">
-                <h4>@ViewData["Title"]</h4>
-            </div>
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
-                    </li>
-                    <li class="breadcrumb-item">
-                        <a asp-controller="Havalehs" asp-action="Index">حواله‌ها</a>
-                    </li>
-                    <li class="breadcrumb-item">
-                        <a asp-controller="Havalehs" asp-action="SubHavalehDetails" asp-route-id="@Model.SubHavalehId">زیرحواله</a>
-                    </li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Havalehs" asp-action="Index">حواله‌ها</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Havalehs" asp-action="SubHavalehDetails" asp-route-id="@Model.SubHavalehId">زیرحواله</a></li>
                     <li class="breadcrumb-item active">تخصیص کشنده</li>
                 </ol>
             </div>
@@ -91,30 +46,15 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h6 class="mb-0">تخصیص کشنده جدید</h6>
-                <small class="text-muted small-muted">کشنده و راننده را برای این زیرحواله انتخاب کنید.</small>
+                <small class="text-muted small-muted">کشنده، راننده، مقدار تخصیص و وضعیت ظرفیت کشنده را برای این زیرحواله انتخاب کنید.</small>
             </div>
-
-            <a asp-action="Index"
-               asp-route-subHavalehId="@Model.SubHavalehId"
-               class="btn btn-secondary btn-sm px-3">
-                بازگشت
-            </a>
+            <a asp-action="Index" asp-route-subHavalehId="@Model.SubHavalehId" class="btn btn-secondary btn-sm px-3">بازگشت</a>
         </div>
 
         <div class="card-body">
             <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                    <div class="summary-box">
-                        <small class="text-muted">شماره حواله</small>
-                        <span class="value">@Model.HavalehNumber</span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="summary-box">
-                        <small class="text-muted">زیرحواله</small>
-                        <span class="value">@(Model.SubHavalehTitle ?? "-")</span>
-                    </div>
-                </div>
+                <div class="col-md-6"><div class="summary-box"><small class="text-muted">شماره حواله</small><span class="value">@Model.HavalehNumber</span></div></div>
+                <div class="col-md-6"><div class="summary-box"><small class="text-muted">زیرحواله</small><span class="value">@(Model.SubHavalehTitle ?? "-")</span></div></div>
             </div>
 
             <form asp-action="Assign" method="post" id="assignmentForm">
@@ -124,7 +64,7 @@
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                 <div class="alert alert-info py-2 small mb-3">
-                    فقط کشنده‌ها و رانندگانی که در سفر فعال دیگری نیستند در جستجو نمایش داده می‌شوند.
+                    کشنده‌ای که ظرفیتش کامل پر نشده باشد، می‌تواند همزمان برای حمل‌های دیگر هم انتخاب شود. مقدار تخصیص نباید از باقیمانده زیرحواله و ظرفیت آزاد کشنده بیشتر باشد.
                 </div>
 
                 <div class="row g-2">
@@ -147,6 +87,21 @@
                         </div>
                     </div>
 
+                    <div class="col-md-6">
+                        <label asp-for="AssignedCargoAmount" class="form-label"></label>
+                        <input asp-for="AssignedCargoAmount" class="form-control form-control-sm" type="number" step="0.001" min="0.001" placeholder="مثلاً 10" />
+                        <span asp-validation-for="AssignedCargoAmount" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label d-block">وضعیت ظرفیت</label>
+                        <div class="form-check mt-1">
+                            <input asp-for="IsTruckCapacityFull" class="form-check-input" />
+                            <label asp-for="IsTruckCapacityFull" class="form-check-label"></label>
+                        </div>
+                        <small class="text-muted d-block mt-1">اگر فعال باشد، کشنده برای حمل فعال دیگری نمایش داده نمی‌شود.</small>
+                    </div>
+
                     <div class="col-12">
                         <label asp-for="Notes" class="form-label"></label>
                         <textarea asp-for="Notes" class="form-control form-control-sm" rows="3" placeholder="توضیحات داخلی تخصیص، در صورت نیاز..."></textarea>
@@ -163,7 +118,7 @@
 </div>
 
 <div class="modal fade" id="tractorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h6 class="modal-title">انتخاب کشنده</h6>
@@ -171,12 +126,22 @@
             </div>
             <div class="modal-body small">
                 <input type="text" id="tractorSearchInput" class="form-control form-control-sm mb-2" placeholder="حداقل ۲ کاراکتر از پلاک را وارد کنید..." />
-                <small class="text-muted d-block mb-3">فقط کشنده‌های فعال و آزاد نمایش داده می‌شوند.</small>
+                <small class="text-muted d-block mb-3">کشنده‌هایی که ظرفیت کامل آنها در حمل فعال پر شده باشد نمایش داده نمی‌شوند. اگر ظرفیت آزاد داشته باشند، مقدار مصرف‌شده نیز نمایش داده می‌شود.</small>
                 <div class="table-responsive">
                     <table class="table table-hover table-sm align-middle">
-                        <thead><tr><th>پلاک</th><th>نوع</th><th>ظرفیت</th><th style="width:90px;">انتخاب</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>پلاک</th>
+                                <th>نوع</th>
+                                <th>ظرفیت کل</th>
+                                <th>مصرف‌شده</th>
+                                <th>ظرفیت آزاد</th>
+                                <th>حمل‌های فعال</th>
+                                <th style="width:90px;">انتخاب</th>
+                            </tr>
+                        </thead>
                         <tbody id="tractorSearchResults">
-                            <tr><td colspan="4" class="text-muted text-center py-3">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید.</td></tr>
+                            <tr><td colspan="7" class="text-muted text-center py-3">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -217,7 +182,7 @@
 
             document.getElementById("openTractorModal")?.addEventListener("click", function () {
                 tractorSearchInput.value = "";
-                tractorResults.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید.</td></tr>';
+                tractorResults.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-3">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید.</td></tr>';
                 tractorModal.show();
                 setTimeout(() => tractorSearchInput.focus(), 200);
             });
@@ -226,13 +191,11 @@
             tractorSearchInput?.addEventListener("input", function () {
                 clearTimeout(tractorTimeout);
                 const term = this.value.trim();
-
                 if (term.length < 2) {
-                    tractorResults.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید.</td></tr>';
+                    tractorResults.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-3">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید.</td></tr>';
                     return;
                 }
-
-                tractorResults.innerHTML = '<tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> در حال جستجو...</td></tr>';
+                tractorResults.innerHTML = '<tr><td colspan="7" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> در حال جستجو...</td></tr>';
                 tractorTimeout = setTimeout(() => loadTractors(term), 350);
             });
 
@@ -241,25 +204,21 @@
                     .then(r => r.json())
                     .then(data => {
                         if (!data || data.length === 0) {
-                            tractorResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">موردی یافت نشد.</td></tr>';
+                            tractorResults.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">موردی یافت نشد.</td></tr>';
                             return;
                         }
-
                         tractorResults.innerHTML = data.map(x => `
                             <tr>
                                 <td>${x.policePlateNumber ?? ""}</td>
                                 <td>${x.tractorType ?? "-"}</td>
                                 <td>${x.capacity ?? "-"} ${x.capacityUnit ?? ""}</td>
+                                <td>${x.usedCapacity ?? 0} ${x.capacityUnit ?? ""}</td>
+                                <td>${x.freeCapacity ?? "-"} ${x.capacityUnit ?? ""}</td>
+                                <td>${x.usedCapacityDescription ?? "-"}</td>
                                 <td>
-                                    <button type="button"
-                                            class="btn btn-primary btn-sm js-select-tractor"
-                                            data-id="${x.id}"
-                                            data-text="${x.policePlateNumber ?? ""}">
-                                        انتخاب
-                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm js-select-tractor" data-id="${x.id}" data-text="${x.policePlateNumber ?? ""}">انتخاب</button>
                                 </td>
-                            </tr>
-                        `).join("");
+                            </tr>`).join("");
 
                         tractorResults.querySelectorAll(".js-select-tractor").forEach(btn => {
                             btn.addEventListener("click", function () {
@@ -269,9 +228,7 @@
                             });
                         });
                     })
-                    .catch(() => {
-                        tractorResults.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">خطا در جستجو.</td></tr>';
-                    });
+                    .catch(() => tractorResults.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">خطا در جستجو.</td></tr>');
             }
 
             const driverModal = new bootstrap.Modal(document.getElementById("driverModal"));
@@ -289,12 +246,10 @@
             driverSearchInput?.addEventListener("input", function () {
                 clearTimeout(driverTimeout);
                 const term = this.value.trim();
-
                 if (term.length < 2) {
                     driverResults.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">لطفاً حداقل ۲ کاراکتر برای جستجو وارد کنید.</td></tr>';
                     return;
                 }
-
                 driverResults.innerHTML = '<tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> در حال جستجو...</td></tr>';
                 driverTimeout = setTimeout(() => loadDrivers(term), 350);
             });
@@ -307,22 +262,13 @@
                             driverResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">موردی یافت نشد.</td></tr>';
                             return;
                         }
-
                         driverResults.innerHTML = data.map(x => `
                             <tr>
                                 <td>${x.fullName ?? ""}</td>
                                 <td>${x.nationalId ?? "-"}</td>
                                 <td>${x.phoneNumber ?? "-"}</td>
-                                <td>
-                                    <button type="button"
-                                            class="btn btn-primary btn-sm js-select-driver"
-                                            data-id="${x.id}"
-                                            data-text="${x.fullName ?? ""}">
-                                        انتخاب
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join("");
+                                <td><button type="button" class="btn btn-primary btn-sm js-select-driver" data-id="${x.id}" data-text="${x.fullName ?? ""}">انتخاب</button></td>
+                            </tr>`).join("");
 
                         driverResults.querySelectorAll(".js-select-driver").forEach(btn => {
                             btn.addEventListener("click", function () {
@@ -332,15 +278,8 @@
                             });
                         });
                     })
-                    .catch(() => {
-                        driverResults.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">خطا در جستجو.</td></tr>';
-                    });
+                    .catch(() => driverResults.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">خطا در جستجو.</td></tr>');
             }
-
-            document.getElementById("clearDriver")?.addEventListener("click", function () {
-                document.getElementById("DriverProfileId").value = "";
-                document.getElementById("DriverFullName").value = "";
-            });
         });
     </script>
 }

@@ -80,6 +80,8 @@ namespace TMS.MVC.Controllers
                 StatusDisplay = GetStatusDisplay(a.Status),
                 StatusBadgeClass = GetStatusBadgeClass(a.Status),
                 AssignmentDate = a.AssignmentDate,
+                AssignedCargoAmount = a.AssignedCargoAmount,
+                IsTruckCapacityFull = a.IsTruckCapacityFull,
                 LoadedAmount = a.LoadedAmount,
                 UnloadedAmount = a.UnloadedAmount,
                 IsCompleted = a.Status == AssignmentStatus.Completed || a.Status == AssignmentStatus.Unloaded
@@ -130,6 +132,40 @@ namespace TMS.MVC.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
+            var subHavaleh = await _context.SubHavalehs
+                .Include(x => x.Havaleh)
+                .FirstOrDefaultAsync(x => x.Id == model.SubHavalehId);
+
+            if (subHavaleh == null)
+                return NotFound();
+
+            var assignedCargoAmount = model.AssignedCargoAmount ?? 0;
+            if (assignedCargoAmount <= 0)
+            {
+                ModelState.AddModelError(nameof(model.AssignedCargoAmount), "مقدار تخصیص باید بزرگتر از صفر باشد.");
+                return View(model);
+            }
+
+            var subAmount = subHavaleh.RequestedCargoAmount ?? 0;
+            if (subAmount <= 0)
+            {
+                ModelState.AddModelError(nameof(model.AssignedCargoAmount), "ابتدا مقدار محموله زیرحواله را مشخص کنید.");
+                return View(model);
+            }
+
+            var currentSubAssigned = await _context.TractorAssignments
+                .Where(x => x.SubHavalehId == model.SubHavalehId &&
+                            x.Status != AssignmentStatus.Cancelled)
+                .SumAsync(x => (decimal?)x.AssignedCargoAmount) ?? 0;
+
+            if (currentSubAssigned + assignedCargoAmount > subAmount)
+            {
+                var remaining = subAmount - currentSubAssigned;
+                ModelState.AddModelError(nameof(model.AssignedCargoAmount),
+                    $"مقدار تخصیص بیشتر از باقیمانده زیرحواله است. باقیمانده قابل تخصیص: {remaining:N3} {subHavaleh.Havaleh.Unit}");
+                return View(model);
+            }
+
             var tractor = await _context.Tractors.FindAsync(model.TractorId);
             if (tractor == null)
             {
@@ -137,16 +173,30 @@ namespace TMS.MVC.Controllers
                 return View(model);
             }
 
-            var tractorInActiveAssignment = await _context.TractorAssignments
-                .AnyAsync(a =>
-                    a.TractorId == model.TractorId &&
-                    a.Status != AssignmentStatus.Completed &&
-                    a.Status != AssignmentStatus.Cancelled &&
-                    a.Status != AssignmentStatus.Unloaded);
+            var activeTractorAssignments = await _context.TractorAssignments
+                .Include(x => x.SubHavaleh)
+                    .ThenInclude(x => x.Havaleh)
+                .Where(x => x.TractorId == model.TractorId &&
+                            x.Status != AssignmentStatus.Completed &&
+                            x.Status != AssignmentStatus.Cancelled &&
+                            x.Status != AssignmentStatus.Unloaded)
+                .ToListAsync();
 
-            if (tractorInActiveAssignment)
+            if (activeTractorAssignments.Any(x => x.IsTruckCapacityFull))
             {
-                ModelState.AddModelError(nameof(model.TractorId), "این کشنده در حال حاضر در یک حمل فعال دیگر تخصیص داده شده است.");
+                ModelState.AddModelError(nameof(model.TractorId),
+                    "این کشنده در یک حمل فعال با ظرفیت کامل ثبت شده و فعلاً قابل استفاده نیست.");
+                return View(model);
+            }
+
+            var usedCapacity = activeTractorAssignments.Sum(x => x.AssignedCargoAmount ?? 0);
+            var maxCapacity = tractor.MaxLoadCapacity ?? 0;
+
+            if (maxCapacity > 0 && usedCapacity + assignedCargoAmount > maxCapacity)
+            {
+                var freeCapacity = maxCapacity - usedCapacity;
+                ModelState.AddModelError(nameof(model.AssignedCargoAmount),
+                    $"ظرفیت کشنده کافی نیست. ظرفیت آزاد فعلی: {freeCapacity:N3} {tractor.CapacityUnit}");
                 return View(model);
             }
 
@@ -159,16 +209,17 @@ namespace TMS.MVC.Controllers
                     return View(model);
                 }
 
-                var driverInActiveAssignment = await _context.TractorAssignments
+                var driverInAnotherActiveTractor = await _context.TractorAssignments
                     .AnyAsync(a =>
                         a.DriverProfileId == model.DriverProfileId &&
+                        a.TractorId != model.TractorId &&
                         a.Status != AssignmentStatus.Completed &&
                         a.Status != AssignmentStatus.Cancelled &&
                         a.Status != AssignmentStatus.Unloaded);
 
-                if (driverInActiveAssignment)
+                if (driverInAnotherActiveTractor)
                 {
-                    ModelState.AddModelError(nameof(model.DriverProfileId), "این راننده در حال حاضر در یک حمل فعال دیگر تخصیص داده شده است.");
+                    ModelState.AddModelError(nameof(model.DriverProfileId), "این راننده در حال حاضر با کشنده دیگری در یک حمل فعال تخصیص داده شده است.");
                     return View(model);
                 }
             }
@@ -179,6 +230,8 @@ namespace TMS.MVC.Controllers
                 TractorId = model.TractorId,
                 DriverProfileId = model.DriverProfileId,
                 AssignmentDate = DateTime.Now,
+                AssignedCargoAmount = model.AssignedCargoAmount,
+                IsTruckCapacityFull = model.IsTruckCapacityFull,
                 Notes = model.Notes,
                 Status = AssignmentStatus.Assigned
             };
@@ -315,9 +368,38 @@ namespace TMS.MVC.Controllers
         public async Task<IActionResult> ConfirmLoading(long assignmentId, decimal loadedAmount)
         {
             var assignment = await _context.TractorAssignments
+                .Include(a => a.SubHavaleh)
+                    .ThenInclude(s => s.Havaleh)
                 .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
             if (assignment == null) return NotFound();
+
+            if (loadedAmount <= 0)
+            {
+                TempData["Error"] = "مقدار بارگیری باید بزرگتر از صفر باشد.";
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
+            }
+
+            var assignedAmount = assignment.AssignedCargoAmount ?? 0;
+            if (assignedAmount > 0 && loadedAmount > assignedAmount)
+            {
+                TempData["Error"] = $"مقدار بارگیری نمی‌تواند بیشتر از مقدار تخصیص باشد. مقدار تخصیص: {assignedAmount:N3}";
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
+            }
+
+            var subAmount = assignment.SubHavaleh.RequestedCargoAmount ?? 0;
+            var currentLoadedTotal = await _context.TractorAssignments
+                .Where(x => x.SubHavalehId == assignment.SubHavalehId &&
+                            x.Id != assignment.Id &&
+                            x.Status != AssignmentStatus.Cancelled)
+                .SumAsync(x => (decimal?)x.LoadedAmount) ?? 0;
+
+            if (currentLoadedTotal + loadedAmount > subAmount)
+            {
+                var remaining = subAmount - currentLoadedTotal;
+                TempData["Error"] = $"مجموع بارگیری‌ها نباید بیشتر از مقدار زیرحواله باشد. باقیمانده قابل بارگیری: {remaining:N3} {assignment.SubHavaleh.Havaleh.Unit}";
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
+            }
 
             assignment.LoadingStartDate = DateTime.Now;
             assignment.LoadingEndDate = DateTime.Now;
@@ -360,6 +442,18 @@ namespace TMS.MVC.Controllers
                 .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
             if (assignment == null) return NotFound();
+
+            if (unloadedAmount <= 0)
+            {
+                TempData["Error"] = "مقدار تخلیه باید بزرگتر از صفر باشد.";
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
+            }
+
+            if (assignment.LoadedAmount.HasValue && unloadedAmount > assignment.LoadedAmount.Value)
+            {
+                TempData["Error"] = $"مقدار تخلیه نمی‌تواند بیشتر از مقدار بارگیری باشد. مقدار بارگیری: {assignment.LoadedAmount.Value:N3}";
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
+            }
 
             assignment.UnloadingStartDate = DateTime.Now;
             assignment.UnloadingEndDate = DateTime.Now;
@@ -820,63 +914,73 @@ namespace TMS.MVC.Controllers
         [HttpGet]
         public async Task<IActionResult> SearchAvailableTractors(string? term)
         {
-            var busyTractorIds = await _context.TractorAssignments
-                .Where(a =>
-                    a.Status != AssignmentStatus.Completed &&
-                    a.Status != AssignmentStatus.Cancelled &&
-                    a.Status != AssignmentStatus.Unloaded)
-                .Select(a => a.TractorId)
-                .Distinct()
+            term = (term ?? string.Empty).Trim();
+
+            var activeAssignments = await _context.TractorAssignments
+                .Include(x => x.SubHavaleh)
+                    .ThenInclude(x => x.Havaleh)
+                .Where(x =>
+                    x.Status != AssignmentStatus.Completed &&
+                    x.Status != AssignmentStatus.Cancelled &&
+                    x.Status != AssignmentStatus.Unloaded)
                 .ToListAsync();
 
             var query = _context.Tractors
-                .Where(t => t.Status == "فعال" && !busyTractorIds.Contains(t.Id))
+                .Where(t => t.Status == "فعال")
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(term) && term.Trim().Length >= 2)
-            {
-                term = term.Trim();
+            if (term.Length >= 2)
                 query = query.Where(t => t.PolicePlateNumber.Contains(term));
-            }
 
             var tractors = await query
                 .OrderBy(t => t.PolicePlateNumber)
-                .Select(t => new TractorSearchResultViewModel
-                {
-                    Id = t.Id,
-                    PolicePlateNumber = t.PolicePlateNumber,
-                    TractorType = t.TractorType,
-                    Capacity = t.MaxLoadCapacity,
-                    CapacityUnit = t.CapacityUnit
-                })
-                .Take(20)
+                .Take(50)
                 .ToListAsync();
 
-            return Json(tractors);
+            var result = tractors
+                .Select(t =>
+                {
+                    var activeForTractor = activeAssignments.Where(a => a.TractorId == t.Id).ToList();
+                    var used = activeForTractor.Sum(a => a.AssignedCargoAmount ?? 0);
+                    var hasFull = activeForTractor.Any(a => a.IsTruckCapacityFull);
+                    var free = t.MaxLoadCapacity.HasValue ? t.MaxLoadCapacity.Value - used : (decimal?)null;
+
+                    return new TractorSearchResultViewModel
+                    {
+                        Id = t.Id,
+                        PolicePlateNumber = t.PolicePlateNumber,
+                        TractorType = t.TractorType,
+                        Capacity = t.MaxLoadCapacity,
+                        CapacityUnit = t.CapacityUnit,
+                        UsedCapacity = used,
+                        FreeCapacity = free,
+                        HasFullCapacityActiveAssignment = hasFull,
+                        UsedCapacityDescription = activeForTractor.Any()
+                            ? string.Join(" | ", activeForTractor.Select(a =>
+                                $"{(a.AssignedCargoAmount ?? 0):N3} {t.CapacityUnit} در حواله {a.SubHavaleh.Havaleh.HavalehNumber}"))
+                            : null
+                    };
+                })
+                .Where(x => !x.HasFullCapacityActiveAssignment)
+                .Where(x => !x.FreeCapacity.HasValue || x.FreeCapacity.Value > 0)
+                .Take(20)
+                .ToList();
+
+            return Json(result);
         }
 
         [HttpGet]
         public async Task<IActionResult> SearchAvailableDrivers(string? term)
         {
-            var busyDriverIds = await _context.TractorAssignments
-                .Where(a =>
-                    a.Status != AssignmentStatus.Completed &&
-                    a.Status != AssignmentStatus.Cancelled &&
-                    a.Status != AssignmentStatus.Unloaded &&
-                    a.DriverProfileId != null)
-                .Select(a => a.DriverProfileId!.Value)
-                .Distinct()
-                .ToListAsync();
+            term = (term ?? string.Empty).Trim();
 
             var query = _context.DriverProfiles
                 .Include(d => d.ApplicationUser)
-                .Where(d => !d.IsBlocked && !busyDriverIds.Contains(d.Id))
+                .Where(d => !d.IsBlocked)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(term) && term.Trim().Length >= 2)
+            if (term.Length >= 2)
             {
-                term = term.Trim();
-
                 query = query.Where(d =>
                     d.ApplicationUser.FirstName.Contains(term) ||
                     d.ApplicationUser.LastName.Contains(term) ||
@@ -984,6 +1088,8 @@ namespace TMS.MVC.Controllers
                 StatusDisplay = GetStatusDisplay(a.Status),
                 StatusBadgeClass = GetStatusBadgeClass(a.Status),
                 AssignmentDate = a.AssignmentDate,
+                AssignedCargoAmount = a.AssignedCargoAmount,
+                IsTruckCapacityFull = a.IsTruckCapacityFull,
                 LoadedAmount = a.LoadedAmount,
                 UnloadedAmount = a.UnloadedAmount,
                 IsCompleted = a.Status == AssignmentStatus.Completed || a.Status == AssignmentStatus.Unloaded

@@ -27,6 +27,12 @@ namespace TMS.MVC.Models
         [StringLength(500)]
         [Display(Name = "توضیحات")]
         public string? Notes { get; set; }
+        [Column(TypeName = "decimal(18,3)")]
+        [Display(Name = "مقدار تخصیص داده شده")]
+        public decimal? AssignedCargoAmount { get; set; }
+
+        [Display(Name = "ظرفیت کشنده کامل پر شده است")]
+        public bool IsTruckCapacityFull { get; set; } = true;
 
         [Display(Name = "وضعیت سفر")]
         public AssignmentStatus Status { get; set; } = AssignmentStatus.Assigned;

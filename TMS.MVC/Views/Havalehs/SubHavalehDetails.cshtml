@@ -1,4 +1,5 @@
 ﻿@using System.Globalization
+@using TMS.MVC.Models
 @model TMS.MVC.Models.SubHavaleh
 
 @{
@@ -31,6 +32,18 @@
     var intermediateRoute = Model.IntermediatePlaces != null && Model.IntermediatePlaces.Any()
         ? string.Join(" - ", Model.IntermediatePlaces.OrderBy(x => x.SortOrder).Select(x => x.Place.Name))
         : "-";
+
+    var activeAssignments = Model.TractorAssignments?
+        .Where(x => x.Status != AssignmentStatus.Cancelled)
+        .ToList() ?? new List<TractorAssignment>();
+
+    var requestedAmount = Model.RequestedCargoAmount ?? 0;
+    var assignedAmount = activeAssignments.Sum(x => x.AssignedCargoAmount ?? 0);
+    var loadedAmount = activeAssignments.Sum(x => x.LoadedAmount ?? 0);
+    var unloadedAmount = activeAssignments.Sum(x => x.UnloadedAmount ?? 0);
+    var remainingToAssign = requestedAmount - assignedAmount;
+    var remainingToLoad = requestedAmount - loadedAmount;
+    var remainingToUnload = requestedAmount - unloadedAmount;
 }
 
 <style>
@@ -207,7 +220,7 @@
 
                 <div class="col-md-3">
                     <div class="info-box">
-                        <small>تحت سوپروایزر</small>
+                        <small>شامل حق سرویس</small>
                         <span class="badge mt-1 @(Model.IsUnderSupervisor ? "bg-success" : "bg-secondary")">
                             @(Model.IsUnderSupervisor ? "فعال" : "غیرفعال")
                         </span>
@@ -436,35 +449,43 @@
 
                 <div class="col-md-3">
                     <div class="info-box">
+                        <small>تخصیص داده شده</small>
+                        <span class="value">@NumberWithUnit(assignedAmount, cargoUnit)</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="info-box">
                         <small>مقدار بارگیری شده</small>
-                        <span class="value">
-                            @NumberWithUnit(Model.TotalLoadedAmount, cargoUnit)
-                        </span>
+                        <span class="value">@NumberWithUnit(loadedAmount, cargoUnit)</span>
                     </div>
                 </div>
 
                 <div class="col-md-3">
                     <div class="info-box">
                         <small>مقدار تخلیه شده</small>
-                        <span class="value">
-                            @NumberWithUnit(Model.TotalUnloadedAmount, cargoUnit)
-                        </span>
+                        <span class="value">@NumberWithUnit(unloadedAmount, cargoUnit)</span>
                     </div>
                 </div>
 
                 <div class="col-md-3">
                     <div class="info-box">
-                        <small>باقی‌مانده تقریبی</small>
-                        @{
-                            decimal? remaining = null;
-                            if (Model.RequestedCargoAmount.HasValue)
-                            {
-                                remaining = Model.RequestedCargoAmount.Value - Model.TotalLoadedAmount;
-                            }
-                        }
-                        <span class="value @(remaining.HasValue && remaining.Value < 0 ? "text-danger" : "")">
-                            @(remaining.HasValue ? $"{remaining.Value:N0} {cargoUnit}" : "-")
-                        </span>
+                        <small>باقی‌مانده جهت تخصیص</small>
+                        <span class="value @(remainingToAssign < 0 ? "text-danger" : "")">@($"{remainingToAssign:N0} {cargoUnit}")</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <small>باقی‌مانده جهت بارگیری</small>
+                        <span class="value @(remainingToLoad < 0 ? "text-danger" : "")">@($"{remainingToLoad:N0} {cargoUnit}")</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <small>باقی‌مانده جهت تخلیه</small>
+                        <span class="value @(remainingToUnload < 0 ? "text-danger" : "")">@($"{remainingToUnload:N0} {cargoUnit}")</span>
                     </div>
                 </div>
             </div>

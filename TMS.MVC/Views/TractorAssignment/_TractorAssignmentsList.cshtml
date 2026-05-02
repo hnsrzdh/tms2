@@ -53,6 +53,8 @@
                 <th>راننده</th>
                 <th>وضعیت</th>
                 <th>تاریخ تخصیص</th>
+                <th>تخصیص</th>
+                <th>ظرفیت پر؟</th>
                 <th>بارگیری</th>
                 <th>تخلیه</th>
                 <th style="width:90px;">عملیات</th>
@@ -73,6 +75,8 @@
                             <span class="badge @GetStatusBadgeClass(item.Status)">@GetStatusDisplay(item.Status)</span>
                         </td>
                         <td>@ToJalali(item.AssignmentDate)</td>
+                        <td>@(item.AssignedCargoAmount?.ToString("N0") ?? "-")</td>
+                        <td><span class="badge @(item.IsTruckCapacityFull ? "bg-danger" : "bg-success")">@(item.IsTruckCapacityFull ? "کامل" : "ظرفیت آزاد")</span></td>
                         <td>@(item.LoadedAmount?.ToString("N0") ?? "-")</td>
                         <td>@(item.UnloadedAmount?.ToString("N0") ?? "-")</td>
                         <td>
@@ -90,7 +94,7 @@
             else
             {
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="10" class="text-center text-muted py-4">
                         هیچ کشنده‌ای تخصیص داده نشده است.
                     </td>
                 </tr>

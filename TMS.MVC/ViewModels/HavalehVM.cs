@@ -97,6 +97,16 @@ namespace TMS.MVC.ViewModels
         public int SubTotalItems { get; set; }
         public int SubTotalPages => (int)Math.Ceiling((double)SubTotalItems / SubPageSize);
         public int SubRowNumberStart => SubTotalItems == 0 ? 0 : ((SubPage - 1) * SubPageSize) + 1;
+
+        public decimal TotalHavalehAmount { get; set; }
+        public decimal TotalSubHavalehAmount { get; set; }
+        public decimal RemainingForSubHavaleh => TotalHavalehAmount - TotalSubHavalehAmount;
+        public decimal TotalAssignedAmount { get; set; }
+        public decimal TotalLoadedAmount { get; set; }
+        public decimal TotalUnloadedAmount { get; set; }
+        public decimal RemainingToAssign => TotalHavalehAmount - TotalAssignedAmount;
+        public decimal RemainingToLoad => TotalHavalehAmount - TotalLoadedAmount;
+        public decimal RemainingToUnload => TotalHavalehAmount - TotalUnloadedAmount;
     }
 
 

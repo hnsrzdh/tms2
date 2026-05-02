@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMS.MVC.Models
@@ -134,13 +134,25 @@ namespace TMS.MVC.Models
         public virtual ICollection<TractorAssignment> TractorAssignments { get; set; } = new List<TractorAssignment>();
 
         [NotMapped]
-        public int AssignedTractorsCount => TractorAssignments?.Count ?? 0;
+        public int AssignedTractorsCount => TractorAssignments?.Count(x => x.Status != AssignmentStatus.Cancelled) ?? 0;
 
         [NotMapped]
-        public decimal TotalLoadedAmount => TractorAssignments?.Sum(x => x.LoadedAmount) ?? 0;
+        public decimal TotalAssignedAmount => TractorAssignments?.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.AssignedCargoAmount ?? 0) ?? 0;
 
         [NotMapped]
-        public decimal TotalUnloadedAmount => TractorAssignments?.Sum(x => x.UnloadedAmount) ?? 0;
+        public decimal TotalLoadedAmount => TractorAssignments?.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.LoadedAmount ?? 0) ?? 0;
+
+        [NotMapped]
+        public decimal TotalUnloadedAmount => TractorAssignments?.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.UnloadedAmount ?? 0) ?? 0;
+
+        [NotMapped]
+        public decimal RemainingToAssign => (RequestedCargoAmount ?? 0) - TotalAssignedAmount;
+
+        [NotMapped]
+        public decimal RemainingToLoad => (RequestedCargoAmount ?? 0) - TotalLoadedAmount;
+
+        [NotMapped]
+        public decimal RemainingToUnload => (RequestedCargoAmount ?? 0) - TotalUnloadedAmount;
     }
 
     public class SubHavalehIntermediatePlace

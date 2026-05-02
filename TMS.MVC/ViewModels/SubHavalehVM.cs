@@ -23,6 +23,12 @@ namespace TMS.MVC.ViewModels
         public DateTime? EndDate { get; set; }
         public decimal? RequestedCargoAmount { get; set; }
         public string? RequestedCargoAmountType { get; set; }
+        public decimal AssignedAmount { get; set; }
+        public decimal LoadedAmount { get; set; }
+        public decimal UnloadedAmount { get; set; }
+        public decimal RemainingToAssign => (RequestedCargoAmount ?? 0) - AssignedAmount;
+        public decimal RemainingToLoad => (RequestedCargoAmount ?? 0) - LoadedAmount;
+        public decimal RemainingToUnload => (RequestedCargoAmount ?? 0) - UnloadedAmount;
     }
 
     public class SubHavalehUpsertViewModel

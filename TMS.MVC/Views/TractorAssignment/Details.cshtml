@@ -951,6 +951,21 @@
                     <div class="row g-2 mb-3">
                         <div class="col-md-3">
                             <div class="summary-box text-center">
+                                <small class="text-muted d-block">مقدار تخصیص داده شده</small>
+                                <span class="value text-primary">@(assignment.AssignedCargoAmount?.ToString("N3") ?? "-")</span>
+                                <small class="text-muted">@unit</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="summary-box text-center">
+                                <small class="text-muted d-block">وضعیت ظرفیت کشنده</small>
+                                <span class="badge mt-2 @(assignment.IsTruckCapacityFull ? "bg-danger" : "bg-success")">@(assignment.IsTruckCapacityFull ? "ظرفیت کامل پر شده" : "ظرفیت آزاد دارد")</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="summary-box text-center">
                                 <small class="text-muted d-block">مقدار بارگیری شده</small>
                                 <span class="value text-primary">@(assignment.LoadedAmount?.ToString("N0") ?? "-")</span>
                                 <small class="text-muted">@unit</small>
@@ -1101,7 +1116,7 @@
                                             <small class="text-muted">بر اساس مقدار تخلیه شده</small>
                                         </td>
                                         <td class="text-muted">
-                                            @driverPricePer1000Unit.ToString("N0") @driverPriceCurrency × (@unloadedAmount.ToString("N0") @unit ÷ 1000) × نرخ @driverPriceRate.ToString("N6")
+                                            @driverPricePer1000Unit.ToString("N0") @driverPriceCurrency × (1000 ÷ @unloadedAmount.ToString("N0") @unit) × نرخ @driverPriceRate.ToString("N6")
                                             <div class="money-note">فی هر 1000 @unit</div>
                                         </td>
                                         <td class="text-center">
@@ -1116,7 +1131,7 @@
                                             <small class="text-muted">کسری کل: @rawShortageAmount.ToString("N0") @unit | کسری مجاز: @allowedShortage.ToString("N0") @unit</small>
                                         </td>
                                         <td class="text-muted">
-                                            max(0, کسری کل - کسری مجاز) × @penaltyPerUnit.ToString("N0") @shortagePenaltyCurrency × نرخ @shortagePenaltyRate.ToString("N6")
+                                            ماکزیمم (0, کسری مجاز - کسری کل) × @penaltyPerUnit.ToString("N0") @shortagePenaltyCurrency × نرخ @shortagePenaltyRate.ToString("N6")
                                         </td>
                                         <td class="text-center">
                                             <strong class="text-danger">@shortagePenalty.ToString("N0") @baseCurrency</strong>
@@ -1183,8 +1198,9 @@
                                 <input name="financialAdjustmentNote" class="form-control form-control-sm" value="@assignment.FinancialAdjustmentNote" placeholder="اگر مبلغ دستی وارد شد، دلیل تغییر را بنویسید..." />
                             </div>
 
-                            <div class="col-md-3 d-flex align-items-end">
-                                <div class="form-check mb-2">
+                            <div class="col-md-3">
+                                <label class="form-label"></label>
+                                <div class="form-check mt-2">
                                     <input class="form-check-input" type="checkbox" name="useManualAmount" value="true" id="useManualAmount" @(assignment.FinancialManualAmount.HasValue ? "checked" : "") />
                                     <label class="form-check-label" for="useManualAmount">تایید با مبلغ دستی</label>
                                 </div>
@@ -1338,12 +1354,13 @@
                                name="loadedAmount"
                                class="form-control text-start"
                                step="0.001"
-                               min="0"
+                               min="0.001"
+                               max="@(assignment.AssignedCargoAmount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
                                required
                                placeholder="مقدار را وارد کنید..." />
                         <span class="input-group-text">@unit</span>
                     </div>
-                    <small class="text-muted">مقدار بارگیری را بر اساس واحد حواله وارد کنید.</small>
+                    <small class="text-muted">مقدار بارگیری را بر اساس واحد حواله وارد کنید. این مقدار نباید از مقدار تخصیص داده شده بیشتر باشد.</small>
                 </div>
 
                 <div class="modal-footer py-2 gap-2">
@@ -1401,7 +1418,8 @@
                                name="unloadedAmount"
                                class="form-control text-start"
                                step="0.001"
-                               min="0"
+                               min="0.001"
+                               max="@(assignment.LoadedAmount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
                                required
                                placeholder="مقدار را وارد کنید..." />
                         <span class="input-group-text">@unit</span>

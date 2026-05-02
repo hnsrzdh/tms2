@@ -30,8 +30,9 @@ namespace TMS.MVC.Models
         public string? TransportType { get; set; }
 
         [Display(Name = "مقصد نهایی")]
-        public long? DestinationCityId { get; set; }
-        public City? DestinationCity { get; set; }
+        public long? DestinationPlaceId { get; set; }
+
+        public Place? DestinationPlace { get; set; }
 
         [StringLength(100)]
         [Display(Name = "نوع ارز راننده")]
@@ -120,7 +121,7 @@ namespace TMS.MVC.Models
         [Display(Name = "تاریخ پایان")]
         public DateTime? EndDate { get; set; }
 
-        public ICollection<SubHavalehIntermediateCity> IntermediateCities { get; set; } = new List<SubHavalehIntermediateCity>();
+        public ICollection<SubHavalehIntermediatePlace> IntermediatePlaces { get; set; } = new List<SubHavalehIntermediatePlace>();
 
         // اضافه کردن رابطه با TractorAssignment
         public virtual ICollection<TractorAssignment> TractorAssignments { get; set; } = new List<TractorAssignment>();
@@ -138,17 +139,19 @@ namespace TMS.MVC.Models
         public decimal TotalUnloadedAmount => TractorAssignments?.Sum(x => x.UnloadedAmount) ?? 0;
     }
 
-    public class SubHavalehIntermediateCity
+    public class SubHavalehIntermediatePlace
     {
         public long Id { get; set; }
 
         [Required]
         public long SubHavalehId { get; set; }
+
         public SubHavaleh SubHavaleh { get; set; } = null!;
 
         [Required]
-        public long CityId { get; set; }
-        public City City { get; set; } = null!;
+        public long PlaceId { get; set; }
+
+        public Place Place { get; set; } = null!;
 
         public int SortOrder { get; set; }
     }

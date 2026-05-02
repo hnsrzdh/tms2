@@ -1,7 +1,20 @@
-﻿@model TMS.MVC.ViewModels.LegalEntityFormVm
+@model TMS.MVC.ViewModels.LegalEntityFormVm
+
 @{
     ViewData["Title"] = "تعریف شخص حقوقی جدید";
 }
+
+<style>
+    .legal-entity-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .legal-entity-compact .form-control,
+    .legal-entity-compact .btn,
+    .legal-entity-compact .form-text { font-size: 0.82rem; }
+    .legal-entity-compact .field-validation-valid,
+    .legal-entity-compact .field-validation-error { font-size: 0.75rem; }
+    .legal-entity-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .legal-entity-compact .card-body { padding-top: 0.85rem; }
+    .legal-entity-compact .small-muted { font-size: 0.78rem; }
+</style>
 
 <div class="container-fluid">
     <div class="page-title">
@@ -11,41 +24,55 @@
             </div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">اشخاص حقوقی</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">اشخاص حقوقی</a></li>
+                    <li class="breadcrumb-item active">تعریف شخص حقوقی</li>
                 </ol>
             </div>
-
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="card shadow-sm">
+<div class="container-fluid legal-entity-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">تعریف شخص حقوقی جدید</h6>
+                <small class="text-muted small-muted">ثبت اطلاعات پایه شرکت یا سازمان</small>
+            </div>
+
+        </div>
+
         <div class="card-body">
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
-                <div class="row">
-                    <div class="col-md-4 mb-3">
+                <div class="row g-2">
+                    <div class="col-md-4">
                         <label asp-for="CompanyName" class="form-label"></label>
-                        <input asp-for="CompanyName" class="form-control" />
+                        <input asp-for="CompanyName" class="form-control form-control-sm" />
                         <span asp-validation-for="CompanyName" class="text-danger"></span>
                     </div>
-                    <div class="col-md-4 mb-3">
+
+                    <div class="col-md-4">
                         <label asp-for="CompanyType" class="form-label"></label>
-                        <input asp-for="CompanyType" class="form-control" />
+                        <input asp-for="CompanyType" class="form-control form-control-sm" />
+                        <span asp-validation-for="CompanyType" class="text-danger"></span>
                     </div>
-                    <div class="col-md-4 mb-3">
+
+                    <div class="col-md-4">
                         <label asp-for="City" class="form-label"></label>
-                        <input asp-for="City" class="form-control" />
+                        <input asp-for="City" class="form-control form-control-sm" />
+                        <span asp-validation-for="City" class="text-danger"></span>
                     </div>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-success">ذخیره</button>
-                    <a asp-action="Index" class="btn btn-secondary">بازگشت</a>
+                <hr class="my-3" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm px-3">ذخیره</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-sm px-3">انصراف</a>
                 </div>
             </form>
         </div>

@@ -4,6 +4,26 @@
     ViewData["Title"] = "ویرایش راه ارتباطی کشنده";
 }
 
+<style>
+    .tractor-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .tractor-compact .form-control,
+    .tractor-compact .form-select,
+    .tractor-compact .btn,
+    .tractor-compact .table,
+    .tractor-compact .badge,
+    .tractor-compact .form-check-label,
+    .tractor-compact .form-text { font-size: 0.82rem; }
+    .tractor-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
+    .tractor-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .tractor-compact .card-body { padding-top: 0.85rem; }
+    .tractor-compact .pagination .page-link { padding: 0.22rem 0.48rem; font-size: 0.78rem; }
+    .tractor-compact .small-muted { font-size: 0.78rem; }
+    .tractor-compact .field-validation-valid,
+    .tractor-compact .field-validation-error { font-size: 0.75rem; }
+    .tractor-compact .form-check { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0; }
+    .tractor-compact .form-check-input { margin-top: 0; }
+</style>
+
 <div class="container-fluid">
     <div class="page-title">
         <div class="row">
@@ -12,34 +32,41 @@
             </div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">کشنده‌ها</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">کشنده‌ها</a></li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="card shadow-sm">
+<div class="container-fluid tractor-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">@ViewData["Title"]</h6>
+                <small class="text-muted small-muted">ویرایش راه ارتباطی کشنده</small>
+            </div>
+        </div>
+
         <div class="card-body">
             <form asp-action="EditContact" method="post">
                 @Html.AntiForgeryToken()
                 <input asp-for="Id" type="hidden" />
                 <input asp-for="TractorId" type="hidden" />
 
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label asp-for="Title" class="form-label"></label>
-                        <input asp-for="Title" class="form-control" />
+                        <input asp-for="Title" class="form-control form-control-sm" />
                         <span asp-validation-for="Title" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6 mb-3">
                         <label asp-for="ContactValue" class="form-label"></label>
-                        <input asp-for="ContactValue" class="form-control" />
+                        <input asp-for="ContactValue" class="form-control form-control-sm" />
                         <span asp-validation-for="ContactValue" class="text-danger"></span>
                     </div>
 
@@ -72,8 +99,8 @@
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-success">ذخیره تغییرات</button>
-                    <a asp-action="Details" asp-route-id="@Model.TractorId" class="btn btn-secondary">بازگشت</a>
+                    <button type="submit" class="btn btn-success btn-sm">ذخیره تغییرات</button>
+                    <a asp-action="Details" asp-route-id="@Model.TractorId" class="btn btn-secondary btn-sm">بازگشت</a>
                 </div>
             </form>
         </div>

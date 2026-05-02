@@ -23,7 +23,7 @@ namespace TMS.MVC.Controllers
             var query = _context.Havalehs
                 .Include(x => x.TransportContractorLegalEntity)
                 .Include(x => x.GoodsOwnerLegalEntity)
-                .Include(x => x.OriginCity)
+                .Include(x => x.OriginPlace)
                 .Include(x => x.Product)
                 .AsQueryable();
 
@@ -37,7 +37,7 @@ namespace TMS.MVC.Controllers
                     (x.HavalehType ?? "").Contains(search) ||
                     (x.TransportContractorLegalEntity != null ? x.TransportContractorLegalEntity.CompanyName : "").Contains(search) ||
                     (x.GoodsOwnerLegalEntity != null ? x.GoodsOwnerLegalEntity.CompanyName : "").Contains(search) ||
-                    (x.OriginCity != null ? x.OriginCity.Name : "").Contains(search) ||
+                    (x.OriginPlace != null ? x.OriginPlace.Name : "").Contains(search) ||
                     (x.Product != null ? x.Product.Name : "").Contains(search));
             }
 
@@ -56,8 +56,8 @@ namespace TMS.MVC.Controllers
                     RequiresFleetEntryPermit = x.RequiresFleetEntryPermit,
                     TransportContractorName = x.TransportContractorLegalEntity != null ? x.TransportContractorLegalEntity.CompanyName : null,
                     GoodsOwnerName = x.GoodsOwnerLegalEntity != null ? x.GoodsOwnerLegalEntity.CompanyName : null,
-                    OriginCityText = x.OriginCity != null
-                        ? (x.OriginCity.CountryName + " / " + x.OriginCity.ProvinceName + " / " + x.OriginCity.Name)
+                    OriginCityText = x.OriginPlace != null
+                        ? x.OriginPlace.Name
                         : null,
                     ProductName = x.Product != null ? x.Product.Name : null,
                     ProductAmount = x.ProductAmount,
@@ -101,7 +101,7 @@ namespace TMS.MVC.Controllers
                 RequiresFleetEntryPermit = vm.RequiresFleetEntryPermit,
                 TransportContractorLegalEntityId = vm.TransportContractorLegalEntityId,
                 GoodsOwnerLegalEntityId = vm.GoodsOwnerLegalEntityId,
-                OriginCityId = vm.OriginCityId,
+                OriginPlaceId = vm.OriginPlaceId,
                 ProductId = vm.ProductId,
                 ProductAmount = vm.ProductAmount,
                 Unit = vm.Unit,
@@ -123,7 +123,7 @@ namespace TMS.MVC.Controllers
             var entity = await _context.Havalehs
                 .Include(x => x.TransportContractorLegalEntity)
                 .Include(x => x.GoodsOwnerLegalEntity)
-                .Include(x => x.OriginCity)
+                .Include(x => x.OriginPlace)
                 .Include(x => x.Product)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -141,10 +141,10 @@ namespace TMS.MVC.Controllers
                 TransportContractorDisplayName = entity.TransportContractorLegalEntity?.CompanyName,
                 GoodsOwnerLegalEntityId = entity.GoodsOwnerLegalEntityId,
                 GoodsOwnerDisplayName = entity.GoodsOwnerLegalEntity?.CompanyName,
-                OriginCityId = entity.OriginCityId,
-                OriginCityDisplayName = entity.OriginCity == null
+                OriginPlaceId = entity.OriginPlaceId,
+                OriginPlaceDisplayName = entity.OriginPlace == null
                     ? null
-                    : $"{entity.OriginCity.CountryName} / {entity.OriginCity.ProvinceName} / {entity.OriginCity.Name}",
+                    : $"{entity.OriginPlace.Name}",
                 ProductId = entity.ProductId,
                 ProductDisplayName = entity.Product == null
                     ? null
@@ -178,7 +178,7 @@ namespace TMS.MVC.Controllers
             entity.RequiresFleetEntryPermit = vm.RequiresFleetEntryPermit;
             entity.TransportContractorLegalEntityId = vm.TransportContractorLegalEntityId;
             entity.GoodsOwnerLegalEntityId = vm.GoodsOwnerLegalEntityId;
-            entity.OriginCityId = vm.OriginCityId;
+            entity.OriginPlaceId = vm.OriginPlaceId;
             entity.ProductId = vm.ProductId;
             entity.ProductAmount = vm.ProductAmount;
             entity.Unit = vm.Unit;
@@ -201,7 +201,7 @@ namespace TMS.MVC.Controllers
             var entity = await _context.Havalehs
                 .Include(x => x.TransportContractorLegalEntity)
                 .Include(x => x.GoodsOwnerLegalEntity)
-                .Include(x => x.OriginCity)
+                .Include(x => x.OriginPlace)
                 .Include(x => x.Product)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -210,9 +210,9 @@ namespace TMS.MVC.Controllers
 
             var subQuery = _context.SubHavalehs
                 .Where(x => x.HavalehId == id)
-                .Include(x => x.DestinationCity)
-                .Include(x => x.IntermediateCities)
-                    .ThenInclude(x => x.City)
+                .Include(x => x.DestinationPlace)
+                .Include(x => x.IntermediatePlaces)
+                    .ThenInclude(x => x.Place)
                 .AsQueryable();
 
             var subTotalItems = await subQuery.CountAsync();
@@ -227,14 +227,14 @@ namespace TMS.MVC.Controllers
                     Title = x.Title,
                     ContractType = x.ContractType,
                     TransportType = x.TransportType,
-                    DestinationCityDisplayName = x.DestinationCity != null
-                        ? x.DestinationCity.CountryName + " / " + x.DestinationCity.ProvinceName + " / " + x.DestinationCity.Name
+                    DestinationCityDisplayName = x.DestinationPlace != null
+                        ? x.DestinationPlace.Name
                         : null,
-                    RouteSummary = x.IntermediateCities
+                    RouteSummary = x.IntermediatePlaces
                         .OrderBy(c => c.SortOrder)
-                        .Select(c => c.City.Name)
+                        .Select(c => c.Place.Name)
                         .Any()
-                            ? string.Join(" ، ", x.IntermediateCities.OrderBy(c => c.SortOrder).Select(c => c.City.Name))
+                            ? string.Join(" ، ", x.IntermediatePlaces.OrderBy(c => c.SortOrder).Select(c => c.Place.Name))
                             : "بدون شهر میانی",
                     StartDate = x.StartDate,
                     EndDate = x.EndDate,
@@ -275,7 +275,7 @@ namespace TMS.MVC.Controllers
         public async Task<IActionResult> AddSubHavaleh(long havalehId)
         {
             var havaleh = await _context.Havalehs
-                .Include(x => x.OriginCity)
+                .Include(x => x.OriginPlace)
                 .FirstOrDefaultAsync(x => x.Id == havalehId);
 
             if (havaleh == null)
@@ -285,9 +285,9 @@ namespace TMS.MVC.Controllers
             {
                 HavalehId = havaleh.Id,
                 HavalehNumber = havaleh.HavalehNumber,
-                OriginCityDisplayName = havaleh.OriginCity == null
+                OriginPlaceDisplayName = havaleh.OriginPlace == null
                     ? "-"
-                    : $"{havaleh.OriginCity.CountryName} / {havaleh.OriginCity.ProvinceName} / {havaleh.OriginCity.Name}",
+                    : $" {havaleh.OriginPlace.Name}",
                 RequestedCargoAmountType = "به میزان ظرفیت"
             };
 
@@ -301,16 +301,16 @@ namespace TMS.MVC.Controllers
             NormalizeSubVm(vm);
 
             var havaleh = await _context.Havalehs
-                .Include(x => x.OriginCity)
+                .Include(x => x.OriginPlace)
                 .FirstOrDefaultAsync(x => x.Id == vm.HavalehId);
 
             if (havaleh == null)
                 return NotFound();
 
             vm.HavalehNumber = havaleh.HavalehNumber;
-            vm.OriginCityDisplayName = havaleh.OriginCity == null
+            vm.OriginPlaceDisplayName = havaleh.OriginPlace == null
                 ? "-"
-                : $"{havaleh.OriginCity.CountryName} / {havaleh.OriginCity.ProvinceName} / {havaleh.OriginCity.Name}";
+                : $"{havaleh.OriginPlace.Name}";
 
             if (!ModelState.IsValid)
                 return View(vm);
@@ -322,7 +322,7 @@ namespace TMS.MVC.Controllers
                 ContractType = vm.ContractType,
                 SettlementBase = vm.SettlementBase,
                 TransportType = vm.TransportType,
-                DestinationCityId = vm.DestinationCityId,
+                DestinationPlaceId = vm.DestinationPlaceId,
                 DriverCurrencyType = vm.DriverCurrencyType,
                 DriverCurrencyRate = vm.DriverCurrencyRate,
                 GoodsOwnerCurrencyType = vm.GoodsOwnerCurrencyType,
@@ -348,12 +348,12 @@ namespace TMS.MVC.Controllers
                 EndDate = vm.EndDate
             };
 
-            foreach (var city in vm.IntermediateCities.Where(x => x.CityId.HasValue))
+            foreach (var place in vm.IntermediatePlaces.Where(x => x.Id.HasValue))
             {
-                entity.IntermediateCities.Add(new SubHavalehIntermediateCity
+                entity.IntermediatePlaces.Add(new SubHavalehIntermediatePlace
                 {
-                    CityId = city.CityId!.Value,
-                    SortOrder = city.SortOrder
+                    PlaceId = place.Id!.Value,
+                    SortOrder = place.SortOrder
                 });
             }
 
@@ -369,10 +369,10 @@ namespace TMS.MVC.Controllers
         {
             var entity = await _context.SubHavalehs
                 .Include(x => x.Havaleh)
-                    .ThenInclude(x => x.OriginCity)
-                .Include(x => x.DestinationCity)
-                .Include(x => x.IntermediateCities)
-                    .ThenInclude(x => x.City)
+                    .ThenInclude(x => x.OriginPlace)
+                .Include(x => x.DestinationPlace)
+                .Include(x => x.IntermediatePlaces)
+                    .ThenInclude(x => x.Place)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
@@ -383,17 +383,17 @@ namespace TMS.MVC.Controllers
                 Id = entity.Id,
                 HavalehId = entity.HavalehId,
                 HavalehNumber = entity.Havaleh.HavalehNumber,
-                OriginCityDisplayName = entity.Havaleh.OriginCity == null
+                OriginPlaceDisplayName = entity.Havaleh.OriginPlace == null
                     ? "-"
-                    : $"{entity.Havaleh.OriginCity.CountryName} / {entity.Havaleh.OriginCity.ProvinceName} / {entity.Havaleh.OriginCity.Name}",
+                    : $"{entity.Havaleh.OriginPlace.Name}",
                 Title = entity.Title,
                 ContractType = entity.ContractType,
                 SettlementBase = entity.SettlementBase,
                 TransportType = entity.TransportType,
-                DestinationCityId = entity.DestinationCityId,
-                DestinationCityDisplayName = entity.DestinationCity == null
+                DestinationPlaceId = entity.DestinationPlaceId,
+                DestinationPlaceDisplayName = entity.DestinationPlace == null
                     ? null
-                    : $"{entity.DestinationCity.CountryName} / {entity.DestinationCity.ProvinceName} / {entity.DestinationCity.Name}",
+                    : $"{entity.DestinationPlace.Name}",
                 DriverCurrencyType = entity.DriverCurrencyType,
                 DriverCurrencyRate = entity.DriverCurrencyRate,
                 GoodsOwnerCurrencyType = entity.GoodsOwnerCurrencyType,
@@ -417,13 +417,13 @@ namespace TMS.MVC.Controllers
                 RequestedCargoAmount = entity.RequestedCargoAmount,
                 StartDate = entity.StartDate,
                 EndDate = entity.EndDate,
-                IntermediateCities = entity.IntermediateCities
+                IntermediatePlaces = entity.IntermediatePlaces
                     .OrderBy(x => x.SortOrder)
-                    .Select(x => new SubHavalehIntermediateCityUpsertItemViewModel
+                    .Select(x => new SubHavalehIntermediatePlaceUpsertItemViewModel
                     {
                         Id = x.Id,
-                        CityId = x.CityId,
-                        CityDisplayName = $"{x.City.CountryName} / {x.City.ProvinceName} / {x.City.Name}",
+                        PlaceId = x.PlaceId,
+                        PlaceDisplayName = $"{x.Place.Name}",
                         SortOrder = x.SortOrder
                     })
                     .ToList()
@@ -440,17 +440,17 @@ namespace TMS.MVC.Controllers
 
             var entity = await _context.SubHavalehs
                 .Include(x => x.Havaleh)
-                    .ThenInclude(x => x.OriginCity)
-                .Include(x => x.IntermediateCities)
+                    .ThenInclude(x => x.OriginPlace)
+                .Include(x => x.IntermediatePlaces)
                 .FirstOrDefaultAsync(x => x.Id == vm.Id);
 
             if (entity == null)
                 return NotFound();
 
             vm.HavalehNumber = entity.Havaleh.HavalehNumber;
-            vm.OriginCityDisplayName = entity.Havaleh.OriginCity == null
+            vm.OriginPlaceDisplayName = entity.Havaleh.OriginPlace == null
                 ? "-"
-                : $"{entity.Havaleh.OriginCity.CountryName} / {entity.Havaleh.OriginCity.ProvinceName} / {entity.Havaleh.OriginCity.Name}";
+                : $"{entity.Havaleh.OriginPlace.Name}";
 
             if (!ModelState.IsValid)
                 return View(vm);
@@ -459,7 +459,7 @@ namespace TMS.MVC.Controllers
             entity.ContractType = vm.ContractType;
             entity.SettlementBase = vm.SettlementBase;
             entity.TransportType = vm.TransportType;
-            entity.DestinationCityId = vm.DestinationCityId;
+            entity.DestinationPlaceId = vm.DestinationPlaceId;
             entity.DriverCurrencyType = vm.DriverCurrencyType;
             entity.DriverCurrencyRate = vm.DriverCurrencyRate;
             entity.GoodsOwnerCurrencyType = vm.GoodsOwnerCurrencyType;
@@ -484,13 +484,13 @@ namespace TMS.MVC.Controllers
             entity.StartDate = vm.StartDate;
             entity.EndDate = vm.EndDate;
 
-            _context.SubHavalehIntermediateCities.RemoveRange(entity.IntermediateCities);
+            _context.SubHavalehIntermediatePlaces.RemoveRange(entity.IntermediatePlaces);
 
-            foreach (var city in vm.IntermediateCities.Where(x => x.CityId.HasValue))
+            foreach (var city in vm.IntermediatePlaces.Where(x => x.PlaceId.HasValue))
             {
-                entity.IntermediateCities.Add(new SubHavalehIntermediateCity
+                entity.IntermediatePlaces.Add(new SubHavalehIntermediatePlace
                 {
-                    CityId = city.CityId!.Value,
+                    PlaceId = city.Id!.Value,
                     SortOrder = city.SortOrder
                 });
             }
@@ -506,10 +506,10 @@ namespace TMS.MVC.Controllers
         {
             var entity = await _context.SubHavalehs
                 .Include(x => x.Havaleh)
-                    .ThenInclude(x => x.OriginCity)
-                .Include(x => x.DestinationCity)
-                .Include(x => x.IntermediateCities)
-                    .ThenInclude(x => x.City)
+                    .ThenInclude(x => x.OriginPlace)
+                .Include(x => x.DestinationPlace)
+                .Include(x => x.IntermediatePlaces)
+                    .ThenInclude(x => x.Place)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
@@ -566,13 +566,14 @@ namespace TMS.MVC.Controllers
             if (string.IsNullOrWhiteSpace(term))
                 return Json(new List<object>());
 
-            var items = await _context.Cities
+            var items = await _context.Places
                 .Where(x =>
                     x.CountryName.Contains(term) ||
                     x.ProvinceName.Contains(term) ||
                     x.Name.Contains(term))
                 .OrderBy(x => x.CountryName)
                 .ThenBy(x => x.ProvinceName)
+                .ThenBy(x => x.CityName)
                 .ThenBy(x => x.Name)
                 .Take(30)
                 .Select(x => new
@@ -615,7 +616,7 @@ namespace TMS.MVC.Controllers
             vm.HavalehType = string.IsNullOrWhiteSpace(vm.HavalehType) ? null : vm.HavalehType.Trim();
             vm.TransportContractorDisplayName = string.IsNullOrWhiteSpace(vm.TransportContractorDisplayName) ? null : vm.TransportContractorDisplayName.Trim();
             vm.GoodsOwnerDisplayName = string.IsNullOrWhiteSpace(vm.GoodsOwnerDisplayName) ? null : vm.GoodsOwnerDisplayName.Trim();
-            vm.OriginCityDisplayName = string.IsNullOrWhiteSpace(vm.OriginCityDisplayName) ? null : vm.OriginCityDisplayName.Trim();
+            vm.OriginPlaceDisplayName = string.IsNullOrWhiteSpace(vm.OriginPlaceDisplayName) ? null : vm.OriginPlaceDisplayName.Trim();
             vm.ProductDisplayName = string.IsNullOrWhiteSpace(vm.ProductDisplayName) ? null : vm.ProductDisplayName.Trim();
             vm.Unit = string.IsNullOrWhiteSpace(vm.Unit) ? null : vm.Unit.Trim();
         }
@@ -626,7 +627,7 @@ namespace TMS.MVC.Controllers
             vm.ContractType = string.IsNullOrWhiteSpace(vm.ContractType) ? null : vm.ContractType.Trim();
             vm.SettlementBase = string.IsNullOrWhiteSpace(vm.SettlementBase) ? null : vm.SettlementBase.Trim();
             vm.TransportType = string.IsNullOrWhiteSpace(vm.TransportType) ? null : vm.TransportType.Trim();
-            vm.DestinationCityDisplayName = string.IsNullOrWhiteSpace(vm.DestinationCityDisplayName) ? null : vm.DestinationCityDisplayName.Trim();
+            vm.DestinationPlaceDisplayName = string.IsNullOrWhiteSpace(vm.DestinationPlaceDisplayName) ? null : vm.DestinationPlaceDisplayName.Trim();
             vm.DriverCurrencyType = string.IsNullOrWhiteSpace(vm.DriverCurrencyType) ? null : vm.DriverCurrencyType.Trim();
             vm.GoodsOwnerCurrencyType = string.IsNullOrWhiteSpace(vm.GoodsOwnerCurrencyType) ? null : vm.GoodsOwnerCurrencyType.Trim();
             vm.LateDeliveryPenaltyType = string.IsNullOrWhiteSpace(vm.LateDeliveryPenaltyType) ? null : vm.LateDeliveryPenaltyType.Trim();
@@ -634,13 +635,13 @@ namespace TMS.MVC.Controllers
             vm.ShortageType = string.IsNullOrWhiteSpace(vm.ShortageType) ? null : vm.ShortageType.Trim();
             vm.RequestedCargoAmountType = string.IsNullOrWhiteSpace(vm.RequestedCargoAmountType) ? null : vm.RequestedCargoAmountType.Trim();
 
-            vm.IntermediateCities = vm.IntermediateCities
-                .Where(x => x.CityId.HasValue)
-                .Select((x, index) => new SubHavalehIntermediateCityUpsertItemViewModel
+            vm.IntermediatePlaces = vm.IntermediatePlaces
+                .Where(x => x.PlaceId.HasValue)
+                .Select((x, index) => new SubHavalehIntermediatePlaceUpsertItemViewModel
                 {
                     Id = x.Id,
-                    CityId = x.CityId,
-                    CityDisplayName = string.IsNullOrWhiteSpace(x.CityDisplayName) ? null : x.CityDisplayName.Trim(),
+                    PlaceId = x.PlaceId,
+                    PlaceDisplayName = string.IsNullOrWhiteSpace(x.PlaceDisplayName) ? null : x.PlaceDisplayName.Trim(),
                     SortOrder = index + 1
                 })
                 .ToList();

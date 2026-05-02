@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using DocumentFormat.OpenXml.Bibliography;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using TMS.MVC.Models;
 
@@ -33,8 +34,9 @@ namespace TMS.MVC.Models
         public LegalEntity? GoodsOwnerLegalEntity { get; set; }
 
         [Display(Name = "مبدا")]
-        public long? OriginCityId { get; set; }
-        public City? OriginCity { get; set; }
+        public long? OriginPlaceId { get; set; }
+
+        public Place? OriginPlace { get; set; }
 
         [Display(Name = "محصول")]
         public long? ProductId { get; set; }

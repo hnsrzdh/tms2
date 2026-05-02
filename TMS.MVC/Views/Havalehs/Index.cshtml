@@ -14,7 +14,54 @@
     }
 }
 
-<div class="container-fluid">
+<style>
+    .havaleh-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .form-control,
+    .havaleh-compact .form-select,
+    .havaleh-compact .btn,
+    .havaleh-compact .table,
+    .havaleh-compact .badge,
+    .havaleh-compact .input-group-text {
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .table > :not(caption) > * > * {
+        padding: 0.35rem 0.45rem;
+    }
+
+    .havaleh-compact .card-header {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .havaleh-compact .card-body {
+        padding: 0.85rem;
+    }
+
+    .havaleh-compact .modal-header,
+    .havaleh-compact .modal-body,
+    .havaleh-compact .modal-footer {
+        padding: 0.75rem 0.9rem;
+    }
+
+    .havaleh-compact .small-muted {
+        font-size: 0.78rem;
+        color: #6c757d;
+    }
+
+    .havaleh-compact .info-box {
+        padding: 0.65rem;
+    }
+
+    .havaleh-compact .pagination {
+        margin-bottom: 0;
+    }
+</style>
+
+<div class="container-fluid havaleh-compact">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
@@ -28,39 +75,39 @@
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid havaleh-compact">
     @if (TempData["Ok"] != null)
     {
-        <div class="alert alert-success">@TempData["Ok"]</div>
+        <div class="alert alert-success py-2">@TempData["Ok"]</div>
     }
 
     <div class="card shadow-sm">
 
         <div class="card-header d-flex justify-content-between align-items-center">
-            <a asp-action="Create" class="btn btn-primary">تعریف حواله جدید</a>
+            <a asp-action="Create" class="btn btn-primary btn-sm">تعریف حواله جدید</a>
         </div>
 
         <div class="card-body">
             <form method="get" class="row g-2 mb-3">
                 <div class="col-md-9">
-                    <input type="text" name="search" value="@Model.Search" class="form-control"
+                    <input type="text" name="search" value="@Model.Search" class="form-control form-control-sm"
                            placeholder="جستجو بر اساس شماره حواله، قرارداد، نوع، شرکت، شهر یا محصول" />
                 </div>
                 <div class="col-md-2">
-                    <select name="pageSize" class="form-select">
+                    <select name="pageSize" class="form-select form-select-sm">
                         <option value="10" selected="@(Model.PageSize == 10)">10</option>
                         <option value="20" selected="@(Model.PageSize == 20)">20</option>
                         <option value="50" selected="@(Model.PageSize == 50)">50</option>
                     </select>
                 </div>
                 <div class="col-md-1 d-grid">
-                    <button type="submit" class="btn btn-primary">فیلتر</button>
+                    <button type="submit" class="btn btn-primary btn-sm">فیلتر</button>
                 </div>
             </form>
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+            <div class="table-responsive table-sm">
+                <table class="table table-hover align-middle table-sm">
+                    <thead class="table-light table-sm">
                         <tr>
                             <th>#</th>
                             <th>شماره حواله</th>
@@ -108,7 +155,7 @@
                                                         <input type="hidden" name="id" value="@item.Id" />
 
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">حذف حواله</h5>
+                                                            <h6 class="modal-title">حذف حواله</h6>
                                                             <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
                                                         </div>
 
@@ -117,9 +164,9 @@
                                                             <div class="mt-2 text-muted">شماره حواله: @item.HavalehNumber</div>
                                                         </div>
 
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="btn btn-danger">حذف</button>
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        <div class="modal-footer gap-2">
+                                                            <button type="submit" class="btn btn-danger btn-sm">حذف</button>
+                                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">انصراف</button>
                                                         </div>
                                                     </form>
                                                 </div>

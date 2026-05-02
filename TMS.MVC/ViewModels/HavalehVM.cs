@@ -62,10 +62,10 @@ namespace TMS.MVC.ViewModels
         public string? GoodsOwnerDisplayName { get; set; }
 
         [Display(Name = "مبدا")]
-        public long? OriginCityId { get; set; }
+        public long? OriginPlaceId { get; set; }
 
         [Display(Name = "نمایش مبدا")]
-        public string? OriginCityDisplayName { get; set; }
+        public string? OriginPlaceDisplayName { get; set; }
 
         [Display(Name = "محصول")]
         public long? ProductId { get; set; }

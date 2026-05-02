@@ -30,6 +30,26 @@
             : "bg-secondary";
 }
 
+<style>
+    .tractor-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .tractor-compact .form-control,
+    .tractor-compact .form-select,
+    .tractor-compact .btn,
+    .tractor-compact .table,
+    .tractor-compact .badge,
+    .tractor-compact .form-check-label,
+    .tractor-compact .form-text { font-size: 0.82rem; }
+    .tractor-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
+    .tractor-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .tractor-compact .card-body { padding-top: 0.85rem; }
+    .tractor-compact .pagination .page-link { padding: 0.22rem 0.48rem; font-size: 0.78rem; }
+    .tractor-compact .small-muted { font-size: 0.78rem; }
+    .tractor-compact .field-validation-valid,
+    .tractor-compact .field-validation-error { font-size: 0.75rem; }
+    .tractor-compact .form-check { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0; }
+    .tractor-compact .form-check-input { margin-top: 0; }
+</style>
+
 <div class="container-fluid">
     <div class="page-title">
         <div class="row">
@@ -38,25 +58,25 @@
             </div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">کشنده‌ها</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">کشنده‌ها</a></li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid tractor-compact">
     @if (TempData["Ok"] != null)
     {
-        <div class="alert alert-success">@TempData["Ok"]</div>
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-2">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>اطلاعات کلی</h4>
             <div class="d-flex gap-2 mt-2">
-                <a asp-action="Index" class="btn btn-secondary">بازگشت</a>
+                <a asp-action="Index" class="btn btn-secondary btn-sm">بازگشت</a>
             </div>
         </div>
         <div class="card-body row">
@@ -85,10 +105,10 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-2">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>اطلاعات بانکی</h4>
-            <a asp-action="AddBankAccount" asp-route-tractorId="@Model.Id" class="btn btn-primary">افزودن</a>
+            <a asp-action="AddBankAccount" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm">افزودن</a>
         </div>
         <div class="card-body table-responsive">
             <table class="table table-bordered table-striped">
@@ -101,7 +121,7 @@
                         <th>شماره شبا</th>
                         <th>پیش فرض</th>
                         <th>توضیحات</th>
-                        <th>عملیات</th>
+                        <th style="width:145px">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -151,10 +171,10 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-2">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>شماره تماس‌ها</h4>
-            <a asp-action="AddContact" asp-route-tractorId="@Model.Id" class="btn btn-primary">افزودن</a>
+            <a asp-action="AddContact" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm">افزودن</a>
         </div>
         <div class="card-body table-responsive">
             <table class="table table-bordered table-striped">
@@ -167,7 +187,7 @@
                         <th>فکس</th>
                         <th>تلفن</th>
                         <th>ایمیل</th>
-                        <th>عملیات</th>
+                        <th style="width:145px">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -208,10 +228,10 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-2">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>آدرس‌ها</h4>
-            <a asp-action="AddAddress" asp-route-tractorId="@Model.Id" class="btn btn-primary">افزودن</a>
+            <a asp-action="AddAddress" asp-route-tractorId="@Model.Id" class="btn btn-primary btn-sm">افزودن</a>
         </div>
         <div class="card-body table-responsive">
             <table class="table table-bordered table-striped">
@@ -219,7 +239,7 @@
                     <tr>
                         <th>عنوان</th>
                         <th>آدرس</th>
-                        <th>عملیات</th>
+                        <th style="width:145px">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>

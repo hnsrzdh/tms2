@@ -3,15 +3,15 @@ using TMS.MVC.Models;
 
 namespace TMS.MVC.ViewModels
 {
-    public class SubHavalehIntermediateCityUpsertItemViewModel
+    public class SubHavalehIntermediatePlaceUpsertItemViewModel
     {
         public long? Id { get; set; }
 
-        [Display(Name = "شهر")]
-        public long? CityId { get; set; }
+        [Display(Name = "مکان")]
+        public long? PlaceId { get; set; }
 
-        [Display(Name = "نمایش شهر")]
-        public string? CityDisplayName { get; set; }
+        [Display(Name = "نمایش مکان")]
+        public string? PlaceDisplayName { get; set; }
 
         public int SortOrder { get; set; }
     }
@@ -41,7 +41,7 @@ namespace TMS.MVC.ViewModels
         public string? HavalehNumber { get; set; }
 
         [Display(Name = "مبدا")]
-        public string? OriginCityDisplayName { get; set; }
+        public string? OriginPlaceDisplayName { get; set; }
 
         [Display(Name = "عنوان")]
         public string? Title { get; set; }
@@ -56,10 +56,10 @@ namespace TMS.MVC.ViewModels
         public string? TransportType { get; set; }
 
         [Display(Name = "مقصد نهایی")]
-        public long? DestinationCityId { get; set; }
+        public long? DestinationPlaceId { get; set; }
 
         [Display(Name = "نمایش مقصد نهایی")]
-        public string? DestinationCityDisplayName { get; set; }
+        public string? DestinationPlaceDisplayName { get; set; }
 
         [Display(Name = "نوع ارز راننده")]
         public string? DriverCurrencyType { get; set; }
@@ -130,6 +130,6 @@ namespace TMS.MVC.ViewModels
         [Display(Name = "تاریخ پایان")]
         public DateTime? EndDate { get; set; }
 
-        public List<SubHavalehIntermediateCityUpsertItemViewModel> IntermediateCities { get; set; } = new();
+        public List<SubHavalehIntermediatePlaceUpsertItemViewModel> IntermediatePlaces { get; set; } = new();
     }
 }

@@ -5,36 +5,63 @@
     ViewData["Title"] = "ایجاد کشنده";
 }
 
+<style>
+    .tractor-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .tractor-compact .form-control,
+    .tractor-compact .form-select,
+    .tractor-compact .btn,
+    .tractor-compact .table,
+    .tractor-compact .badge,
+    .tractor-compact .form-check-label,
+    .tractor-compact .form-text { font-size: 0.82rem; }
+    .tractor-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
+    .tractor-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .tractor-compact .card-body { padding-top: 0.85rem; }
+    .tractor-compact .pagination .page-link { padding: 0.22rem 0.48rem; font-size: 0.78rem; }
+    .tractor-compact .small-muted { font-size: 0.78rem; }
+    .tractor-compact .field-validation-valid,
+    .tractor-compact .field-validation-error { font-size: 0.75rem; }
+    .tractor-compact .form-check { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0; }
+    .tractor-compact .form-check-input { margin-top: 0; }
+</style>
+
 <div class="container-fluid">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">کشنده‌ها</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">کشنده‌ها</a></li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="card shadow-sm">
+<div class="container-fluid tractor-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">@ViewData["Title"]</h6>
+                <small class="text-muted small-muted">ثبت مشخصات کامل کشنده و مالک</small>
+            </div>
+        </div>
+
         <div class="card-body">
             <form asp-action="Create" method="post" id="tractorCreateForm">
                 @Html.AntiForgeryToken()
 
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-12 d-flex justify-content-center">
                         <div class="tractor-plate-wrap">
                             <div class="tractor-plate-main">
                                 <div class="tractor-plate-left">
                                     <div class="tractor-plate-fields">
                                         <input asp-for="PlatePartLeft2"
-                                               class="form-control text-center plate-box plate-box-1 js-plate-2"
+                                               class="form-control form-control-sm text-center plate-box plate-box-1 js-plate-2"
                                                maxlength="2"
                                                placeholder="44" />
 
@@ -74,7 +101,7 @@
                                         </select>
 
                                         <input asp-for="PlatePartMiddle3"
-                                               class="form-control text-center plate-box plate-box-3 js-plate-3"
+                                               class="form-control form-control-sm text-center plate-box plate-box-3 js-plate-3"
                                                maxlength="3"
                                                placeholder="123" />
                                     </div>
@@ -84,7 +111,7 @@
                                     <div class="tractor-plate-iran">ایران</div>
                                     <div class="tractor-plate-code">
                                         <input asp-for="PlatePartRight2"
-                                               class="form-control text-center plate-box plate-box-2 js-plate-2"
+                                               class="form-control form-control-sm text-center plate-box plate-box-2 js-plate-2"
                                                maxlength="2"
                                                placeholder="25" />
                                     </div>
@@ -106,19 +133,19 @@
                         <label class="form-label">مالک</label>
                         <div class="input-group">
                             <input asp-for="OwnerApplicationUserId" type="hidden" />
-                            <input asp-for="OwnerUserDisplayName" class="form-control" readonly />
-                            <button type="button" class="btn btn-outline-secondary" id="openOwnerModal">انتخاب</button>
+                            <input asp-for="OwnerUserDisplayName" class="form-control form-control-sm" readonly />
+                            <button type="button" class="btn btn-secondary btn-sm" id="openOwnerModal">انتخاب</button>
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="NationalId" class="form-label"></label>
-                        <input asp-for="NationalId" class="form-control" />
+                        <input asp-for="NationalId" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="Status" class="form-label"></label>
-                        <select asp-for="Status" class="form-select">
+                        <select asp-for="Status" class="form-select form-select-sm">
                             <option value="فعال">فعال</option>
                             <option value="غیرفعال">غیرفعال</option>
                         </select>
@@ -128,46 +155,46 @@
 
                     <div class="col-md-3">
                         <label asp-for="ProductionYear" class="form-label"></label>
-                        <input asp-for="ProductionYear" class="form-control" />
+                        <input asp-for="ProductionYear" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-3">
                         <label asp-for="TractorSmartCardNumber" class="form-label"></label>
-                        <input asp-for="TractorSmartCardNumber" class="form-control" />
+                        <input asp-for="TractorSmartCardNumber" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-3">
                         <label asp-for="FileNumber" class="form-label"></label>
-                        <input asp-for="FileNumber" class="form-control" />
+                        <input asp-for="FileNumber" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-3">
                         <label asp-for="TractorIdentifier" class="form-label"></label>
-                        <input asp-for="TractorIdentifier" class="form-control" />
+                        <input asp-for="TractorIdentifier" class="form-control form-control-sm" />
                     </div>
 
                     <h3></h3>
 
                     <div class="col-md-3">
                         <label asp-for="TractorType" class="form-label"></label>
-                        <input asp-for="TractorType" class="form-control" />
+                        <input asp-for="TractorType" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-3">
                         <label asp-for="SystemName" class="form-label"></label>
-                        <input asp-for="SystemName" class="form-control" />
+                        <input asp-for="SystemName" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-2">
                         <label asp-for="AxleCount" class="form-label"></label>
-                        <input asp-for="AxleCount" class="form-control" />
+                        <input asp-for="AxleCount" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-2">
                         <label asp-for="MaxLoadCapacity" class="form-label"></label>
                         <input type="text"
                                id="MaxLoadCapacityDisplay"
-                               class="form-control text-start"
+                               class="form-control form-control-sm text-start"
                                inputmode="numeric"
                                autocomplete="off"
                                value="@(Model.MaxLoadCapacity.HasValue ? string.Format("{0:N0}", Model.MaxLoadCapacity.Value) : "")" />
@@ -177,7 +204,7 @@
 
                     <div class="col-md-2">
                         <label asp-for="CapacityUnit" class="form-label"></label>
-                        <select asp-for="CapacityUnit" class="form-select">
+                        <select asp-for="CapacityUnit" class="form-select form-select-sm">
                             <option selected value="لیتر">لیتر</option>
                             <option value="کیلوگرم">کیلوگرم</option>
                         </select>
@@ -193,7 +220,7 @@
                                                                   ? Model.TechnicalInspectionExpireDate.Value.ToString("yyyy-MM-dd")
                                                                   : "")" />
                         <input id="TechnicalInspectionExpireDate_shamsi"
-                               class="form-control jalali-date"
+                               class="form-control form-control-sm jalali-date"
                                autocomplete="off"
                                placeholder="1405/01/25" />
                         <span asp-validation-for="TechnicalInspectionExpireDate" class="text-danger"></span>
@@ -208,7 +235,7 @@
                                                                   ? Model.ThirdPartyInsuranceExpireDate.Value.ToString("yyyy-MM-dd")
                                                                   : "")" />
                         <input id="ThirdPartyInsuranceExpireDate_shamsi"
-                               class="form-control jalali-date"
+                               class="form-control form-control-sm jalali-date"
                                autocomplete="off"
                                placeholder="1405/01/25" />
                         <span asp-validation-for="ThirdPartyInsuranceExpireDate" class="text-danger"></span>
@@ -216,13 +243,13 @@
 
                     <div class="col-md-4">
                         <label asp-for="TransitPlateNumber" class="form-label"></label>
-                        <input asp-for="TransitPlateNumber" class="form-control" />
+                        <input asp-for="TransitPlateNumber" class="form-control form-control-sm" />
                     </div>
                 </div>
 
-                <div class="mt-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">ثبت</button>
-                    <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm">ثبت</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-sm">انصراف</a>
                 </div>
             </form>
         </div>
@@ -230,15 +257,15 @@
 </div>
 
 <div class="modal fade" id="ownerPickerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">انتخاب مالک</h5>
+            <div class="modal-header py-2">
+                <h6 class="modal-title">انتخاب مالک</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body small">
                 <input type="text" id="ownerSearchInput" class="form-control mb-3" placeholder="جستجو..." />
-                <table class="table table-hover">
+                <table class="table table-hover table-sm">
                     <thead>
                         <tr>
                             <th>نام</th>

@@ -1,9 +1,46 @@
-﻿@using TMS.MVC.ViewModels
+@using TMS.MVC.ViewModels
 @model TransportAgreementUpsertViewModel
 
 @{
     ViewData["Title"] = "ویرایش تفاهم‌نامه حمل";
 }
+
+<style>
+    .transport-agreement-form-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .transport-agreement-form-compact .form-control,
+    .transport-agreement-form-compact .form-select,
+    .transport-agreement-form-compact .btn,
+    .transport-agreement-form-compact .table,
+    .transport-agreement-form-compact .badge {
+        font-size: 0.82rem;
+    }
+
+    .transport-agreement-form-compact .table > :not(caption) > * > * {
+        padding: 0.45rem 0.55rem;
+    }
+
+    .transport-agreement-form-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .transport-agreement-form-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .transport-agreement-form-compact .field-validation-valid,
+    .transport-agreement-form-compact .field-validation-error {
+        font-size: 0.75rem;
+    }
+
+    .transport-agreement-form-compact .small-muted {
+        font-size: 0.78rem;
+    }
+</style>
 
 <div class="container-fluid">
     <div class="page-title">
@@ -13,39 +50,51 @@
             </div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">تفاهم‌نامه‌های حمل</li>
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-action="Index">تفاهم‌نامه‌های حمل</a>
+                    </li>
+                    <li class="breadcrumb-item active">ویرایش تفاهم‌نامه</li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="card shadow-sm">
+<div class="container-fluid transport-agreement-form-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">ویرایش تفاهم‌نامه حمل</h6>
+                <small class="text-muted small-muted">ویرایش اطلاعات صاحب کالا، مسیر، محصول، مقدار و وضعیت تفاهم‌نامه</small>
+            </div>
+
+        </div>
+
         <div class="card-body">
-            <form asp-action="Edit" method="post" id="agreementForm">
+            <form asp-action="Create" method="post" id="agreementForm">
                 @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="Id" />
 
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-6">
                         <label asp-for="Title" class="form-label"></label>
-                        <input asp-for="Title" class="form-control" />
+                        <input asp-for="Title" class="form-control form-control-sm" />
                         <span asp-validation-for="Title" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="CargoOwnerName" class="form-label"></label>
-                        <input asp-for="CargoOwnerName" class="form-control" />
+                        <input asp-for="CargoOwnerName" class="form-control form-control-sm" />
                         <span asp-validation-for="CargoOwnerName" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="Origin" class="form-label"></label>
-                        <div class="input-group">
+                        <div class="input-group input-group-sm">
                             <input asp-for="Origin" class="form-control" readonly />
                             <button type="button"
                                     class="btn btn-outline-secondary js-open-city-modal"
@@ -59,7 +108,7 @@
 
                     <div class="col-md-6">
                         <label asp-for="Destination" class="form-label"></label>
-                        <div class="input-group">
+                        <div class="input-group input-group-sm">
                             <input asp-for="Destination" class="form-control" readonly />
                             <button type="button"
                                     class="btn btn-outline-secondary js-open-city-modal"
@@ -73,7 +122,7 @@
 
                     <div class="col-md-6">
                         <label asp-for="ProductName" class="form-label"></label>
-                        <div class="input-group">
+                        <div class="input-group input-group-sm">
                             <input asp-for="ProductName" class="form-control" readonly />
                             <button type="button"
                                     class="btn btn-outline-secondary js-open-product-modal"
@@ -87,13 +136,13 @@
 
                     <div class="col-md-3">
                         <label asp-for="Amount" class="form-label"></label>
-                        <input asp-for="Amount" class="form-control js-amount-input" autocomplete="off" />
+                        <input asp-for="Amount" class="form-control form-control-sm js-amount-input" autocomplete="off" />
                         <span asp-validation-for="Amount" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-3">
                         <label asp-for="Unit" class="form-label"></label>
-                        <select asp-for="Unit" class="form-select">
+                        <select asp-for="Unit" class="form-select form-select-sm">
                             <option value="">انتخاب کنید</option>
                             <option value="لیتر">لیتر</option>
                             <option value="کیلوگرم">کیلوگرم</option>
@@ -103,14 +152,16 @@
 
                     <div class="col-md-3">
                         <label asp-for="Status" class="form-label"></label>
-                        <input asp-for="Status" class="form-control" />
+                        <input asp-for="Status" class="form-control form-control-sm" />
                         <span asp-validation-for="Status" class="text-danger"></span>
                     </div>
                 </div>
 
-                <div class="mt-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
-                    <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+                <hr class="my-3" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm px-3">ذخیره تغییرات</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-sm px-3">انصراف</a>
                 </div>
             </form>
         </div>
@@ -118,19 +169,19 @@
 </div>
 
 <div class="modal fade" id="cityPickerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="cityPickerTitle">انتخاب شهر</h5>
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="cityPickerTitle">انتخاب شهر</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body small">
                 <div class="mb-3">
-                    <input type="text" id="citySearchInput" class="form-control" placeholder="جستجوی شهر..." />
+                    <input type="text" id="citySearchInput" class="form-control form-control-sm" placeholder="جستجوی شهر..." />
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover table-sm align-middle">
                         <thead>
                             <tr>
                                 <th>کشور</th>
@@ -141,7 +192,7 @@
                         </thead>
                         <tbody id="citySearchResults">
                             <tr>
-                                <td colspan="4" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td>
+                                <td colspan="4" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -152,19 +203,19 @@
 </div>
 
 <div class="modal fade" id="productPickerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="productPickerTitle">انتخاب محصول</h5>
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="productPickerTitle">انتخاب محصول</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body small">
                 <div class="mb-3">
-                    <input type="text" id="productSearchInput" class="form-control" placeholder="جستجوی محصول..." />
+                    <input type="text" id="productSearchInput" class="form-control form-control-sm" placeholder="جستجوی محصول..." />
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover table-sm align-middle">
                         <thead>
                             <tr>
                                 <th>نام محصول</th>
@@ -173,7 +224,7 @@
                         </thead>
                         <tbody id="productSearchResults">
                             <tr>
-                                <td colspan="2" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td>
+                                <td colspan="2" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -205,7 +256,7 @@
                     currentTargetInputId = this.dataset.targetInput;
                     cityTitle.textContent = this.dataset.modalTitle || "انتخاب شهر";
                     citySearchInput.value = "";
-                    citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                    citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td></tr>';
                     cityModal.show();
                     setTimeout(() => citySearchInput.focus(), 300);
                 });
@@ -216,7 +267,7 @@
                     currentTargetInputId = this.dataset.targetInput;
                     productTitle.textContent = this.dataset.modalTitle || "انتخاب محصول";
                     productSearchInput.value = "";
-                    productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                    productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td></tr>';
                     productModal.show();
                     setTimeout(() => productSearchInput.focus(), 300);
                 });
@@ -229,7 +280,7 @@
 
                 citySearchTimeout = setTimeout(() => {
                     if (!term) {
-                        citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                        citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td></tr>';
                         return;
                     }
 
@@ -237,7 +288,7 @@
                         .then(r => r.json())
                         .then(data => {
                             if (!data || data.length === 0) {
-                                citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted">موردی یافت نشد.</td></tr>';
+                                citySearchResults.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">موردی یافت نشد.</td></tr>';
                                 return;
                             }
 
@@ -247,7 +298,7 @@
                                     <td>${x.provinceName ?? ""}</td>
                                     <td>${x.name ?? ""}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-primary js-select-city" data-name="${x.name}">
+                                        <button type="button" class="btn btn-primary btn-sm js-select-city" data-name="${x.name}">
                                             انتخاب
                                         </button>
                                     </td>
@@ -273,7 +324,7 @@
 
                 productSearchTimeout = setTimeout(() => {
                     if (!term) {
-                        productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                        productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td></tr>';
                         return;
                     }
 
@@ -281,7 +332,7 @@
                         .then(r => r.json())
                         .then(data => {
                             if (!data || data.length === 0) {
-                                productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted">موردی یافت نشد.</td></tr>';
+                                productSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">موردی یافت نشد.</td></tr>';
                                 return;
                             }
 
@@ -289,7 +340,7 @@
                                 <tr>
                                     <td>${x.name ?? ""}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-primary js-select-product" data-name="${x.name}">
+                                        <button type="button" class="btn btn-primary btn-sm js-select-product" data-name="${x.name}">
                                             انتخاب
                                         </button>
                                     </td>
@@ -309,20 +360,20 @@
             });
 
             document.querySelectorAll(".js-amount-input").forEach(input => {
-                const formatValue = () => {
-                    let value = input.value.replace(/,/g, "").replace(/[^\d.]/g, "");
+                input.addEventListener("input", function () {
+                    let value = this.value.replace(/,/g, "").replace(/[^\d.]/g, "");
                     if (!value) {
-                        input.value = "";
+                        this.value = "";
                         return;
                     }
 
                     const parts = value.split(".");
                     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                    input.value = parts.length > 1 ? parts[0] + "." + parts[1] : parts[0];
-                };
 
-                formatValue();
-                input.addEventListener("input", formatValue);
+                    this.value = parts.length > 1
+                        ? parts[0] + "." + parts[1]
+                        : parts[0];
+                });
             });
 
             document.getElementById("agreementForm")?.addEventListener("submit", function () {

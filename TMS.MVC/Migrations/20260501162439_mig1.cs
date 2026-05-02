@@ -32,6 +32,7 @@ namespace TMS.MVC.Migrations
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    NationalId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -52,23 +53,6 @@ namespace TMS.MVC.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Cities",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CountryName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    ProvinceName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Latitude = table.Column<decimal>(type: "decimal(10,7)", nullable: true),
-                    Longitude = table.Column<decimal>(type: "decimal(10,7)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Cities", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -102,13 +86,33 @@ namespace TMS.MVC.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Places",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CountryName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    ProvinceName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    CityName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
+                    Address = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Latitude = table.Column<decimal>(type: "decimal(10,7)", nullable: true),
+                    Longitude = table.Column<decimal>(type: "decimal(10,7)", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Places", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Products",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true)
+                    Type = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -128,35 +132,6 @@ namespace TMS.MVC.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TicketCategories", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Tractors",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PolicePlateNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    OwnerName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    NationalId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    TractorSmartCardNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    FileNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TractorIdentifier = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    MaxLoadCapacity = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    TechnicalInspectionExpireDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ThirdPartyInsuranceExpireDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ProductionYear = table.Column<int>(type: "int", nullable: true),
-                    AxleCount = table.Column<int>(type: "int", nullable: true),
-                    SystemName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TractorType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TransitPlateNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    TrailerCategory = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TrailerType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Tractors", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -292,9 +267,11 @@ namespace TMS.MVC.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    NationalCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     SmartCardNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    DrivingLicenseNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
+                    DrivingLicenseNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    IsBlocked = table.Column<bool>(type: "bit", nullable: false),
+                    BlockDescription = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    WalletBalance = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -308,23 +285,37 @@ namespace TMS.MVC.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TractorOwnerProfiles",
+                name: "Tractors",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    NationalId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true)
+                    PolicePlateNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    NationalId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    TractorSmartCardNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    FileNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    TractorIdentifier = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    MaxLoadCapacity = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    CapacityUnit = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    TechnicalInspectionExpireDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ThirdPartyInsuranceExpireDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    WalletBalance = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    ProductionYear = table.Column<int>(type: "int", nullable: true),
+                    AxleCount = table.Column<int>(type: "int", nullable: true),
+                    SystemName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    TractorType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    TransitPlateNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    OwnerApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TractorOwnerProfiles", x => x.Id);
+                    table.PrimaryKey("PK_Tractors", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TractorOwnerProfiles_AspNetUsers_ApplicationUserId",
-                        column: x => x.ApplicationUserId,
+                        name: "FK_Tractors_AspNetUsers_OwnerApplicationUserId",
+                        column: x => x.OwnerApplicationUserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -446,6 +437,55 @@ namespace TMS.MVC.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Havalehs",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    HavalehNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ContractNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    HavalehType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    RequiresFleetEntryPermit = table.Column<bool>(type: "bit", nullable: false),
+                    TransportContractorLegalEntityId = table.Column<long>(type: "bigint", nullable: true),
+                    GoodsOwnerLegalEntityId = table.Column<long>(type: "bigint", nullable: true),
+                    OriginPlaceId = table.Column<long>(type: "bigint", nullable: true),
+                    ProductId = table.Column<long>(type: "bigint", nullable: true),
+                    ProductAmount = table.Column<decimal>(type: "decimal(18,3)", nullable: true),
+                    Unit = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    PurchaseDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    AllowedLoadingDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ShortagePenaltyPerUnit = table.Column<decimal>(type: "decimal(18,3)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Havalehs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Havalehs_LegalEntities_GoodsOwnerLegalEntityId",
+                        column: x => x.GoodsOwnerLegalEntityId,
+                        principalTable: "LegalEntities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Havalehs_LegalEntities_TransportContractorLegalEntityId",
+                        column: x => x.TransportContractorLegalEntityId,
+                        principalTable: "LegalEntities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Havalehs_Places_OriginPlaceId",
+                        column: x => x.OriginPlaceId,
+                        principalTable: "Places",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Havalehs_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Tickets",
                 columns: table => new
                 {
@@ -477,106 +517,6 @@ namespace TMS.MVC.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TractorAddresses",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TractorId = table.Column<int>(type: "int", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    CityName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    AddressText = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TractorAddresses", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TractorAddresses_Tractors_TractorId",
-                        column: x => x.TractorId,
-                        principalTable: "Tractors",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TractorBankAccounts",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TractorId = table.Column<int>(type: "int", nullable: false),
-                    OwnerDisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    AccountOwnerName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    BankName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    AccountNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    CardNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    ShebaNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    AccountType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    OwnerMismatch = table.Column<bool>(type: "bit", nullable: false),
-                    DocumentIdentifier = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    VerificationCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TractorBankAccounts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TractorBankAccounts_Tractors_TractorId",
-                        column: x => x.TractorId,
-                        principalTable: "Tractors",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TractorContacts",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TractorId = table.Column<int>(type: "int", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    ConfirmedInSamava = table.Column<bool>(type: "bit", nullable: false),
-                    SmsNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    WhatsAppNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    RegisteredPhone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TractorContacts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TractorContacts_Tractors_TractorId",
-                        column: x => x.TractorId,
-                        principalTable: "Tractors",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TrailerInfos",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TractorId = table.Column<int>(type: "int", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TrailerType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TrailerCategory = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    PlateNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TrailerInfos", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TrailerInfos_Tractors_TractorId",
-                        column: x => x.TractorId,
-                        principalTable: "Tractors",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "DriverAddresses",
                 columns: table => new
                 {
@@ -584,8 +524,6 @@ namespace TMS.MVC.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     DriverProfileId = table.Column<int>(type: "int", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    CityName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     AddressText = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
@@ -606,16 +544,13 @@ namespace TMS.MVC.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     DriverProfileId = table.Column<int>(type: "int", nullable: false),
-                    OwnerDisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     AccountOwnerName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     BankName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     AccountNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     CardNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     ShebaNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    AccountType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    OwnerMismatch = table.Column<bool>(type: "bit", nullable: false),
-                    DocumentIdentifier = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    VerificationCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    IsDefault = table.Column<bool>(type: "bit", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -636,11 +571,12 @@ namespace TMS.MVC.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     DriverProfileId = table.Column<int>(type: "int", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    ConfirmedInSamava = table.Column<bool>(type: "bit", nullable: false),
-                    SmsNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    WhatsAppNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    RegisteredPhone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
+                    ContactValue = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    HasSms = table.Column<bool>(type: "bit", nullable: false),
+                    HasWhatsApp = table.Column<bool>(type: "bit", nullable: false),
+                    IsFax = table.Column<bool>(type: "bit", nullable: false),
+                    IsPhone = table.Column<bool>(type: "bit", nullable: false),
+                    IsEmail = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -654,23 +590,20 @@ namespace TMS.MVC.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DriverTractors",
+                name: "TractorAddresses",
                 columns: table => new
                 {
-                    DriverProfileId = table.Column<int>(type: "int", nullable: false),
-                    TractorId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TractorId = table.Column<int>(type: "int", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    AddressText = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DriverTractors", x => new { x.DriverProfileId, x.TractorId });
+                    table.PrimaryKey("PK_TractorAddresses", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DriverTractors_DriverProfiles_DriverProfileId",
-                        column: x => x.DriverProfileId,
-                        principalTable: "DriverProfiles",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_DriverTractors_Tractors_TractorId",
+                        name: "FK_TractorAddresses_Tractors_TractorId",
                         column: x => x.TractorId,
                         principalTable: "Tractors",
                         principalColumn: "Id",
@@ -678,27 +611,108 @@ namespace TMS.MVC.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TractorOwnerLinks",
+                name: "TractorBankAccounts",
                 columns: table => new
                 {
-                    TractorOwnerProfileId = table.Column<int>(type: "int", nullable: false),
-                    TractorId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TractorId = table.Column<int>(type: "int", nullable: false),
+                    AccountOwnerName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    BankName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    AccountNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    CardNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    ShebaNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    IsDefault = table.Column<bool>(type: "bit", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TractorOwnerLinks", x => new { x.TractorOwnerProfileId, x.TractorId });
+                    table.PrimaryKey("PK_TractorBankAccounts", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TractorOwnerLinks_TractorOwnerProfiles_TractorOwnerProfileId",
-                        column: x => x.TractorOwnerProfileId,
-                        principalTable: "TractorOwnerProfiles",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_TractorOwnerLinks_Tractors_TractorId",
+                        name: "FK_TractorBankAccounts_Tractors_TractorId",
                         column: x => x.TractorId,
                         principalTable: "Tractors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TractorContacts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TractorId = table.Column<int>(type: "int", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ContactValue = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    HasSms = table.Column<bool>(type: "bit", nullable: false),
+                    HasWhatsApp = table.Column<bool>(type: "bit", nullable: false),
+                    IsFax = table.Column<bool>(type: "bit", nullable: false),
+                    IsPhone = table.Column<bool>(type: "bit", nullable: false),
+                    IsEmail = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TractorContacts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TractorContacts_Tractors_TractorId",
+                        column: x => x.TractorId,
+                        principalTable: "Tractors",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SubHavalehs",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    HavalehId = table.Column<long>(type: "bigint", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
+                    ContractType = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    SettlementBase = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    TransportType = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    DestinationPlaceId = table.Column<long>(type: "bigint", nullable: true),
+                    DriverCurrencyType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    DriverCurrencyRate = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    GoodsOwnerCurrencyType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    GoodsOwnerCurrencyRate = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    GoodsOwnerPricePerTon = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    GoodsOwnerTip = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    DriverPricePerTon = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    DriverTip = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    GoodsOwnerStopFee = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    DriverStopFee = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    AllowedLoadingTime = table.Column<int>(type: "int", nullable: true),
+                    AllowedDeliveryTime = table.Column<int>(type: "int", nullable: true),
+                    LateDeliveryPenalty = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    LateDeliveryPenaltyType = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    ShortagePenaltyType = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    ShortageType = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    FixedShortageAmount = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    AcceptableWeightLoss = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    IsUnderSupervisor = table.Column<bool>(type: "bit", nullable: false),
+                    RequestedCargoAmountType = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    RequestedCargoAmount = table.Column<decimal>(type: "decimal(18,3)", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SubHavalehs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SubHavalehs_Havalehs_HavalehId",
+                        column: x => x.HavalehId,
+                        principalTable: "Havalehs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SubHavalehs_Places_DestinationPlaceId",
+                        column: x => x.DestinationPlaceId,
+                        principalTable: "Places",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -749,6 +763,99 @@ namespace TMS.MVC.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "SubHavalehIntermediatePlaces",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SubHavalehId = table.Column<long>(type: "bigint", nullable: false),
+                    PlaceId = table.Column<long>(type: "bigint", nullable: false),
+                    SortOrder = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SubHavalehIntermediatePlaces", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SubHavalehIntermediatePlaces_Places_PlaceId",
+                        column: x => x.PlaceId,
+                        principalTable: "Places",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SubHavalehIntermediatePlaces_SubHavalehs_SubHavalehId",
+                        column: x => x.SubHavalehId,
+                        principalTable: "SubHavalehs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TractorAssignments",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SubHavalehId = table.Column<long>(type: "bigint", nullable: false),
+                    TractorId = table.Column<int>(type: "int", nullable: false),
+                    DriverProfileId = table.Column<int>(type: "int", nullable: true),
+                    AssignmentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    ArrivalAtOriginDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsArrivalAtOriginConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    ArrivalAtOriginConfirmedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LoadingStartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LoadingEndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LoadedAmount = table.Column<decimal>(type: "decimal(18,3)", nullable: true),
+                    IsLoadingConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    LoadingConfirmedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ArrivalAtDestinationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsArrivalAtDestinationConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    ArrivalAtDestinationConfirmedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UnloadingStartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UnloadingEndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UnloadedAmount = table.Column<decimal>(type: "decimal(18,3)", nullable: true),
+                    ShortageAmount = table.Column<decimal>(type: "decimal(18,3)", nullable: true),
+                    IsUnloadingConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    UnloadingConfirmedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CancellationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CancelledBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CancellationReason = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    IsCancellationRequestedByDriver = table.Column<bool>(type: "bit", nullable: false),
+                    CancellationRequestDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    FinalFare = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    ShortagePenalty = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    DelayPenalty = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PayableAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    IsSettled = table.Column<bool>(type: "bit", nullable: false),
+                    SettledTo = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    SettledBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SettledDate = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TractorAssignments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TractorAssignments_DriverProfiles_DriverProfileId",
+                        column: x => x.DriverProfileId,
+                        principalTable: "DriverProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_TractorAssignments_SubHavalehs_SubHavalehId",
+                        column: x => x.SubHavalehId,
+                        principalTable: "SubHavalehs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TractorAssignments_Tractors_TractorId",
+                        column: x => x.TractorId,
+                        principalTable: "Tractors",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TicketAttachments",
                 columns: table => new
                 {
@@ -767,6 +874,119 @@ namespace TMS.MVC.Migrations
                         name: "FK_TicketAttachments_TicketMessages_TicketMessageId",
                         column: x => x.TicketMessageId,
                         principalTable: "TicketMessages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ChatMessages",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TractorAssignmentId = table.Column<long>(type: "bigint", nullable: false),
+                    SenderId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    SenderName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    SenderRole = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    FilePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    FileName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    FileContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FileSize = table.Column<long>(type: "bigint", nullable: true),
+                    SentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false),
+                    ReadDate = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChatMessages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ChatMessages_TractorAssignments_TractorAssignmentId",
+                        column: x => x.TractorAssignmentId,
+                        principalTable: "TractorAssignments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LoadingDocuments",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TractorAssignmentId = table.Column<long>(type: "bigint", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    FilePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    DocumentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    UploadDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UploadedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsApproved = table.Column<bool>(type: "bit", nullable: false),
+                    ApprovedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ApprovalDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RejectionNote = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LoadingDocuments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LoadingDocuments_TractorAssignments_TractorAssignmentId",
+                        column: x => x.TractorAssignmentId,
+                        principalTable: "TractorAssignments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LocationTrackings",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TractorAssignmentId = table.Column<long>(type: "bigint", nullable: false),
+                    Latitude = table.Column<decimal>(type: "decimal(10,7)", nullable: false),
+                    Longitude = table.Column<decimal>(type: "decimal(10,7)", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Speed = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    Heading = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LocationTrackings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LocationTrackings_TractorAssignments_TractorAssignmentId",
+                        column: x => x.TractorAssignmentId,
+                        principalTable: "TractorAssignments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UnloadingDocuments",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TractorAssignmentId = table.Column<long>(type: "bigint", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    FilePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    DocumentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    UploadDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UploadedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsApproved = table.Column<bool>(type: "bit", nullable: false),
+                    ApprovedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ApprovalDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RejectionNote = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UnloadingDocuments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UnloadingDocuments_TractorAssignments_TractorAssignmentId",
+                        column: x => x.TractorAssignmentId,
+                        principalTable: "TractorAssignments",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -811,10 +1031,14 @@ namespace TMS.MVC.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Cities_CountryName_ProvinceName_Name",
-                table: "Cities",
-                columns: new[] { "CountryName", "ProvinceName", "Name" },
-                unique: true);
+                name: "IX_ChatMessages_TractorAssignmentId_IsRead",
+                table: "ChatMessages",
+                columns: new[] { "TractorAssignmentId", "IsRead" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChatMessages_TractorAssignmentId_SentDate",
+                table: "ChatMessages",
+                columns: new[] { "TractorAssignmentId", "SentDate" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_DriverAddresses_DriverProfileId",
@@ -838,9 +1062,30 @@ namespace TMS.MVC.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_DriverTractors_TractorId",
-                table: "DriverTractors",
-                column: "TractorId");
+                name: "IX_Havalehs_GoodsOwnerLegalEntityId",
+                table: "Havalehs",
+                column: "GoodsOwnerLegalEntityId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Havalehs_HavalehNumber",
+                table: "Havalehs",
+                column: "HavalehNumber",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Havalehs_OriginPlaceId",
+                table: "Havalehs",
+                column: "OriginPlaceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Havalehs_ProductId",
+                table: "Havalehs",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Havalehs_TransportContractorLegalEntityId",
+                table: "Havalehs",
+                column: "TransportContractorLegalEntityId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LegalEntityAddresses_LegalEntityId",
@@ -858,9 +1103,25 @@ namespace TMS.MVC.Migrations
                 column: "LegalEntityId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_LoadingDocuments_TractorAssignmentId",
+                table: "LoadingDocuments",
+                column: "TractorAssignmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LocationTrackings_TractorAssignmentId_Timestamp",
+                table: "LocationTrackings",
+                columns: new[] { "TractorAssignmentId", "Timestamp" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PermissionDefinitions_Key",
                 table: "PermissionDefinitions",
                 column: "Key",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Places_CountryName_ProvinceName_CityName_Name",
+                table: "Places",
+                columns: new[] { "CountryName", "ProvinceName", "CityName", "Name" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -879,6 +1140,26 @@ namespace TMS.MVC.Migrations
                 table: "RolePermissions",
                 columns: new[] { "RoleName", "PermissionDefinitionId" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubHavalehIntermediatePlaces_PlaceId",
+                table: "SubHavalehIntermediatePlaces",
+                column: "PlaceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubHavalehIntermediatePlaces_SubHavalehId",
+                table: "SubHavalehIntermediatePlaces",
+                column: "SubHavalehId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubHavalehs_DestinationPlaceId",
+                table: "SubHavalehs",
+                column: "DestinationPlaceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubHavalehs_HavalehId",
+                table: "SubHavalehs",
+                column: "HavalehId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TicketAttachments_TicketMessageId",
@@ -927,6 +1208,21 @@ namespace TMS.MVC.Migrations
                 column: "TractorId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TractorAssignments_DriverProfileId",
+                table: "TractorAssignments",
+                column: "DriverProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TractorAssignments_SubHavalehId",
+                table: "TractorAssignments",
+                column: "SubHavalehId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TractorAssignments_TractorId",
+                table: "TractorAssignments",
+                column: "TractorId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TractorBankAccounts_TractorId",
                 table: "TractorBankAccounts",
                 column: "TractorId");
@@ -937,15 +1233,9 @@ namespace TMS.MVC.Migrations
                 column: "TractorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TractorOwnerLinks_TractorId",
-                table: "TractorOwnerLinks",
-                column: "TractorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TractorOwnerProfiles_ApplicationUserId",
-                table: "TractorOwnerProfiles",
-                column: "ApplicationUserId",
-                unique: true);
+                name: "IX_Tractors_OwnerApplicationUserId",
+                table: "Tractors",
+                column: "OwnerApplicationUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tractors_PolicePlateNumber",
@@ -954,14 +1244,14 @@ namespace TMS.MVC.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_TrailerInfos_TractorId",
-                table: "TrailerInfos",
-                column: "TractorId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_TransportAgreements_Title",
                 table: "TransportAgreements",
                 column: "Title");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UnloadingDocuments_TractorAssignmentId",
+                table: "UnloadingDocuments",
+                column: "TractorAssignmentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserPermissions_PermissionDefinitionId",
@@ -994,7 +1284,7 @@ namespace TMS.MVC.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "Cities");
+                name: "ChatMessages");
 
             migrationBuilder.DropTable(
                 name: "DriverAddresses");
@@ -1006,9 +1296,6 @@ namespace TMS.MVC.Migrations
                 name: "DriverContacts");
 
             migrationBuilder.DropTable(
-                name: "DriverTractors");
-
-            migrationBuilder.DropTable(
                 name: "LegalEntityAddresses");
 
             migrationBuilder.DropTable(
@@ -1018,10 +1305,16 @@ namespace TMS.MVC.Migrations
                 name: "LegalEntityContacts");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "LoadingDocuments");
+
+            migrationBuilder.DropTable(
+                name: "LocationTrackings");
 
             migrationBuilder.DropTable(
                 name: "RolePermissions");
+
+            migrationBuilder.DropTable(
+                name: "SubHavalehIntermediatePlaces");
 
             migrationBuilder.DropTable(
                 name: "TicketAttachments");
@@ -1039,13 +1332,10 @@ namespace TMS.MVC.Migrations
                 name: "TractorContacts");
 
             migrationBuilder.DropTable(
-                name: "TractorOwnerLinks");
-
-            migrationBuilder.DropTable(
-                name: "TrailerInfos");
-
-            migrationBuilder.DropTable(
                 name: "TransportAgreements");
+
+            migrationBuilder.DropTable(
+                name: "UnloadingDocuments");
 
             migrationBuilder.DropTable(
                 name: "UserPermissions");
@@ -1054,19 +1344,10 @@ namespace TMS.MVC.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "DriverProfiles");
-
-            migrationBuilder.DropTable(
-                name: "LegalEntities");
-
-            migrationBuilder.DropTable(
                 name: "TicketMessages");
 
             migrationBuilder.DropTable(
-                name: "TractorOwnerProfiles");
-
-            migrationBuilder.DropTable(
-                name: "Tractors");
+                name: "TractorAssignments");
 
             migrationBuilder.DropTable(
                 name: "PermissionDefinitions");
@@ -1075,10 +1356,31 @@ namespace TMS.MVC.Migrations
                 name: "Tickets");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "DriverProfiles");
+
+            migrationBuilder.DropTable(
+                name: "SubHavalehs");
+
+            migrationBuilder.DropTable(
+                name: "Tractors");
 
             migrationBuilder.DropTable(
                 name: "TicketCategories");
+
+            migrationBuilder.DropTable(
+                name: "Havalehs");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "LegalEntities");
+
+            migrationBuilder.DropTable(
+                name: "Places");
+
+            migrationBuilder.DropTable(
+                name: "Products");
         }
     }
 }

@@ -4,32 +4,103 @@
 @{
     ViewData["Title"] = "مدیریت دسترسی‌های کاربر";
 }
+
+<style>
+    .user-permissions-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .user-permissions-compact .form-control,
+    .user-permissions-compact .form-select,
+    .user-permissions-compact .btn,
+    .user-permissions-compact .form-check-label,
+    .user-permissions-compact .badge {
+        font-size: 0.82rem;
+    }
+
+    .user-permissions-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .user-permissions-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .user-permissions-compact .small-muted {
+        font-size: 0.78rem;
+    }
+
+    .user-permissions-compact .permission-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.45rem;
+        padding: 0.55rem 0.65rem;
+        height: 100%;
+        background: #fff;
+    }
+
+        .user-permissions-compact .permission-card .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0;
+        }
+
+        .user-permissions-compact .permission-card .form-check-input {
+            margin-top: 0;
+        }
+
+    .user-permissions-compact .permission-key {
+        font-size: 0.74rem;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .user-permissions-compact .category-card {
+        margin-bottom: 0.75rem;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12">
                 <h4>@ViewData["Title"]</h4>
-                <div class="text-muted small mt-2">
-                    کاربر: <strong>@Model.Email</strong>
-                    @if (!string.IsNullOrWhiteSpace(Model.FullName))
-                    {
-                        <span>- @Model.FullName</span>
-                    }
-                </div>
-            </div>
-            <div class="col-sm-6 col-12">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">کاربران</li>
-                </ol>
             </div>
 
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-action="Index">کاربران</a>
+                    </li>
+                    <li class="breadcrumb-item active">دسترسی‌ها</li>
+                </ol>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="card shadow-sm">
+<div class="container-fluid user-permissions-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">دسترسی‌های کاربر</h6>
+                <small class="text-muted small-muted">
+                    کاربر:
+                    <strong>@Model.Email</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.FullName))
+                    {
+                        <span>- @Model.FullName</span>
+                    }
+                </small>
+            </div>
+
+        </div>
+
         <div class="card-body">
             <form asp-action="Permissions" method="post">
                 @Html.AntiForgeryToken()
@@ -42,15 +113,22 @@
                 {
                     for (int i = 0; i < Model.Categories.Count; i++)
                     {
-                        <div class="card shadow-sm mb-3">
+                        <div class="card category-card">
                             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <strong>@Model.Categories[i].Category</strong>
+                                <div>
+                                    <h6 class="mb-0">@Model.Categories[i].Category</h6>
+                                </div>
 
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-sm btn-outline-success js-check-category" data-index="@i">
+                                    <button type="button"
+                                            class="btn btn-outline-success btn-sm px-3 js-check-category"
+                                            data-index="@i">
                                         انتخاب همه
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary js-uncheck-category" data-index="@i">
+
+                                    <button type="button"
+                                            class="btn btn-outline-secondary btn-sm px-3 js-uncheck-category"
+                                            data-index="@i">
                                         حذف انتخاب
                                     </button>
                                 </div>
@@ -67,15 +145,17 @@
                                         <input type="hidden" asp-for="Categories[@i].Items[@j].Title" />
 
                                         <div class="col-md-4">
-                                            <div class="form-check border rounded p-2 h-100">
-                                                <input asp-for="Categories[@i].Items[@j].Selected"
-                                                       class="form-check-input permission-checkbox category-@i" />
+                                            <div class="permission-card">
+                                                <div class="form-check">
+                                                    <input asp-for="Categories[@i].Items[@j].Selected"
+                                                           class="form-check-input permission-checkbox category-@i" />
 
-                                                <label asp-for="Categories[@i].Items[@j].Selected" class="form-check-label">
-                                                    @Model.Categories[i].Items[j].Title
-                                                </label>
+                                                    <label asp-for="Categories[@i].Items[@j].Selected" class="form-check-label">
+                                                        @Model.Categories[i].Items[j].Title
+                                                    </label>
+                                                </div>
 
-                                                <div class="text-muted small mt-1">
+                                                <div class="text-muted permission-key mt-1">
                                                     @Model.Categories[i].Items[j].Key
                                                 </div>
                                             </div>
@@ -86,19 +166,28 @@
                         </div>
                     }
 
-                    <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary">ذخیره دسترسی‌ها</button>
-                        <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+                    <hr class="my-3" />
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm px-3">
+                            ذخیره دسترسی‌ها
+                        </button>
+
+                        <a asp-action="Index" class="btn btn-secondary btn-sm px-3">
+                            انصراف
+                        </a>
                     </div>
                 }
                 else
                 {
-                    <div class="alert alert-warning">
+                    <div class="alert alert-info py-2 small">
                         هیچ دسترسی‌ای برای نمایش تعریف نشده است.
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <a asp-action="Index" class="btn btn-outline-secondary">بازگشت</a>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-secondary btn-sm px-3">
+                            بازگشت
+                        </a>
                     </div>
                 }
             </form>

@@ -21,21 +21,25 @@ namespace TMS.MVC.Controllers
             string? search,
             string? countryFilter,
             string? provinceFilter,
+            string? cityFilter,
             int page = 1,
             int pageSize = 10)
         {
             if (page < 1) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var q = _db.Cities.AsQueryable();
+            var q = _db.Places.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim();
+
                 q = q.Where(x =>
                     x.CountryName.Contains(search) ||
                     x.ProvinceName.Contains(search) ||
-                    x.Name.Contains(search));
+                    x.CityName.Contains(search) ||
+                    x.Name.Contains(search) ||
+                    (x.Address != null && x.Address.Contains(search)));
             }
 
             if (!string.IsNullOrWhiteSpace(countryFilter))
@@ -43,6 +47,9 @@ namespace TMS.MVC.Controllers
 
             if (!string.IsNullOrWhiteSpace(provinceFilter))
                 q = q.Where(x => x.ProvinceName == provinceFilter);
+
+            if (!string.IsNullOrWhiteSpace(cityFilter))
+                q = q.Where(x => x.CityName == cityFilter);
 
             var totalItems = await q.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
@@ -53,49 +60,46 @@ namespace TMS.MVC.Controllers
             var items = await q
                 .OrderBy(x => x.CountryName)
                 .ThenBy(x => x.ProvinceName)
+                .ThenBy(x => x.CityName)
                 .ThenBy(x => x.Name)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            var vm = new CityIndexVm
+            var vm = new PlaceIndexVm
             {
                 Items = items,
                 Search = search,
                 CountryFilter = countryFilter,
                 ProvinceFilter = provinceFilter,
+                CityFilter = cityFilter,
                 Page = page,
                 PageSize = pageSize,
                 TotalItems = totalItems,
-
-                Countries = await _db.Cities
-                    .Select(x => x.CountryName)
-                    .Where(x => x != null && x != "")
-                    .Distinct()
-                    .OrderBy(x => x)
-                    .Select(x => new SelectListItem { Value = x, Text = x })
-                    .ToListAsync(),
-
-                Provinces = await _db.Cities
-                    .Select(x => x.ProvinceName)
-                    .Where(x => x != null && x != "")
-                    .Distinct()
-                    .OrderBy(x => x)
-                    .Select(x => new SelectListItem { Value = x, Text = x })
-                    .ToListAsync()
+                Countries = await GetCountryItems(),
+                Provinces = await GetProvinceItems(countryFilter),
+                Cities = await GetCityItems(countryFilter, provinceFilter)
             };
 
             return View(vm);
         }
+
         public async Task<IActionResult> Create()
         {
-            var vm = await BuildFormVm();
+            var vm = new PlaceFormVm
+            {
+                IsActive = true,
+                Latitude = 35.6892m,
+                Longitude = 51.3890m
+            };
+
+            await FillFormLists(vm);
             return View(vm);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CityFormVm model)
+        public async Task<IActionResult> Create(PlaceFormVm model)
         {
             if (!ModelState.IsValid)
             {
@@ -105,47 +109,56 @@ namespace TMS.MVC.Controllers
 
             var countryName = NormalizeName(model.CountryName);
             var provinceName = NormalizeName(model.ProvinceName);
-            var cityName = NormalizeName(model.Name);
+            var cityName = NormalizeName(model.CityName);
+            var placeName = NormalizeName(model.Name);
 
-            var existing = await _db.Cities.FirstOrDefaultAsync(x =>
+            var duplicate = await _db.Places.AnyAsync(x =>
                 x.CountryName == countryName &&
                 x.ProvinceName == provinceName &&
-                x.Name == cityName);
+                x.CityName == cityName &&
+                x.Name == placeName);
 
-            if (existing != null)
+            if (duplicate)
             {
-                ModelState.AddModelError("", "این شهر قبلاً ثبت شده است.");
+                ModelState.AddModelError("", "این مکان قبلاً برای این شهر ثبت شده است.");
                 await FillFormLists(model);
                 return View(model);
             }
 
-            _db.Cities.Add(new City
+            _db.Places.Add(new Place
             {
                 CountryName = countryName,
                 ProvinceName = provinceName,
-                Name = cityName,
+                CityName = cityName,
+                Name = placeName,
+                Address = NormalizeNullable(model.Address),
                 Latitude = model.Latitude,
-                Longitude = model.Longitude
+                Longitude = model.Longitude,
+                IsActive = model.IsActive
             });
 
             await _db.SaveChangesAsync();
-            TempData["Ok"] = "ثبت با موفقیت انجام شد.";
+
+            TempData["Ok"] = "ثبت مکان با موفقیت انجام شد.";
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(long id)
         {
-            var city = await _db.Cities.FindAsync(id);
-            if (city == null) return NotFound();
+            var place = await _db.Places.FindAsync(id);
+            if (place == null) return NotFound();
 
-            var vm = new CityFormVm
+            var vm = new PlaceFormVm
             {
-                Id = city.Id,
-                CountryName = city.CountryName,
-                ProvinceName = city.ProvinceName,
-                Name = city.Name,
-                Latitude = city.Latitude,
-                Longitude = city.Longitude
+                Id = place.Id,
+                CountryName = place.CountryName,
+                ProvinceName = place.ProvinceName,
+                CityName = place.CityName,
+                Name = place.Name,
+                Address = place.Address,
+                Latitude = place.Latitude,
+                Longitude = place.Longitude,
+                IsActive = place.IsActive
             };
 
             await FillFormLists(vm);
@@ -154,11 +167,11 @@ namespace TMS.MVC.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(long id, CityFormVm model)
+        public async Task<IActionResult> Edit(long id, PlaceFormVm model)
         {
             if (id != model.Id) return NotFound();
 
-            var entity = await _db.Cities.FindAsync(id);
+            var entity = await _db.Places.FindAsync(id);
             if (entity == null) return NotFound();
 
             if (!ModelState.IsValid)
@@ -169,29 +182,35 @@ namespace TMS.MVC.Controllers
 
             var countryName = NormalizeName(model.CountryName);
             var provinceName = NormalizeName(model.ProvinceName);
-            var cityName = NormalizeName(model.Name);
+            var cityName = NormalizeName(model.CityName);
+            var placeName = NormalizeName(model.Name);
 
-            var duplicate = await _db.Cities.FirstOrDefaultAsync(x =>
+            var duplicate = await _db.Places.AnyAsync(x =>
                 x.Id != id &&
                 x.CountryName == countryName &&
                 x.ProvinceName == provinceName &&
-                x.Name == cityName);
+                x.CityName == cityName &&
+                x.Name == placeName);
 
-            if (duplicate != null)
+            if (duplicate)
             {
-                ModelState.AddModelError("", "رکورد تکراری است.");
+                ModelState.AddModelError("", "این مکان قبلاً برای این شهر ثبت شده است.");
                 await FillFormLists(model);
                 return View(model);
             }
 
             entity.CountryName = countryName;
             entity.ProvinceName = provinceName;
-            entity.Name = cityName;
+            entity.CityName = cityName;
+            entity.Name = placeName;
+            entity.Address = NormalizeNullable(model.Address);
             entity.Latitude = model.Latitude;
             entity.Longitude = model.Longitude;
+            entity.IsActive = model.IsActive;
 
             await _db.SaveChangesAsync();
-            TempData["Ok"] = "ویرایش با موفقیت انجام شد.";
+
+            TempData["Ok"] = "ویرایش مکان با موفقیت انجام شد.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -199,12 +218,14 @@ namespace TMS.MVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(long id)
         {
-            var entity = await _db.Cities.FindAsync(id);
+            var entity = await _db.Places.FindAsync(id);
+
             if (entity != null)
             {
-                _db.Cities.Remove(entity);
+                _db.Places.Remove(entity);
                 await _db.SaveChangesAsync();
-                TempData["Ok"] = "حذف انجام شد.";
+
+                TempData["Ok"] = "حذف مکان انجام شد.";
             }
 
             return RedirectToAction(nameof(Index));
@@ -226,8 +247,8 @@ namespace TMS.MVC.Controllers
 
             using var stream = excelFile.OpenReadStream();
             using var workbook = new XLWorkbook(stream);
-            var ws = workbook.Worksheet(1);
 
+            var ws = workbook.Worksheet(1);
             var lastRow = ws.LastRowUsed()?.RowNumber() ?? 0;
 
             for (int row = 2; row <= lastRow; row++)
@@ -235,39 +256,51 @@ namespace TMS.MVC.Controllers
                 var countryName = NormalizeName(ws.Cell(row, 1).GetString());
                 var provinceName = NormalizeName(ws.Cell(row, 2).GetString());
                 var cityName = NormalizeName(ws.Cell(row, 3).GetString());
+                var placeName = NormalizeName(ws.Cell(row, 4).GetString());
 
-                decimal? latitude = TryGetDecimal(ws.Cell(row, 4).GetString());
-                decimal? longitude = TryGetDecimal(ws.Cell(row, 5).GetString());
+                decimal? latitude = TryGetDecimal(ws.Cell(row, 5).GetString());
+                decimal? longitude = TryGetDecimal(ws.Cell(row, 6).GetString());
+
+                var address = NormalizeNullable(ws.Cell(row, 7).GetString());
 
                 if (string.IsNullOrWhiteSpace(countryName) ||
                     string.IsNullOrWhiteSpace(provinceName) ||
-                    string.IsNullOrWhiteSpace(cityName))
+                    string.IsNullOrWhiteSpace(cityName) ||
+                    string.IsNullOrWhiteSpace(placeName))
                 {
                     skipped++;
                     continue;
                 }
 
-                var existing = await _db.Cities.FirstOrDefaultAsync(x =>
+                var existing = await _db.Places.FirstOrDefaultAsync(x =>
                     x.CountryName == countryName &&
                     x.ProvinceName == provinceName &&
-                    x.Name == cityName);
+                    x.CityName == cityName &&
+                    x.Name == placeName);
 
                 if (existing == null)
                 {
-                    _db.Cities.Add(new City
+                    _db.Places.Add(new Place
                     {
                         CountryName = countryName,
                         ProvinceName = provinceName,
-                        Name = cityName,
+                        CityName = cityName,
+                        Name = placeName,
                         Latitude = latitude,
-                        Longitude = longitude
+                        Longitude = longitude,
+                        Address = address,
+                        IsActive = true
                     });
+
                     created++;
                 }
                 else
                 {
                     if (latitude.HasValue) existing.Latitude = latitude;
                     if (longitude.HasValue) existing.Longitude = longitude;
+                    if (!string.IsNullOrWhiteSpace(address)) existing.Address = address;
+
+                    existing.IsActive = true;
                     updated++;
                 }
             }
@@ -278,70 +311,125 @@ namespace TMS.MVC.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task<CityFormVm> BuildFormVm()
+        private async Task FillFormLists(PlaceFormVm vm)
         {
-            var vm = new CityFormVm();
-            await FillFormLists(vm);
-            return vm;
-        }
-
-        private async Task FillFormLists(CityFormVm vm)
-        {
-            var countryList = await _db.Cities
-                .Where(x => x.CountryName != null && x.CountryName != "")
-                .Select(x => x.CountryName)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToListAsync();
-
-            var allProvincePairs = await _db.Cities
-                .Where(x => x.CountryName != null && x.CountryName != "" &&
-                            x.ProvinceName != null && x.ProvinceName != "")
+            var allPlaces = await _db.Places
                 .Select(x => new
                 {
                     x.CountryName,
-                    x.ProvinceName
+                    x.ProvinceName,
+                    x.CityName
                 })
-                .Distinct()
-                .OrderBy(x => x.CountryName)
-                .ThenBy(x => x.ProvinceName)
                 .ToListAsync();
 
-            vm.Countries = countryList
-                .Select(x => new SelectListItem
-                {
-                    Value = x,
-                    Text = x
-                })
+            vm.Countries = allPlaces
+                .Where(x => !string.IsNullOrWhiteSpace(x.CountryName))
+                .Select(x => x.CountryName)
+                .Distinct()
+                .OrderBy(x => x)
+                .Select(x => new SelectListItem { Value = x, Text = x })
                 .ToList();
 
-            var selectedCountry = (vm.CountryName ?? string.Empty).Trim();
-
-            var provinceList = allProvincePairs
-                .Where(x => x.CountryName == selectedCountry)
+            vm.Provinces = allPlaces
+                .Where(x =>
+                    !string.IsNullOrWhiteSpace(x.CountryName) &&
+                    x.CountryName == vm.CountryName &&
+                    !string.IsNullOrWhiteSpace(x.ProvinceName))
                 .Select(x => x.ProvinceName)
                 .Distinct()
                 .OrderBy(x => x)
+                .Select(x => new SelectListItem { Value = x, Text = x })
                 .ToList();
 
-            vm.Provinces = provinceList
-                .Select(x => new SelectListItem
-                {
-                    Value = x,
-                    Text = x
-                })
+            vm.Cities = allPlaces
+                .Where(x =>
+                    !string.IsNullOrWhiteSpace(x.CountryName) &&
+                    !string.IsNullOrWhiteSpace(x.ProvinceName) &&
+                    x.CountryName == vm.CountryName &&
+                    x.ProvinceName == vm.ProvinceName &&
+                    !string.IsNullOrWhiteSpace(x.CityName))
+                .Select(x => x.CityName)
+                .Distinct()
+                .OrderBy(x => x)
+                .Select(x => new SelectListItem { Value = x, Text = x })
                 .ToList();
 
-            vm.CountryProvinceMap = allProvincePairs
+            vm.CountryProvinceMap = allPlaces
+                .Where(x =>
+                    !string.IsNullOrWhiteSpace(x.CountryName) &&
+                    !string.IsNullOrWhiteSpace(x.ProvinceName))
                 .GroupBy(x => x.CountryName)
                 .ToDictionary(
                     g => g.Key,
                     g => g.Select(x => x.ProvinceName).Distinct().OrderBy(x => x).ToList()
                 );
+
+            vm.ProvinceCityMap = allPlaces
+                .Where(x =>
+                    !string.IsNullOrWhiteSpace(x.ProvinceName) &&
+                    !string.IsNullOrWhiteSpace(x.CityName))
+                .GroupBy(x => x.ProvinceName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.CityName).Distinct().OrderBy(x => x).ToList()
+                );
         }
+
+        private async Task<List<SelectListItem>> GetCountryItems()
+        {
+            return await _db.Places
+                .Select(x => x.CountryName)
+                .Where(x => x != null && x != "")
+                .Distinct()
+                .OrderBy(x => x)
+                .Select(x => new SelectListItem { Value = x, Text = x })
+                .ToListAsync();
+        }
+
+        private async Task<List<SelectListItem>> GetProvinceItems(string? countryName)
+        {
+            var q = _db.Places.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(countryName))
+                q = q.Where(x => x.CountryName == countryName);
+
+            return await q
+                .Select(x => x.ProvinceName)
+                .Where(x => x != null && x != "")
+                .Distinct()
+                .OrderBy(x => x)
+                .Select(x => new SelectListItem { Value = x, Text = x })
+                .ToListAsync();
+        }
+
+        private async Task<List<SelectListItem>> GetCityItems(string? countryName, string? provinceName)
+        {
+            var q = _db.Places.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(countryName))
+                q = q.Where(x => x.CountryName == countryName);
+
+            if (!string.IsNullOrWhiteSpace(provinceName))
+                q = q.Where(x => x.ProvinceName == provinceName);
+
+            return await q
+                .Select(x => x.CityName)
+                .Where(x => x != null && x != "")
+                .Distinct()
+                .OrderBy(x => x)
+                .Select(x => new SelectListItem { Value = x, Text = x })
+                .ToListAsync();
+        }
+
         private static string NormalizeName(string? value)
         {
             return (value ?? string.Empty).Trim();
+        }
+
+        private static string? NormalizeNullable(string? value)
+        {
+            value = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
         private static decimal? TryGetDecimal(string? value)
@@ -350,10 +438,12 @@ namespace TMS.MVC.Controllers
                 return null;
 
             value = value.Trim().Replace(",", ".");
-            if (decimal.TryParse(value,
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture,
-                out var result))
+
+            if (decimal.TryParse(
+                    value,
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var result))
             {
                 return result;
             }

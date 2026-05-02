@@ -4,7 +4,54 @@
     ViewData["Title"] = "ویرایش حواله";
 }
 
-<div class="container-fluid">
+<style>
+    .havaleh-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .form-control,
+    .havaleh-compact .form-select,
+    .havaleh-compact .btn,
+    .havaleh-compact .table,
+    .havaleh-compact .badge,
+    .havaleh-compact .input-group-text {
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .table > :not(caption) > * > * {
+        padding: 0.35rem 0.45rem;
+    }
+
+    .havaleh-compact .card-header {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .havaleh-compact .card-body {
+        padding: 0.85rem;
+    }
+
+    .havaleh-compact .modal-header,
+    .havaleh-compact .modal-body,
+    .havaleh-compact .modal-footer {
+        padding: 0.75rem 0.9rem;
+    }
+
+    .havaleh-compact .small-muted {
+        font-size: 0.78rem;
+        color: #6c757d;
+    }
+
+    .havaleh-compact .info-box {
+        padding: 0.65rem;
+    }
+
+    .havaleh-compact .pagination {
+        margin-bottom: 0;
+    }
+</style>
+
+<div class="container-fluid havaleh-compact">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
@@ -18,48 +65,48 @@
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid havaleh-compact">
     <form asp-action="Edit" method="post" id="havalehEditForm">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
 
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
 
         <!-- دسته: اطلاعات پایه حواله -->
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-3">
             <div class="card-header">
-                <h5 class="mb-0">اطلاعات پایه حواله</h5>
+                <h6 class="mb-0">اطلاعات پایه حواله</h6>
             </div>
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-2">
                         <label asp-for="HavalehNumber" class="form-label fw-bold small"></label>
-                        <input asp-for="HavalehNumber" class="form-control" />
+                        <input asp-for="HavalehNumber" class="form-control form-control-sm" />
                         <span asp-validation-for="HavalehNumber" class="text-danger small"></span>
                     </div>
                     <div class="col-md-2">
                         <label asp-for="ContractNumber" class="form-label fw-bold small"></label>
-                        <input asp-for="ContractNumber" class="form-control" />
+                        <input asp-for="ContractNumber" class="form-control form-control-sm" />
                     </div>
                     <div class="col-md-2">
                         <label asp-for="HavalehType" class="form-label fw-bold small"></label>
-                        <input asp-for="HavalehType" class="form-control" />
+                        <input asp-for="HavalehType" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label fw-bold small">صاحب کالا</label>
                         <div class="input-group">
                             <input asp-for="GoodsOwnerLegalEntityId" type="hidden" />
-                            <input asp-for="GoodsOwnerDisplayName" class="form-control" readonly />
-                            <button type="button" class="btn btn-outline-secondary" id="openGoodsOwnerModal">انتخاب</button>
+                            <input asp-for="GoodsOwnerDisplayName" class="form-control form-control-sm" readonly />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="openGoodsOwnerModal">انتخاب</button>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold small">پیمانکار حمل</label>
                         <div class="input-group">
                             <input asp-for="TransportContractorLegalEntityId" type="hidden" />
-                            <input asp-for="TransportContractorDisplayName" class="form-control" readonly />
-                            <button type="button" class="btn btn-outline-secondary" id="openTransportContractorModal">انتخاب</button>
+                            <input asp-for="TransportContractorDisplayName" class="form-control form-control-sm" readonly />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="openTransportContractorModal">انتخاب</button>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -73,57 +120,57 @@
         </div>
 
         <!-- دسته: مبدا و زمان‌بندی -->
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-3">
             <div class="card-header">
-                <h5 class="mb-0">مبدا و زمان‌بندی</h5>
+                <h6 class="mb-0">مبدا و زمان‌بندی</h6>
             </div>
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">مبدا</label>
                         <div class="input-group">
-                            <input asp-for="OriginCityId" type="hidden" />
-                            <input asp-for="OriginCityDisplayName" class="form-control" readonly />
-                            <button type="button" class="btn btn-outline-secondary" id="openOriginCityModal">انتخاب</button>
+                            <input asp-for="OriginPlaceId" type="hidden" />
+                            <input asp-for="OriginPlaceDisplayName" class="form-control form-control-sm" readonly />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="openOriginCityModal">انتخاب</button>
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="PurchaseDate" class="form-label fw-bold small"></label>
                         <input type="hidden" asp-for="PurchaseDate" id="PurchaseDate" value="@(Model.PurchaseDate?.ToString("yyyy-MM-dd"))" />
-                        <input id="PurchaseDate_shamsi" class="form-control jalali-date" autocomplete="off" />
+                        <input id="PurchaseDate_shamsi" class="form-control jalali-date form-control-sm" autocomplete="off" />
                     </div>
                     <div class="col-md-4">
                         <label asp-for="AllowedLoadingDate" class="form-label fw-bold small"></label>
                         <input type="hidden" asp-for="AllowedLoadingDate" id="AllowedLoadingDate" value="@(Model.AllowedLoadingDate?.ToString("yyyy-MM-dd"))" />
-                        <input id="AllowedLoadingDate_shamsi" class="form-control jalali-date" autocomplete="off" />
+                        <input id="AllowedLoadingDate_shamsi" class="form-control jalali-date form-control-sm" autocomplete="off" />
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- دسته: محصول و مقدار -->
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-3">
             <div class="card-header">
-                <h5 class="mb-0">محموله</h5>
+                <h6 class="mb-0">محموله</h6>
             </div>
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">محصول</label>
                         <div class="input-group">
                             <input asp-for="ProductId" type="hidden" />
-                            <input asp-for="ProductDisplayName" class="form-control" readonly />
-                            <button type="button" class="btn btn-outline-secondary" id="openProductModal">انتخاب</button>
+                            <input asp-for="ProductDisplayName" class="form-control form-control-sm" readonly />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="openProductModal">انتخاب</button>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <label asp-for="ProductAmount" class="form-label fw-bold small"></label>
-                        <input asp-for="ProductAmount" class="form-control" type="number" step="1" />
+                        <input asp-for="ProductAmount" class="form-control form-control-sm" type="number" step="1" />
                     </div>
                     <div class="col-md-2">
                         <label asp-for="Unit" class="form-label fw-bold small"></label>
-                        <select asp-for="Unit" class="form-select">
+                        <select asp-for="Unit" class="form-select form-select-sm">
                             <option value="کیلوگرم">کیلوگرم</option>
                             <option value="لیتر">لیتر</option>
                         </select>
@@ -131,7 +178,7 @@
                     <div class="col-md-3">
                         <label asp-for="ShortagePenaltyPerUnit" class="form-label fw-bold small"></label>
                         <div class="input-group">
-                            <input asp-for="ShortagePenaltyPerUnit" class="form-control" type="number" step="1" />
+                            <input asp-for="ShortagePenaltyPerUnit" class="form-control form-control-sm" type="number" step="1" />
                             <span class="input-group-text">ریال</span>
                         </div>
                     </div>
@@ -141,8 +188,8 @@
 
         <!-- دکمه‌های اقدام -->
         <div class="mt-4 d-flex gap-2 justify-content-start">
-            <button type="submit" class="btn btn-primary px-4">ذخیره تغییرات</button>
-            <a asp-action="Index" class="btn btn-secondary px-4">انصراف</a>
+            <button type="submit" class="btn btn-primary px-4 btn-sm">ذخیره تغییرات</button>
+            <a asp-action="Index" class="btn btn-secondary px-4 btn-sm">انصراف</a>
         </div>
     </form>
 </div>
@@ -152,12 +199,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">انتخاب پیمانکار حمل</h5>
+                <h6 class="modal-title">انتخاب پیمانکار حمل</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="transportContractorSearchInput" class="form-control mb-3" placeholder="جستجو..." />
-                <table class="table table-hover">
+                <input type="text" id="transportContractorSearchInput" class="form-control mb-3 form-control-sm" placeholder="جستجو..." />
+                <table class="table table-hover table-sm">
                     <thead><tr><th>نام شرکت</th><th>نوع</th><th>شهر</th><th>انتخاب</th></tr></thead>
                     <tbody id="transportContractorSearchResults"></tbody>
                 </table>
@@ -170,12 +217,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">انتخاب صاحب کالا</h5>
+                <h6 class="modal-title">انتخاب صاحب کالا</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="goodsOwnerSearchInput" class="form-control mb-3" placeholder="جستجو..." />
-                <table class="table table-hover">
+                <input type="text" id="goodsOwnerSearchInput" class="form-control mb-3 form-control-sm" placeholder="جستجو..." />
+                <table class="table table-hover table-sm">
                     <thead>
                         <tr>
                             <th>نام شرکت</th>
@@ -195,12 +242,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">انتخاب مبدا</h5>
+                <h6 class="modal-title">انتخاب مبدا</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="originCitySearchInput" class="form-control mb-3" placeholder="جستجو..." />
-                <table class="table table-hover">
+                <input type="text" id="originCitySearchInput" class="form-control mb-3 form-control-sm" placeholder="جستجو..." />
+                <table class="table table-hover table-sm">
                     <thead><tr><th>شهر</th><th>انتخاب</th></tr></thead>
                     <tbody id="originCitySearchResults"></tbody>
                 </table>
@@ -213,12 +260,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">انتخاب محصول</h5>
+                <h6 class="modal-title">انتخاب محصول</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="productSearchInput" class="form-control mb-3" placeholder="جستجو..." />
-                <table class="table table-hover">
+                <input type="text" id="productSearchInput" class="form-control mb-3 form-control-sm" placeholder="جستجو..." />
+                <table class="table table-hover table-sm">
                     <thead><tr><th>محصول</th><th>انتخاب</th></tr></thead>
                     <tbody id="productSearchResults"></tbody>
                 </table>

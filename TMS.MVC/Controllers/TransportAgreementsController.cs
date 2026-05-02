@@ -181,7 +181,7 @@ namespace TMS.MVC.Controllers
 
             term = term.Trim();
 
-            var items = await _context.Cities
+            var items = await _context.Places
                 .Where(x =>
                     x.Name.Contains(term) ||
                     x.ProvinceName.Contains(term) ||

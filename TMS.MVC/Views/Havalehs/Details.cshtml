@@ -14,7 +14,54 @@
     }
 }
 
-<div class="container-fluid">
+<style>
+    .havaleh-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .form-control,
+    .havaleh-compact .form-select,
+    .havaleh-compact .btn,
+    .havaleh-compact .table,
+    .havaleh-compact .badge,
+    .havaleh-compact .input-group-text {
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .table > :not(caption) > * > * {
+        padding: 0.35rem 0.45rem;
+    }
+
+    .havaleh-compact .card-header {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .havaleh-compact .card-body {
+        padding: 0.85rem;
+    }
+
+    .havaleh-compact .modal-header,
+    .havaleh-compact .modal-body,
+    .havaleh-compact .modal-footer {
+        padding: 0.75rem 0.9rem;
+    }
+
+    .havaleh-compact .small-muted {
+        font-size: 0.78rem;
+        color: #6c757d;
+    }
+
+    .havaleh-compact .info-box {
+        padding: 0.65rem;
+    }
+
+    .havaleh-compact .pagination {
+        margin-bottom: 0;
+    }
+</style>
+
+<div class="container-fluid havaleh-compact">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12">
@@ -30,91 +77,91 @@
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid havaleh-compact">
     @if (TempData["Ok"] != null)
     {
-        <div class="alert alert-success">@TempData["Ok"]</div>
+        <div class="alert alert-success py-2">@TempData["Ok"]</div>
     }
 
-    <div class="card shadow-sm mb-4">
+    <div class="card shadow-sm mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5>اطلاعات کلی</h5>
+            <h6>اطلاعات کلی</h6>
             <div class="d-flex gap-2">
                 <a asp-action="Index" class="btn btn-secondary btn-sm">بازگشت</a>
             </div>
         </div>
         <div class="card-body">
-            <div class="row g-3">
+            <div class="row g-2">
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">شماره حواله</small>
                         <span class="fw-bold text-muted mt-2 d-block">@Model.Entity.HavalehNumber</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">شماره قرارداد</small>
                         <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.ContractNumber ?? "-")</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">نوع حواله</small>
                         <span class="badge bg-info mt-2 d-block">@(Model.Entity.HavalehType ?? "-")</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">نیازمند اخذ مجوز ورود ناوگان</small>
                         <span class="badge mt-2 d-block @(Model.Entity.RequiresFleetEntryPermit ? "bg-success" : "bg-secondary")">@(Model.Entity.RequiresFleetEntryPermit ? "بلی" : "خیر")</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">محصول</small>
                         <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.Product?.Name ?? "-")</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">پیمانکار حمل</small>
                         <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.TransportContractorLegalEntity?.CompanyName ?? "-")</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">صاحب کالا</small>
                         <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.GoodsOwnerLegalEntity?.CompanyName ?? "-")</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">فی کسری مقدار به ازای هر @Model.Entity.Unit</small>
                         <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.ShortagePenaltyPerUnit.HasValue? Model.Entity.ShortagePenaltyPerUnit.Value.ToString("N0") : "-") ریال</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">مبدا</small>
                         <span class="fw-bold text-muted mt-2 d-block">
-                            @(Model.Entity.OriginCity == null ? "-" : $"{Model.Entity.OriginCity.CountryName} / {Model.Entity.OriginCity.ProvinceName} / {Model.Entity.OriginCity.Name}")
+                            @Model.Entity.OriginPlace.Name
                         </span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">مقدار محصول</small>
                         <span class="fw-bold text-muted mt-2 d-block">@(Model.Entity.ProductAmount.HasValue ? $"{Model.Entity.ProductAmount:N0} {Model.Entity.Unit}" : "-")</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">تاریخ خرید</small>
                         <span class="fw-bold text-muted mt-2 d-block">@ToJalali(Model.Entity.PurchaseDate)</span>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="border rounded-3 p-3 bg-light text-center">
+                    <div class="border rounded-3 p-2 bg-light text-center">
                         <small class="text-muted d-block">تاریخ مجاز بارگیری</small>
                         <span class="fw-bold text-muted mt-2 d-block">@ToJalali(Model.Entity.AllowedLoadingDate)</span>
                     </div>
@@ -124,11 +171,11 @@
     </div>
     <div class="card shadow-sm mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5>ریزحواله‌ها</h5>
+            <h6>ریزحواله‌ها</h6>
             <a asp-action="AddSubHavaleh" asp-route-havalehId="@Model.Entity.Id" class="btn btn-primary btn-sm">افزودن ریزحواله</a>
         </div>
-        <div class="card-body table-responsive">
-            <table class="table table-bordered table-striped">
+        <div class="card-body table-responsive table-sm">
+            <table class="table table-bordered table-striped table-sm">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -178,7 +225,7 @@
                                                     <input type="hidden" name="havalehId" value="@Model.Entity.Id" />
 
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title">حذف ریزحواله</h5>
+                                                        <h6 class="modal-title">حذف ریزحواله</h6>
                                                         <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
                                                     </div>
 
@@ -189,9 +236,9 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="modal-footer">
-                                                        <button type="submit" class="btn btn-danger">حذف</button>
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                    <div class="modal-footer gap-2">
+                                                        <button type="submit" class="btn btn-danger btn-sm">حذف</button>
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">انصراف</button>
                                                     </div>
                                                 </form>
                                             </div>

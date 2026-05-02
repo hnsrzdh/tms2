@@ -12,8 +12,8 @@ using TMS.MVC.Data;
 namespace TMS.MVC.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260414121237_mig7")]
-    partial class mig7
+    [Migration("20260501162439_mig1")]
+    partial class mig1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -242,7 +242,7 @@ namespace TMS.MVC.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.City", b =>
+            modelBuilder.Entity("TMS.MVC.Models.ChatMessage", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -250,36 +250,280 @@ namespace TMS.MVC.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("CountryName")
+                    b.Property<string>("FileContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ReadDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SenderName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<decimal?>("Latitude")
-                        .HasColumnType("decimal(10,7)");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasColumnType("decimal(10,7)");
-
-                    b.Property<string>("Name")
+                    b.Property<string>("SenderRole")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("ProvinceName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<DateTime>("SentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("TractorAssignmentId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CountryName", "ProvinceName", "Name")
-                        .IsUnique();
+                    b.HasIndex("TractorAssignmentId", "IsRead");
 
-                    b.ToTable("Cities");
+                    b.HasIndex("TractorAssignmentId", "SentDate");
+
+                    b.ToTable("ChatMessages");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntity", b =>
+            modelBuilder.Entity("TMS.MVC.Models.DriverAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddressText")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("DriverProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriverProfileId");
+
+                    b.ToTable("DriverAddresses");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.DriverBankAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AccountOwnerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("BankName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CardNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("DriverProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ShebaNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriverProfileId");
+
+                    b.ToTable("DriverBankAccounts");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.DriverContact", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContactValue")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("DriverProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("HasSms")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasWhatsApp")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsEmail")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFax")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPhone")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriverProfileId");
+
+                    b.ToTable("DriverContacts");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.DriverProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BlockDescription")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("DrivingLicenseNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsBlocked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SmartCardNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("WalletBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId")
+                        .IsUnique();
+
+                    b.ToTable("DriverProfiles");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.Havaleh", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("AllowedLoadingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ContractNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long?>("GoodsOwnerLegalEntityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("HavalehNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("HavalehType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long?>("OriginPlaceId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("ProductAmount")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<long?>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("RequiresFleetEntryPermit")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("ShortagePenaltyPerUnit")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<long?>("TransportContractorLegalEntityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoodsOwnerLegalEntityId");
+
+                    b.HasIndex("HavalehNumber")
+                        .IsUnique();
+
+                    b.HasIndex("OriginPlaceId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("TransportContractorLegalEntityId");
+
+                    b.ToTable("Havalehs");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntity", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -305,7 +549,7 @@ namespace TMS.MVC.Migrations
                     b.ToTable("LegalEntities");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntityAddress", b =>
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntityAddress", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -336,7 +580,7 @@ namespace TMS.MVC.Migrations
                     b.ToTable("LegalEntityAddresses");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntityBankAccount", b =>
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntityBankAccount", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -367,7 +611,7 @@ namespace TMS.MVC.Migrations
                     b.ToTable("LegalEntityBankAccounts");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntityContact", b =>
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntityContact", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -409,6 +653,98 @@ namespace TMS.MVC.Migrations
                     b.ToTable("LegalEntityContacts");
                 });
 
+            modelBuilder.Entity("TMS.MVC.Models.LoadingDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("ApprovalDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DocumentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RejectionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<long>("TractorAssignmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UploadDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TractorAssignmentId");
+
+                    b.ToTable("LoadingDocuments");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.LocationTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("Heading")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Latitude")
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<decimal>("Longitude")
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("Speed")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("TractorAssignmentId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TractorAssignmentId", "Timestamp");
+
+                    b.ToTable("LocationTrackings");
+                });
+
             modelBuilder.Entity("TMS.MVC.Models.PermissionDefinition", b =>
                 {
                     b.Property<int>("Id")
@@ -436,6 +772,55 @@ namespace TMS.MVC.Migrations
                     b.ToTable("PermissionDefinitions");
                 });
 
+            modelBuilder.Entity("TMS.MVC.Models.Place", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CityName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CountryName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("ProvinceName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryName", "ProvinceName", "CityName", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Places", (string)null);
+                });
+
             modelBuilder.Entity("TMS.MVC.Models.Product", b =>
                 {
                     b.Property<long>("Id")
@@ -449,7 +834,7 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
-                    b.Property<string>("Title")
+                    b.Property<string>("Type")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
@@ -487,6 +872,146 @@ namespace TMS.MVC.Migrations
                         .IsUnique();
 
                     b.ToTable("RolePermissions");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.SubHavaleh", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("AcceptableWeightLoss")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int?>("AllowedDeliveryTime")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AllowedLoadingTime")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContractType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<long?>("DestinationPlaceId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("DriverCurrencyRate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("DriverCurrencyType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("DriverPricePerTon")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("DriverStopFee")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("DriverTip")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("FixedShortageAmount")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("GoodsOwnerCurrencyRate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("GoodsOwnerCurrencyType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("GoodsOwnerPricePerTon")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("GoodsOwnerStopFee")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("GoodsOwnerTip")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<long>("HavalehId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsUnderSupervisor")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("LateDeliveryPenalty")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("LateDeliveryPenaltyType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal?>("RequestedCargoAmount")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<string>("RequestedCargoAmountType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SettlementBase")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ShortagePenaltyType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ShortageType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("TransportType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DestinationPlaceId");
+
+                    b.HasIndex("HavalehId");
+
+                    b.ToTable("SubHavalehs");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.SubHavalehIntermediatePlace", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("PlaceId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<long>("SubHavalehId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlaceId");
+
+                    b.HasIndex("SubHavalehId");
+
+                    b.ToTable("SubHavalehIntermediatePlaces");
                 });
 
             modelBuilder.Entity("TMS.MVC.Models.Tickets.Ticket", b =>
@@ -698,6 +1223,10 @@ namespace TMS.MVC.Migrations
                     b.Property<int?>("AxleCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("CapacityUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("FileNumber")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -750,6 +1279,9 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<decimal?>("WalletBalance")
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerApplicationUserId");
@@ -784,6 +1316,136 @@ namespace TMS.MVC.Migrations
                     b.HasIndex("TractorId");
 
                     b.ToTable("TractorAddresses");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.TractorAssignment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ArrivalAtDestinationConfirmedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ArrivalAtDestinationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ArrivalAtOriginConfirmedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ArrivalAtOriginDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("AssignmentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CancellationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("CancellationRequestDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("DelayPenalty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("DriverProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("FinalFare")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsArrivalAtDestinationConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsArrivalAtOriginConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsCancellationRequestedByDriver")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsLoadingConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSettled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUnloadingConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("LoadedAmount")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<string>("LoadingConfirmedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LoadingEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LoadingStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("PayableAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SettledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SettledDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SettledTo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("ShortageAmount")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<decimal?>("ShortagePenalty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<long>("SubHavalehId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TractorId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("UnloadedAmount")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<string>("UnloadingConfirmedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UnloadingEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UnloadingStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriverProfileId");
+
+                    b.HasIndex("SubHavalehId");
+
+                    b.HasIndex("TractorId");
+
+                    b.ToTable("TractorAssignments");
                 });
 
             modelBuilder.Entity("TMS.MVC.Models.TractorBankAccount", b =>
@@ -870,6 +1532,61 @@ namespace TMS.MVC.Migrations
                     b.HasIndex("TractorId");
 
                     b.ToTable("TractorContacts");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.UnloadingDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("ApprovalDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DocumentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RejectionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<long>("TractorAssignmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UploadDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TractorAssignmentId");
+
+                    b.ToTable("UnloadingDocuments");
                 });
 
             modelBuilder.Entity("TMS.MVC.Models.UserPermission", b =>
@@ -1004,9 +1721,95 @@ namespace TMS.MVC.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntityAddress", b =>
+            modelBuilder.Entity("TMS.MVC.Models.ChatMessage", b =>
                 {
-                    b.HasOne("TMS.MVC.Models.Organizations.LegalEntity", "LegalEntity")
+                    b.HasOne("TMS.MVC.Models.TractorAssignment", "TractorAssignment")
+                        .WithMany("ChatMessages")
+                        .HasForeignKey("TractorAssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TractorAssignment");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.DriverAddress", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.DriverProfile", "DriverProfile")
+                        .WithMany("Addresses")
+                        .HasForeignKey("DriverProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DriverProfile");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.DriverBankAccount", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.DriverProfile", "DriverProfile")
+                        .WithMany("BankAccounts")
+                        .HasForeignKey("DriverProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DriverProfile");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.DriverContact", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.DriverProfile", "DriverProfile")
+                        .WithMany("Contacts")
+                        .HasForeignKey("DriverProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DriverProfile");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.DriverProfile", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.ApplicationUser", "ApplicationUser")
+                        .WithMany()
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.Havaleh", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.LegalEntity", "GoodsOwnerLegalEntity")
+                        .WithMany()
+                        .HasForeignKey("GoodsOwnerLegalEntityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TMS.MVC.Models.Place", "OriginPlace")
+                        .WithMany()
+                        .HasForeignKey("OriginPlaceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TMS.MVC.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TMS.MVC.Models.LegalEntity", "TransportContractorLegalEntity")
+                        .WithMany()
+                        .HasForeignKey("TransportContractorLegalEntityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("GoodsOwnerLegalEntity");
+
+                    b.Navigation("OriginPlace");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("TransportContractorLegalEntity");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntityAddress", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.LegalEntity", "LegalEntity")
                         .WithMany("Addresses")
                         .HasForeignKey("LegalEntityId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1015,9 +1818,9 @@ namespace TMS.MVC.Migrations
                     b.Navigation("LegalEntity");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntityBankAccount", b =>
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntityBankAccount", b =>
                 {
-                    b.HasOne("TMS.MVC.Models.Organizations.LegalEntity", "LegalEntity")
+                    b.HasOne("TMS.MVC.Models.LegalEntity", "LegalEntity")
                         .WithMany("BankAccounts")
                         .HasForeignKey("LegalEntityId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1026,15 +1829,37 @@ namespace TMS.MVC.Migrations
                     b.Navigation("LegalEntity");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntityContact", b =>
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntityContact", b =>
                 {
-                    b.HasOne("TMS.MVC.Models.Organizations.LegalEntity", "LegalEntity")
+                    b.HasOne("TMS.MVC.Models.LegalEntity", "LegalEntity")
                         .WithMany("Contacts")
                         .HasForeignKey("LegalEntityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("LegalEntity");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.LoadingDocument", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.TractorAssignment", "TractorAssignment")
+                        .WithMany("LoadingDocuments")
+                        .HasForeignKey("TractorAssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TractorAssignment");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.LocationTracking", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.TractorAssignment", "TractorAssignment")
+                        .WithMany()
+                        .HasForeignKey("TractorAssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TractorAssignment");
                 });
 
             modelBuilder.Entity("TMS.MVC.Models.RolePermission", b =>
@@ -1046,6 +1871,43 @@ namespace TMS.MVC.Migrations
                         .IsRequired();
 
                     b.Navigation("PermissionDefinition");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.SubHavaleh", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.Place", "DestinationPlace")
+                        .WithMany()
+                        .HasForeignKey("DestinationPlaceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TMS.MVC.Models.Havaleh", "Havaleh")
+                        .WithMany("SubHavalehs")
+                        .HasForeignKey("HavalehId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DestinationPlace");
+
+                    b.Navigation("Havaleh");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.SubHavalehIntermediatePlace", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.Place", "Place")
+                        .WithMany()
+                        .HasForeignKey("PlaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TMS.MVC.Models.SubHavaleh", "SubHavaleh")
+                        .WithMany("IntermediatePlaces")
+                        .HasForeignKey("SubHavalehId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Place");
+
+                    b.Navigation("SubHavaleh");
                 });
 
             modelBuilder.Entity("TMS.MVC.Models.Tickets.Ticket", b =>
@@ -1112,6 +1974,32 @@ namespace TMS.MVC.Migrations
                     b.Navigation("Tractor");
                 });
 
+            modelBuilder.Entity("TMS.MVC.Models.TractorAssignment", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.DriverProfile", "DriverProfile")
+                        .WithMany()
+                        .HasForeignKey("DriverProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TMS.MVC.Models.SubHavaleh", "SubHavaleh")
+                        .WithMany("TractorAssignments")
+                        .HasForeignKey("SubHavalehId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TMS.MVC.Models.Tractor", "Tractor")
+                        .WithMany()
+                        .HasForeignKey("TractorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DriverProfile");
+
+                    b.Navigation("SubHavaleh");
+
+                    b.Navigation("Tractor");
+                });
+
             modelBuilder.Entity("TMS.MVC.Models.TractorBankAccount", b =>
                 {
                     b.HasOne("TMS.MVC.Models.Tractor", "Tractor")
@@ -1134,6 +2022,17 @@ namespace TMS.MVC.Migrations
                     b.Navigation("Tractor");
                 });
 
+            modelBuilder.Entity("TMS.MVC.Models.UnloadingDocument", b =>
+                {
+                    b.HasOne("TMS.MVC.Models.TractorAssignment", "TractorAssignment")
+                        .WithMany("UnloadingDocuments")
+                        .HasForeignKey("TractorAssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TractorAssignment");
+                });
+
             modelBuilder.Entity("TMS.MVC.Models.UserPermission", b =>
                 {
                     b.HasOne("TMS.MVC.Models.PermissionDefinition", "PermissionDefinition")
@@ -1153,13 +2052,34 @@ namespace TMS.MVC.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.Organizations.LegalEntity", b =>
+            modelBuilder.Entity("TMS.MVC.Models.DriverProfile", b =>
                 {
                     b.Navigation("Addresses");
 
                     b.Navigation("BankAccounts");
 
                     b.Navigation("Contacts");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.Havaleh", b =>
+                {
+                    b.Navigation("SubHavalehs");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.LegalEntity", b =>
+                {
+                    b.Navigation("Addresses");
+
+                    b.Navigation("BankAccounts");
+
+                    b.Navigation("Contacts");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.SubHavaleh", b =>
+                {
+                    b.Navigation("IntermediatePlaces");
+
+                    b.Navigation("TractorAssignments");
                 });
 
             modelBuilder.Entity("TMS.MVC.Models.Tractor", b =>
@@ -1169,6 +2089,15 @@ namespace TMS.MVC.Migrations
                     b.Navigation("BankAccounts");
 
                     b.Navigation("Contacts");
+                });
+
+            modelBuilder.Entity("TMS.MVC.Models.TractorAssignment", b =>
+                {
+                    b.Navigation("ChatMessages");
+
+                    b.Navigation("LoadingDocuments");
+
+                    b.Navigation("UnloadingDocuments");
                 });
 #pragma warning restore 612, 618
         }

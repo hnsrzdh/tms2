@@ -217,9 +217,9 @@ namespace TMS.MVC.Controllers
             var assignment = await _context.TractorAssignments
                 .Include(a => a.SubHavaleh)
                     .ThenInclude(s => s.Havaleh)
-                        .ThenInclude(h => h.OriginCity)
+                        .ThenInclude(h => h.OriginPlace)
                 .Include(a => a.SubHavaleh)
-                    .ThenInclude(s => s.DestinationCity)
+                    .ThenInclude(s => s.DestinationPlace)
                 .Include(a => a.Tractor)
                 .Include(a => a.DriverProfile)
                     .ThenInclude(d => d.ApplicationUser)
@@ -244,11 +244,11 @@ namespace TMS.MVC.Controllers
                 HavalehNumber = assignment.SubHavaleh.Havaleh.HavalehNumber,
                 TractorPlateNumber = assignment.Tractor.PolicePlateNumber,
                 DriverFullName = assignment.DriverProfile?.ApplicationUser.FullName ?? "تعیین نشده",
-                OriginCityDisplay = assignment.SubHavaleh.Havaleh.OriginCity != null
-                    ? $"{assignment.SubHavaleh.Havaleh.OriginCity.CountryName} / {assignment.SubHavaleh.Havaleh.OriginCity.ProvinceName} / {assignment.SubHavaleh.Havaleh.OriginCity.Name}"
+                OriginCityDisplay = assignment.SubHavaleh.Havaleh.OriginPlace != null
+                    ? $"{assignment.SubHavaleh.Havaleh.OriginPlace.Name}"
                     : "نامشخص",
-                DestinationCityDisplay = assignment.SubHavaleh.DestinationCity != null
-                    ? $"{assignment.SubHavaleh.DestinationCity.CountryName} / {assignment.SubHavaleh.DestinationCity.ProvinceName} / {assignment.SubHavaleh.DestinationCity.Name}"
+                DestinationCityDisplay = assignment.SubHavaleh.DestinationPlace != null
+                    ? $"{assignment.SubHavaleh.DestinationPlace.Name}"
                     : "نامشخص",
 
                 LoadingDocuments = assignment.LoadingDocuments.Select(d => new DocumentItemViewModel

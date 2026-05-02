@@ -4,53 +4,115 @@
     ViewData["Title"] = "فهرست محصولات";
 }
 
+<style>
+    .products-index-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .products-index-compact .form-control,
+    .products-index-compact .form-select,
+    .products-index-compact .btn,
+    .products-index-compact .table,
+    .products-index-compact .badge {
+        font-size: 0.82rem;
+    }
+
+        .products-index-compact .table > :not(caption) > * > * {
+            padding: 0.45rem 0.55rem;
+        }
+
+    .products-index-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .products-index-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .products-index-compact .pagination .page-link {
+        padding: 0.22rem 0.48rem;
+        font-size: 0.78rem;
+    }
+
+    .products-index-compact .small-muted {
+        font-size: 0.78rem;
+    }
+
+    .products-index-compact .product-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12">
                 <h4>@ViewData["Title"]</h4>
             </div>
+
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">محصولات</li>
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item active">محصولات</li>
                 </ol>
             </div>
-
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid products-index-compact">
     @if (TempData["Ok"] != null)
     {
-        <div class="alert alert-success">@TempData["Ok"]</div>
-    }
-    @if (TempData["Err"] != null)
-    {
-        <div class="alert alert-danger">@TempData["Err"]</div>
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
 
-    <div class="card shadow-sm rounded-0">
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
+    <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">محصولات</h6>
+                <small class="text-muted small-muted">مدیریت نام و نوع محصولات قابل حمل</small>
+            </div>
+
             <div class="d-flex gap-2">
-                <a asp-action="Create" class="btn btn-primary">تعریف محصول جدید</a>
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importExcelModal">
-                    از اکسل وارد کن!
+                <button type="button"
+                        class="btn btn-outline-success btn-sm px-3"
+                        data-bs-toggle="modal"
+                        data-bs-target="#importExcelModal">
+                    ایمپورت از اکسل
                 </button>
+
+                <a asp-action="Create" class="btn btn-primary btn-sm px-3">
+                    تعریف محصول جدید
+                </a>
             </div>
         </div>
 
         <div class="card-body">
-            <form method="get" class="row g-2 mb-3">
+            <form method="get" asp-action="Index" class="row g-2 mb-3">
                 <input type="hidden" name="page" value="1" />
 
                 <div class="col-md-9">
-                    <input name="search" value="@Model.Search" class="form-control" placeholder="جستجو..." />
+                    <label class="form-label">جستجو</label>
+                    <input name="search"
+                           value="@Model.Search"
+                           class="form-control form-control-sm"
+                           placeholder="جستجو بر اساس نام یا نوع محصول..." />
                 </div>
 
                 <div class="col-md-2">
-                    <select name="pageSize" class="form-select">
+                    <label class="form-label">تعداد</label>
+                    <select name="pageSize" class="form-select form-select-sm">
                         @foreach (var size in new[] { 10, 20, 50, 100 })
                         {
                             if (Model.PageSize == size)
@@ -65,20 +127,24 @@
                     </select>
                 </div>
 
-                <div class="col-md-1 d-grid">
-                    <button type="submit" class="btn btn-primary">جستجو</button>
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-info btn-sm w-100">
+                        فیلتر
+                    </button>
                 </div>
             </form>
 
             <div class="table-responsive">
-                <table class="table table-bordered table-striped align-middle">
-                    <thead class="table-light">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
                         <tr>
                             <th>نام محصول</th>
                             <th>نوع محصول</th>
-                            <th style="width:220px;">عملیات</th>
+                            <th style="width:145px;">عملیات</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         @if (Model.Items.Any())
                         {
@@ -88,13 +154,15 @@
                                     <td>@item.Name</td>
                                     <td>@item.Type</td>
                                     <td>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                        <div class="product-actions">
+                                            <a asp-action="Edit"
+                                               asp-route-id="@item.Id"
+                                               class="btn btn-outline-primary btn-sm">
                                                 ویرایش
                                             </a>
 
                                             <button type="button"
-                                                    class="btn btn-sm btn-outline-danger"
+                                                    class="btn btn-outline-danger btn-sm"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#deleteModal_@item.Id">
                                                 حذف
@@ -102,28 +170,29 @@
                                         </div>
 
                                         <div class="modal fade" id="deleteModal_@item.Id" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog">
+                                            <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content">
                                                     <form asp-action="Delete" method="post">
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@item.Id" />
 
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">تایید حذف</h5>
-                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        <div class="modal-header py-2">
+                                                            <h6 class="modal-title">تایید حذف محصول</h6>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
 
-                                                        <div class="modal-body">
+                                                        <div class="modal-body small">
                                                             <p class="mb-2">آیا از حذف این محصول مطمئن هستید؟</p>
-                                                            <div class="text-muted">
+
+                                                            <div class="alert alert-warning py-2 mb-0">
                                                                 <div><strong>نام محصول:</strong> @item.Name</div>
-                                                                <div><strong>عنوان:</strong> @item.Type</div>
+                                                                <div><strong>نوع محصول:</strong> @item.Type</div>
                                                             </div>
                                                         </div>
 
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="btn btn-danger">حذف</button>
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        <div class="modal-footer py-2 gap-2">
+                                                            <button type="submit" class="btn btn-danger btn-sm px-3">حذف</button>
+                                                            <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
                                                         </div>
                                                     </form>
                                                 </div>
@@ -136,7 +205,9 @@
                         else
                         {
                             <tr>
-                                <td colspan="3" class="text-center">داده‌ای یافت نشد.</td>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    داده‌ای یافت نشد.
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -145,7 +216,7 @@
 
             @if (Model.TotalPages > 1)
             {
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
                     <div class="text-muted small">
                         صفحه @Model.Page از @Model.TotalPages
                         -
@@ -220,31 +291,34 @@
 </div>
 
 <div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form asp-action="ImportExcel" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
 
-                <div class="modal-header">
-                    <h5 class="modal-title">ایمپورت از اکسل</h5>
-                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">ایمپورت محصولات از اکسل</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
-                <div class="modal-body">
+                <div class="modal-body small">
                     <div class="mb-3">
                         <label class="form-label">فایل اکسل</label>
-                        <input type="file" name="excelFile" class="form-control" accept=".xlsx,.xls" />
+                        <input type="file"
+                               name="excelFile"
+                               class="form-control form-control-sm"
+                               accept=".xlsx,.xls" />
                     </div>
 
-                    <div class="small text-muted">
-                        ستون 1: نام محصول<br />
-                        ستون 2: نوع محصول
+                    <div class="alert alert-info py-2 mb-0">
+                        <div>ستون 1: نام محصول</div>
+                        <div>ستون 2: نوع محصول</div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">ایمپورت</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <div class="modal-footer py-2 gap-2">
+                    <button type="submit" class="btn btn-success btn-sm px-3">ایمپورت</button>
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
                 </div>
             </form>
         </div>

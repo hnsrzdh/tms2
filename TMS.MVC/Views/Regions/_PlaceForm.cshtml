@@ -1,0 +1,323 @@
+﻿@model TMS.MVC.Models.ViewModels.PlaceFormVm
+@using System.Text.Json
+
+@{
+    var isEdit = Model.Id.HasValue;
+    var actionName = isEdit ? "Edit" : "Create";
+
+    var defaultLat = Model.Latitude ?? 35.6892m;
+    var defaultLng = Model.Longitude ?? 51.3890m;
+
+    var countryProvinceJson = JsonSerializer.Serialize(Model.CountryProvinceMap);
+    var provinceCityJson = JsonSerializer.Serialize(Model.ProvinceCityMap);
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+    .place-map-box {
+        height: 420px;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+    }
+
+    .place-form-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.85rem;
+    }
+
+    .place-form-compact .form-control,
+    .place-form-compact .form-check-label {
+        font-size: 0.85rem;
+    }
+
+    .place-form-compact .field-validation-valid,
+    .place-form-compact .field-validation-error {
+        font-size: 0.75rem;
+    }
+
+    .place-form-compact .form-check {
+        min-height: 31px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        margin-bottom: 0;
+    }
+
+    .place-form-compact .map-button-wrap {
+        height: 31px;
+        display: flex;
+        align-items: center;
+    }
+
+        .place-form-compact .map-button-wrap .btn {
+            height: 31px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+    .place-form-compact .validation-placeholder {
+        min-height: 18px;
+        display: block;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header py-2">
+            <h6 class="mb-0">@ViewData["Title"]</h6>
+            <small class="text-muted">کشور، استان، شهر و مکان دقیق را ثبت کنید.</small>
+        </div>
+
+        <div class="card-body place-form-compact">
+            <form asp-action="@actionName" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="Id" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label asp-for="CountryName" class="form-label"></label>
+                        <input asp-for="CountryName" class="form-control form-control-sm" list="countryList" autocomplete="off" />
+                        <datalist id="countryList">
+                            @foreach (var item in Model.Countries)
+                            {
+                                <option value="@item.Value"></option>
+                            }
+                        </datalist>
+                        <span asp-validation-for="CountryName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ProvinceName" class="form-label"></label>
+                        <input asp-for="ProvinceName" class="form-control form-control-sm" list="provinceList" autocomplete="off" />
+                        <datalist id="provinceList">
+                            @foreach (var item in Model.Provinces)
+                            {
+                                <option value="@item.Value"></option>
+                            }
+                        </datalist>
+                        <span asp-validation-for="ProvinceName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CityName" class="form-label"></label>
+                        <input asp-for="CityName" class="form-control form-control-sm" list="cityList" autocomplete="off" />
+                        <datalist id="cityList">
+                            @foreach (var item in Model.Cities)
+                            {
+                                <option value="@item.Value"></option>
+                            }
+                        </datalist>
+                        <span asp-validation-for="CityName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control form-control-sm" placeholder="مثلاً انبار مرکزی، معدن، کارخانه، محل تخلیه..." />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Address" class="form-label"></label>
+                        <input asp-for="Address" class="form-control form-control-sm" placeholder="آدرس یا توضیحات کوتاه" />
+                        <span asp-validation-for="Address" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="form-check mt-4">
+                            <input asp-for="IsActive" class="form-check-input mt-0" />
+                            <label asp-for="IsActive" class="form-check-label mt-2"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Latitude" class="form-label"></label>
+                        <input asp-for="Latitude" class="form-control form-control-sm" id="Latitude" dir="ltr" />
+                        <span asp-validation-for="Latitude" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Longitude" class="form-label"></label>
+                        <input asp-for="Longitude" class="form-control form-control-sm" id="Longitude" dir="ltr" />
+                        <span asp-validation-for="Longitude" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label d-block">&nbsp;</label>
+                        <div class="map-button-wrap">
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm w-100"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#mapModal">
+                                انتخاب از نقشه
+                            </button>
+                        </div>
+                        <span class="text-danger validation-placeholder">&nbsp;</span>
+                    </div>
+                </div>
+
+                <hr class="my-3" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-secondary btn-sm px-3">بازگشت</a>
+                    <button type="submit" class="btn btn-primary btn-sm px-3">ذخیره</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="mapModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">انتخاب موقعیت روی نقشه</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert-info py-2 small">
+                    روی نقشه کلیک کنید یا مارکر را جابه‌جا کنید تا مختصات مکان انتخاب شود.
+                </div>
+
+                <div id="placeMap" class="place-map-box"></div>
+            </div>
+
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-primary btn-sm px-3" data-bs-dismiss="modal">
+                    تایید موقعیت
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const countryProvinceMap = @Html.Raw(countryProvinceJson);
+        const provinceCityMap = @Html.Raw(provinceCityJson);
+
+        const countryInput = document.getElementById("CountryName");
+        const provinceInput = document.getElementById("ProvinceName");
+        const cityInput = document.getElementById("CityName");
+
+        const provinceList = document.getElementById("provinceList");
+        const cityList = document.getElementById("cityList");
+
+        function fillDataList(listElement, values) {
+            listElement.innerHTML = "";
+
+            values.forEach(function (value) {
+                const option = document.createElement("option");
+                option.value = value;
+                listElement.appendChild(option);
+            });
+        }
+
+        countryInput.addEventListener("change", function () {
+            const country = countryInput.value;
+            const provinces = countryProvinceMap[country] || [];
+            fillDataList(provinceList, provinces);
+
+            provinceInput.value = "";
+            cityInput.value = "";
+            fillDataList(cityList, []);
+        });
+
+        provinceInput.addEventListener("change", function () {
+            const province = provinceInput.value;
+            const cities = provinceCityMap[province] || [];
+            fillDataList(cityList, cities);
+
+            cityInput.value = "";
+        });
+
+        let map;
+        let marker;
+
+        function normalizeDecimal(value) {
+            if (!value) return null;
+            return value.toString().replace(",", ".");
+        }
+
+        function getCurrentLat() {
+            const value = normalizeDecimal(document.getElementById("Latitude").value);
+            return value ? parseFloat(value) : @defaultLat;
+        }
+
+        function getCurrentLng() {
+            const value = normalizeDecimal(document.getElementById("Longitude").value);
+            return value ? parseFloat(value) : @defaultLng;
+        }
+
+        function setCoordinates(lat, lng) {
+            const fixedLat = lat.toFixed(7);
+            const fixedLng = lng.toFixed(7);
+
+            document.getElementById("Latitude").value = fixedLat;
+            document.getElementById("Longitude").value = fixedLng;
+        }
+
+        function initMap() {
+            const lat = getCurrentLat();
+            const lng = getCurrentLng();
+
+            if (!map) {
+                map = L.map("placeMap", {
+                    center: [lat, lng],
+                    zoom: 13
+                });
+
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    maxZoom: 19,
+                    attribution: "OpenStreetMap"
+                }).addTo(map);
+
+                marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+                marker.on("dragend", function () {
+                    const p = marker.getLatLng();
+                    setCoordinates(p.lat, p.lng);
+                });
+
+                map.on("click", function (e) {
+                    marker.setLatLng(e.latlng);
+                    setCoordinates(e.latlng.lat, e.latlng.lng);
+                });
+            } else {
+                map.setView([lat, lng], 13);
+                marker.setLatLng([lat, lng]);
+            }
+
+            setCoordinates(lat, lng);
+
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 250);
+        }
+
+        const mapModal = document.getElementById("mapModal");
+
+        mapModal.addEventListener("shown.bs.modal", function () {
+            initMap();
+        });
+
+        document.getElementById("Latitude").addEventListener("change", function () {
+            setCoordinates(getCurrentLat(), getCurrentLng());
+        });
+
+        document.getElementById("Longitude").addEventListener("change", function () {
+            setCoordinates(getCurrentLat(), getCurrentLng());
+        });
+    </script>
+}

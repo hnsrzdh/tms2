@@ -302,43 +302,6 @@ namespace TMS.MVC.Migrations
                     b.ToTable("ChatMessages");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.City", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("CountryName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<decimal?>("Latitude")
-                        .HasColumnType("decimal(10,7)");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasColumnType("decimal(10,7)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("ProvinceName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CountryName", "ProvinceName", "Name")
-                        .IsUnique();
-
-                    b.ToTable("Cities");
-                });
-
             modelBuilder.Entity("TMS.MVC.Models.DriverAddress", b =>
                 {
                     b.Property<int>("Id")
@@ -516,7 +479,7 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<long?>("OriginCityId")
+                    b.Property<long?>("OriginPlaceId")
                         .HasColumnType("bigint");
 
                     b.Property<decimal?>("ProductAmount")
@@ -548,7 +511,7 @@ namespace TMS.MVC.Migrations
                     b.HasIndex("HavalehNumber")
                         .IsUnique();
 
-                    b.HasIndex("OriginCityId");
+                    b.HasIndex("OriginPlaceId");
 
                     b.HasIndex("ProductId");
 
@@ -806,6 +769,55 @@ namespace TMS.MVC.Migrations
                     b.ToTable("PermissionDefinitions");
                 });
 
+            modelBuilder.Entity("TMS.MVC.Models.Place", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CityName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CountryName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("ProvinceName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryName", "ProvinceName", "CityName", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Places", (string)null);
+                });
+
             modelBuilder.Entity("TMS.MVC.Models.Product", b =>
                 {
                     b.Property<long>("Id")
@@ -880,7 +892,7 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<long?>("DestinationCityId")
+                    b.Property<long?>("DestinationPlaceId")
                         .HasColumnType("bigint");
 
                     b.Property<decimal?>("DriverCurrencyRate")
@@ -966,14 +978,14 @@ namespace TMS.MVC.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DestinationCityId");
+                    b.HasIndex("DestinationPlaceId");
 
                     b.HasIndex("HavalehId");
 
                     b.ToTable("SubHavalehs");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.SubHavalehIntermediateCity", b =>
+            modelBuilder.Entity("TMS.MVC.Models.SubHavalehIntermediatePlace", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -981,7 +993,7 @@ namespace TMS.MVC.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<long>("CityId")
+                    b.Property<long>("PlaceId")
                         .HasColumnType("bigint");
 
                     b.Property<int>("SortOrder")
@@ -992,11 +1004,11 @@ namespace TMS.MVC.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CityId");
+                    b.HasIndex("PlaceId");
 
                     b.HasIndex("SubHavalehId");
 
-                    b.ToTable("SubHavalehIntermediateCities");
+                    b.ToTable("SubHavalehIntermediatePlaces");
                 });
 
             modelBuilder.Entity("TMS.MVC.Models.Tickets.Ticket", b =>
@@ -1768,9 +1780,9 @@ namespace TMS.MVC.Migrations
                         .HasForeignKey("GoodsOwnerLegalEntityId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("TMS.MVC.Models.City", "OriginCity")
+                    b.HasOne("TMS.MVC.Models.Place", "OriginPlace")
                         .WithMany()
-                        .HasForeignKey("OriginCityId")
+                        .HasForeignKey("OriginPlaceId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("TMS.MVC.Models.Product", "Product")
@@ -1785,7 +1797,7 @@ namespace TMS.MVC.Migrations
 
                     b.Navigation("GoodsOwnerLegalEntity");
 
-                    b.Navigation("OriginCity");
+                    b.Navigation("OriginPlace");
 
                     b.Navigation("Product");
 
@@ -1860,9 +1872,9 @@ namespace TMS.MVC.Migrations
 
             modelBuilder.Entity("TMS.MVC.Models.SubHavaleh", b =>
                 {
-                    b.HasOne("TMS.MVC.Models.City", "DestinationCity")
+                    b.HasOne("TMS.MVC.Models.Place", "DestinationPlace")
                         .WithMany()
-                        .HasForeignKey("DestinationCityId")
+                        .HasForeignKey("DestinationPlaceId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("TMS.MVC.Models.Havaleh", "Havaleh")
@@ -1871,26 +1883,26 @@ namespace TMS.MVC.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("DestinationCity");
+                    b.Navigation("DestinationPlace");
 
                     b.Navigation("Havaleh");
                 });
 
-            modelBuilder.Entity("TMS.MVC.Models.SubHavalehIntermediateCity", b =>
+            modelBuilder.Entity("TMS.MVC.Models.SubHavalehIntermediatePlace", b =>
                 {
-                    b.HasOne("TMS.MVC.Models.City", "City")
+                    b.HasOne("TMS.MVC.Models.Place", "Place")
                         .WithMany()
-                        .HasForeignKey("CityId")
+                        .HasForeignKey("PlaceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TMS.MVC.Models.SubHavaleh", "SubHavaleh")
-                        .WithMany("IntermediateCities")
+                        .WithMany("IntermediatePlaces")
                         .HasForeignKey("SubHavalehId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("City");
+                    b.Navigation("Place");
 
                     b.Navigation("SubHavaleh");
                 });
@@ -2062,7 +2074,7 @@ namespace TMS.MVC.Migrations
 
             modelBuilder.Entity("TMS.MVC.Models.SubHavaleh", b =>
                 {
-                    b.Navigation("IntermediateCities");
+                    b.Navigation("IntermediatePlaces");
 
                     b.Navigation("TractorAssignments");
                 });

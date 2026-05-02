@@ -10,7 +10,7 @@ namespace TMS.MVC.Data
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-        public DbSet<City> Cities => Set<City>();
+        public DbSet<Place> Places => Set<Place>();
 
         public DbSet<LegalEntity> LegalEntities => Set<LegalEntity>();
         public DbSet<LegalEntityContact> LegalEntityContacts => Set<LegalEntityContact>();
@@ -39,8 +39,7 @@ namespace TMS.MVC.Data
 
         public DbSet<Havaleh> Havalehs => Set<Havaleh>();
         public DbSet<SubHavaleh> SubHavalehs => Set<SubHavaleh>();
-        public DbSet<SubHavalehIntermediateCity> SubHavalehIntermediateCities => Set<SubHavalehIntermediateCity>();
-
+        public DbSet<SubHavalehIntermediatePlace> SubHavalehIntermediatePlaces => Set<SubHavalehIntermediatePlace>();
         public DbSet<TractorAssignment> TractorAssignments { get; set; }
         public DbSet<LoadingDocument> LoadingDocuments { get; set; }
         public DbSet<UnloadingDocument> UnloadingDocuments { get; set; }
@@ -59,8 +58,11 @@ namespace TMS.MVC.Data
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<City>()
-                .HasIndex(x => new { x.CountryName, x.ProvinceName, x.Name })
+            builder.Entity<Place>()
+                .ToTable("Places");
+
+            builder.Entity<Place>()
+                .HasIndex(x => new { x.CountryName, x.ProvinceName, x.CityName, x.Name })
                 .IsUnique();
 
             builder.Entity<LegalEntityContact>()
@@ -161,9 +163,9 @@ namespace TMS.MVC.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Havaleh>()
-                .HasOne(x => x.OriginCity)
+                .HasOne(x => x.OriginPlace)
                 .WithMany()
-                .HasForeignKey(x => x.OriginCityId)
+                .HasForeignKey(x => x.OriginPlaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Havaleh>()
@@ -179,21 +181,21 @@ namespace TMS.MVC.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<SubHavaleh>()
-                .HasOne(x => x.DestinationCity)
+                .HasOne(x => x.DestinationPlace)
                 .WithMany()
-                .HasForeignKey(x => x.DestinationCityId)
+                .HasForeignKey(x => x.DestinationPlaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<SubHavalehIntermediateCity>()
+            builder.Entity<SubHavalehIntermediatePlace>()
                 .HasOne(x => x.SubHavaleh)
-                .WithMany(x => x.IntermediateCities)
+                .WithMany(x => x.IntermediatePlaces)
                 .HasForeignKey(x => x.SubHavalehId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<SubHavalehIntermediateCity>()
-                .HasOne(x => x.City)
+            builder.Entity<SubHavalehIntermediatePlace>()
+                .HasOne(x => x.Place)
                 .WithMany()
-                .HasForeignKey(x => x.CityId)
+                .HasForeignKey(x => x.PlaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<TractorAssignment>()

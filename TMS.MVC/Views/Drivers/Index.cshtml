@@ -1,9 +1,24 @@
-﻿@using TMS.MVC.ViewModels
+@using TMS.MVC.ViewModels
 @model DriverIndexViewModel
 
 @{
     ViewData["Title"] = "رانندگان";
 }
+
+<style>
+    .drivers-index-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .drivers-index-compact .form-control,
+    .drivers-index-compact .form-select,
+    .drivers-index-compact .btn,
+    .drivers-index-compact .table,
+    .drivers-index-compact .badge { font-size: 0.82rem; }
+    .drivers-index-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
+    .drivers-index-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .drivers-index-compact .card-body { padding-top: 0.85rem; }
+    .drivers-index-compact .pagination .page-link { padding: 0.22rem 0.48rem; font-size: 0.78rem; }
+    .drivers-index-compact .small-muted { font-size: 0.78rem; }
+    .drivers-index-compact .driver-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+</style>
 
 <div class="container-fluid">
     <div class="page-title">
@@ -11,54 +26,74 @@
             <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">رانندگان</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item active">رانندگان</li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid drivers-index-compact">
     @if (TempData["Ok"] != null)
     {
-        <div class="alert alert-success">@TempData["Ok"]</div>
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
 
-    <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <a asp-action="Create" class="btn btn-primary">تعریف راننده جدید</a>
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">رانندگان</h6>
+                <small class="text-muted small-muted">مدیریت اطلاعات رانندگان، کارت هوشمند، گواهینامه و وضعیت</small>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-action="Create" class="btn btn-primary btn-sm px-3">تعریف راننده جدید</a>
+            </div>
         </div>
 
         <div class="card-body">
-            <form method="get" class="row g-2 mb-3">
+            <form method="get" asp-action="Index" class="row g-2 mb-3">
                 <div class="col-md-9">
-                    <input type="text" name="search" value="@Model.Search" class="form-control"
+                    <label class="form-label">جستجو</label>
+                    <input type="text"
+                           name="search"
+                           value="@Model.Search"
+                           class="form-control form-control-sm"
                            placeholder="جستجو بر اساس نام، کد ملی، شماره هوشمند، گواهینامه یا توضیحات" />
                 </div>
+
                 <div class="col-md-2">
-                    <select name="pageSize" class="form-select">
-                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
-                        <option value="20" selected="@(Model.PageSize == 20)">20</option>
-                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                    <label class="form-label">تعداد</label>
+                    <select name="pageSize" class="form-select form-select-sm">
+                        <option value="10" selected="@(Model.PageSize == 10)">10 رکورد</option>
+                        <option value="20" selected="@(Model.PageSize == 20)">20 رکورد</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50 رکورد</option>
                     </select>
                 </div>
-                <div class="col-md-1 d-grid">
-                    <button type="submit" class="btn btn-primary">فیلتر</button>
+
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-info btn-sm w-100">فیلتر</button>
                 </div>
             </form>
 
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
                         <tr>
-                            <th>#</th>
+                            <th style="width:55px">#</th>
                             <th>نام راننده</th>
                             <th>کد ملی</th>
                             <th>شماره کارت هوشمند</th>
                             <th>شماره گواهینامه</th>
                             <th>وضعیت</th>
-                            <th>عملیات</th>
+                            <th style="width:200px">عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,16 +111,16 @@
                                     <td>
                                         @if (item.IsBlocked)
                                         {
-                                            <span class="badge rounded-pill bg-danger px-3 py-2">محدود</span>
+                                            <span class="badge bg-danger">محدود</span>
                                         }
                                         else
                                         {
-                                            <span class="badge rounded-pill bg-success px-3 py-2">فعال</span>
+                                            <span class="badge bg-success">فعال</span>
                                         }
                                     </td>
                                     <td>
-                                        <div class="d-flex gap-1 flex-wrap">
-                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">ویرایش</a>
+                                        <div class="driver-actions">
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
                                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-danger"
@@ -96,29 +131,31 @@
                                         </div>
 
                                         <div class="modal fade" id="deleteModal_@item.Id" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog">
+                                            <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content">
                                                     <form asp-action="Delete" method="post">
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@item.Id" />
 
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">حذف راننده</h5>
-                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        <div class="modal-header py-2">
+                                                            <h6 class="modal-title">حذف راننده</h6>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
 
-                                                        <div class="modal-body">
-                                                            <p class="mb-0">آیا از حذف این راننده مطمئن هستید؟</p>
-                                                            <div class="mt-2 text-muted">@item.FullName</div>
-                                                            @if (!string.IsNullOrWhiteSpace(item.NationalId))
-                                                            {
-                                                                <div class="text-muted">کد ملی: @item.NationalId</div>
-                                                            }
+                                                        <div class="modal-body small">
+                                                            <p class="mb-2">آیا از حذف این راننده مطمئن هستید؟</p>
+                                                            <div class="alert alert-warning py-2 mb-0">
+                                                                <div>@item.FullName</div>
+                                                                @if (!string.IsNullOrWhiteSpace(item.NationalId))
+                                                                {
+                                                                    <div>کد ملی: @item.NationalId</div>
+                                                                }
+                                                            </div>
                                                         </div>
 
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="btn btn-danger">حذف</button>
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        <div class="modal-footer py-2 gap-2">
+                                                            <button type="submit" class="btn btn-danger btn-sm px-3">حذف</button>
+                                                            <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
                                                         </div>
                                                     </form>
                                                 </div>
@@ -131,7 +168,9 @@
                         }
                         else
                         {
-                            <tr><td colspan="7" class="text-center py-4">موردی یافت نشد.</td></tr>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">موردی یافت نشد.</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
@@ -139,7 +178,7 @@
 
             @if (Model.TotalPages > 1)
             {
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
                     <div class="text-muted small">صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems</div>
                     <nav>
                         <ul class="pagination pagination-primary">

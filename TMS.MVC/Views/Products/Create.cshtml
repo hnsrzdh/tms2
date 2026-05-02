@@ -4,48 +4,94 @@
     ViewData["Title"] = "ایجاد محصول";
 }
 
+<style>
+    .product-form-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .product-form-compact .form-control,
+    .product-form-compact .btn,
+    .product-form-compact .form-text {
+        font-size: 0.82rem;
+    }
+
+    .product-form-compact .field-validation-valid,
+    .product-form-compact .field-validation-error {
+        font-size: 0.75rem;
+    }
+
+    .product-form-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .product-form-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .product-form-compact .small-muted {
+        font-size: 0.78rem;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12">
                 <h4>@ViewData["Title"]</h4>
             </div>
+
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">محصولات</li>
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-action="Index">محصولات</a>
+                    </li>
+                    <li class="breadcrumb-item active">ایجاد محصول</li>
                 </ol>
             </div>
-
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="card shadow-sm">
+<div class="container-fluid product-form-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">ایجاد محصول</h6>
+                <small class="text-muted small-muted">ثبت نام و نوع محصول قابل حمل</small>
+            </div>
+
+        </div>
+
         <div class="card-body">
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
 
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
+                <div class="row g-2">
+                    <div class="col-md-6">
                         <label asp-for="Name" class="form-label"></label>
-                        <input asp-for="Name" class="form-control" />
+                        <input asp-for="Name" class="form-control form-control-sm" />
                         <span asp-validation-for="Name" class="text-danger"></span>
                     </div>
 
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
                         <label asp-for="Type" class="form-label"></label>
-                        <input asp-for="Type" class="form-control" />
+                        <input asp-for="Type" class="form-control form-control-sm" />
                         <span asp-validation-for="Type" class="text-danger"></span>
                     </div>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-success">ذخیره</button>
-                    <a asp-action="Index" class="btn btn-secondary">بازگشت</a>
+                <hr class="my-3" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm px-3">ذخیره</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-sm px-3">انصراف</a>
                 </div>
             </form>
         </div>

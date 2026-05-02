@@ -1,8 +1,45 @@
-@model TMS.MVC.Models.ViewModels.CityIndexVm
+@model TMS.MVC.Models.ViewModels.PlaceIndexVm
 
 @{
-    ViewData["Title"] = "لیست شهرها";
+    ViewData["Title"] = "لیست مکان‌ها";
 }
+
+<style>
+    .place-index-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .place-index-compact .form-control,
+    .place-index-compact .form-select,
+    .place-index-compact .btn,
+    .place-index-compact .table,
+    .place-index-compact .badge {
+        font-size: 0.82rem;
+    }
+
+        .place-index-compact .table > :not(caption) > * > * {
+            padding: 0.45rem 0.55rem;
+        }
+
+    .place-index-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .place-index-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .place-index-compact .pagination .page-link {
+        padding: 0.22rem 0.48rem;
+        font-size: 0.78rem;
+    }
+
+    .place-index-compact .small-muted {
+        font-size: 0.78rem;
+    }
+</style>
 
 <div class="container-fluid">
     <div class="page-title">
@@ -12,158 +49,211 @@
             </div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">مناطق</li>
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item active">مکان‌ها</li>
                 </ol>
             </div>
-
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid place-index-compact">
     @if (TempData["Ok"] != null)
     {
-        <div class="alert alert-success">@TempData["Ok"]</div>
-    }
-    @if (TempData["Err"] != null)
-    {
-        <div class="alert alert-danger">@TempData["Err"]</div>
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
 
-    <div class="card shadow-sm">
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
+    <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">مکان‌ها</h6>
+                <small class="text-muted small-muted">تعریف مکان‌های دقیق برای بارگیری، تخلیه و مسیریابی</small>
+            </div>
+
             <div class="d-flex gap-2">
-                <a asp-action="Create" class="btn btn-primary">تعریف شهر جدید</a>
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importExcelModal">
-                    از اکسل وارد کن!
+                <button type="button"
+                        class="btn btn-outline-success btn-sm px-3"
+                        data-bs-toggle="modal"
+                        data-bs-target="#importExcelModal">
+                    ایمپورت از اکسل
                 </button>
+
+                <a asp-action="Create" class="btn btn-primary btn-sm px-3">
+                    تعریف مکان جدید
+                </a>
             </div>
         </div>
 
         <div class="card-body">
-            <form method="get" class="row g-2 mb-3">
-                <input type="hidden" name="page" value="1" />
-
+            <form method="get" asp-action="Index" class="row g-2 mb-3">
                 <div class="col-md-3">
-                    <input name="search" value="@Model.Search" class="form-control" placeholder="جستجو..." />
+                    <label class="form-label">جستجو</label>
+                    <input name="search"
+                           value="@Model.Search"
+                           class="form-control form-control-sm"
+                           placeholder="نام مکان، شهر، آدرس..." />
                 </div>
 
-                <div class="col-md-3">
-                    <select name="countryFilter" class="form-select">
+                <div class="col-md-2">
+                    <label class="form-label">کشور</label>
+                    <select name="countryFilter" class="form-select form-select-sm">
                         <option value="">همه کشورها</option>
-                        @foreach (var c in Model.Countries)
+                        @foreach (var item in Model.Countries)
                         {
-                            if (Model.CountryFilter == c.Value)
-                            {
-                                <option value="@c.Value" selected>@c.Text</option>
-                            }
-                            else
-                            {
-                                <option value="@c.Value">@c.Text</option>
-                            }
-                        }
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <select name="provinceFilter" class="form-select">
-                        <option value="">همه استان‌ها</option>
-                        @foreach (var p in Model.Provinces)
-                        {
-                            if (Model.ProvinceFilter == p.Value)
-                            {
-                                <option value="@p.Value" selected>@p.Text</option>
-                            }
-                            else
-                            {
-                                <option value="@p.Value">@p.Text</option>
-                            }
+                            <option value="@item.Value" selected="@(Model.CountryFilter == item.Value)">
+                                @item.Text
+                            </option>
                         }
                     </select>
                 </div>
 
                 <div class="col-md-2">
-                    <select name="pageSize" class="form-select">
-                        @foreach (var size in new[] { 10, 20, 50, 100 })
+                    <label class="form-label">استان</label>
+                    <select name="provinceFilter" class="form-select form-select-sm">
+                        <option value="">همه استان‌ها</option>
+                        @foreach (var item in Model.Provinces)
                         {
-                            if (Model.PageSize == size)
-                            {
-                                <option value="@size" selected>@size رکورد</option>
-                            }
-                            else
-                            {
-                                <option value="@size">@size رکورد</option>
-                            }
+                            <option value="@item.Value" selected="@(Model.ProvinceFilter == item.Value)">
+                                @item.Text
+                            </option>
                         }
                     </select>
                 </div>
 
-                <div class="col-md-1 d-grid">
-                    <button type="submit" class="btn btn-primary">فیلتر</button>
+                <div class="col-md-2">
+                    <label class="form-label">شهر</label>
+                    <select name="cityFilter" class="form-select form-select-sm">
+                        <option value="">همه شهرها</option>
+                        @foreach (var item in Model.Cities)
+                        {
+                            <option value="@item.Value" selected="@(Model.CityFilter == item.Value)">
+                                @item.Text
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">تعداد</label>
+                    <select name="pageSize" class="form-select form-select-sm">
+                        @foreach (var size in new[] { 10, 20, 50, 100 })
+                        {
+                            <option value="@size" selected="@(Model.PageSize == size)">
+                                @size رکورد
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-info btn-sm w-100">
+                        فیلتر
+                    </button>
                 </div>
             </form>
+
             <div class="table-responsive">
-                <table class="table table-bordered table-striped align-middle">
-                    <thead class="table-light">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
                         <tr>
+                            <th style="width:55px">#</th>
                             <th>کشور</th>
                             <th>استان</th>
                             <th>شهر</th>
-                            <th>عرض</th>
-                            <th>طول</th>
-                            <th style="width: 180px;">عملیات</th>
+                            <th>مکان</th>
+                            <th>مختصات</th>
+                            <th>وضعیت</th>
+                            <th style="width:145px">عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (Model.Items.Any())
                         {
+                            var row = Model.RowNumberStart;
+
                             foreach (var item in Model.Items)
                             {
                                 <tr>
+                                    <td>@row</td>
                                     <td>@item.CountryName</td>
                                     <td>@item.ProvinceName</td>
-                                    <td>@item.Name</td>
-                                    <td>@(item.Latitude?.ToString("0.0000000") ?? "-")</td>
-                                    <td>@(item.Longitude?.ToString("0.0000000") ?? "-")</td>
+                                    <td>@item.CityName</td>
                                     <td>
-                                        <div class="d-flex gap-2">
-                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                        <div class="fw-bold">@item.Name</div>
+                                        @if (!string.IsNullOrWhiteSpace(item.Address))
+                                        {
+                                            <small class="text-muted">@item.Address</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.Latitude.HasValue && item.Longitude.HasValue)
+                                        {
+                                            <span dir="ltr">
+                                                @item.Latitude.Value.ToString("0.0000000"),
+                                                @item.Longitude.Value.ToString("0.0000000")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge bg-success">فعال</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">غیرفعال</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <a asp-action="Edit"
+                                               asp-route-id="@item.Id"
+                                               class="btn btn-outline-primary btn-sm">
                                                 ویرایش
                                             </a>
 
                                             <button type="button"
-                                                    class="btn btn-sm btn-outline-danger"
+                                                    class="btn btn-outline-danger btn-sm"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#deleteModal_@item.Id">
                                                 حذف
                                             </button>
                                         </div>
 
-                                        <div class="modal fade" id="deleteModal_@item.Id" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog">
+                                        <div class="modal fade" id="deleteModal_@item.Id" tabindex="-1">
+                                            <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content">
                                                     <form asp-action="Delete" method="post">
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@item.Id" />
 
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">حذف شهر</h5>
-                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        <div class="modal-header py-2">
+                                                            <h6 class="modal-title">حذف مکان</h6>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
 
-                                                        <div class="modal-body">
-                                                            <p class="mb-0">
-                                                                آیا از حذف این شهر مطمئن هستید؟
-                                                            </p>
-                                                            <div class="mt-2 text-muted">
-                                                                @item.CountryName / @item.ProvinceName / @item.Name
+                                                        <div class="modal-body small">
+                                                            <p>آیا از حذف این مکان مطمئن هستید؟</p>
+                                                            <div class="alert alert-warning py-2 mb-0">
+                                                                @item.CountryName / @item.ProvinceName / @item.CityName / @item.Name
                                                             </div>
                                                         </div>
 
-                                                        <div class="modal-footer">
-                                                            <button type="submit" class="btn btn-danger">حذف</button>
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                        <div class="modal-footer py-2 gap-2">
+                                                            <button type="submit" class="btn btn-danger btn-sm px-3">حذف</button>
+                                                            <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
                                                         </div>
                                                     </form>
                                                 </div>
@@ -171,29 +261,31 @@
                                         </div>
                                     </td>
                                 </tr>
+
+                                row++;
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center">داده‌ای یافت نشد.</td>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    داده‌ای یافت نشد.
+                                </td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+
             @if (Model.TotalPages > 1)
             {
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
                     <div class="text-muted small">
-                        صفحه @Model.Page از @Model.TotalPages
-                        -
-                        تعداد کل: @Model.TotalItems
+                        صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems
                     </div>
 
-                    <nav aria-label="Page navigation">
-                            <ul class="pagination pagination-primary">
-
+                    <nav>
+                        <ul class="pagination pagination-primary">
                             <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
                                 <a class="page-link"
                                    asp-action="Index"
@@ -201,7 +293,8 @@
                                    asp-route-pageSize="@Model.PageSize"
                                    asp-route-search="@Model.Search"
                                    asp-route-countryFilter="@Model.CountryFilter"
-                                   asp-route-provinceFilter="@Model.ProvinceFilter">
+                                   asp-route-provinceFilter="@Model.ProvinceFilter"
+                                   asp-route-cityFilter="@Model.CityFilter">
                                     اول
                                 </a>
                             </li>
@@ -213,7 +306,8 @@
                                    asp-route-pageSize="@Model.PageSize"
                                    asp-route-search="@Model.Search"
                                    asp-route-countryFilter="@Model.CountryFilter"
-                                   asp-route-provinceFilter="@Model.ProvinceFilter">
+                                   asp-route-provinceFilter="@Model.ProvinceFilter"
+                                   asp-route-cityFilter="@Model.CityFilter">
                                     قبلی
                                 </a>
                             </li>
@@ -232,7 +326,8 @@
                                        asp-route-pageSize="@Model.PageSize"
                                        asp-route-search="@Model.Search"
                                        asp-route-countryFilter="@Model.CountryFilter"
-                                       asp-route-provinceFilter="@Model.ProvinceFilter">
+                                       asp-route-provinceFilter="@Model.ProvinceFilter"
+                                       asp-route-cityFilter="@Model.CityFilter">
                                         @i
                                     </a>
                                 </li>
@@ -245,7 +340,8 @@
                                    asp-route-pageSize="@Model.PageSize"
                                    asp-route-search="@Model.Search"
                                    asp-route-countryFilter="@Model.CountryFilter"
-                                   asp-route-provinceFilter="@Model.ProvinceFilter">
+                                   asp-route-provinceFilter="@Model.ProvinceFilter"
+                                   asp-route-cityFilter="@Model.CityFilter">
                                     بعدی
                                 </a>
                             </li>
@@ -257,7 +353,8 @@
                                    asp-route-pageSize="@Model.PageSize"
                                    asp-route-search="@Model.Search"
                                    asp-route-countryFilter="@Model.CountryFilter"
-                                   asp-route-provinceFilter="@Model.ProvinceFilter">
+                                   asp-route-provinceFilter="@Model.ProvinceFilter"
+                                   asp-route-cityFilter="@Model.CityFilter">
                                     آخر
                                 </a>
                             </li>
@@ -265,40 +362,44 @@
                     </nav>
                 </div>
             }
-        
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade" id="importExcelModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form asp-action="ImportExcel" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
 
-                <div class="modal-header">
-                    <h5 class="modal-title">ایمپورت از اکسل</h5>
-                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">ایمپورت مکان‌ها از اکسل</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
-                <div class="modal-body">
+                <div class="modal-body small">
                     <div class="mb-3">
                         <label class="form-label">فایل اکسل</label>
-                        <input type="file" name="excelFile" class="form-control" accept=".xlsx,.xls" />
+                        <input type="file"
+                               name="excelFile"
+                               class="form-control form-control-sm"
+                               accept=".xlsx,.xls" />
                     </div>
 
-                    <div class="small text-muted">
-                        ستون 1: کشور<br />
-                        ستون 2: استان<br />
-                        ستون 3: شهر<br />
-                        ستون 4: عرض جغرافیایی (اختیاری)<br />
-                        ستون 5: طول جغرافیایی (اختیاری)
+                    <div class="alert alert-info py-2 mb-0">
+                        <div>ستون 1: کشور</div>
+                        <div>ستون 2: استان</div>
+                        <div>ستون 3: شهر</div>
+                        <div>ستون 4: نام مکان</div>
+                        <div>ستون 5: عرض جغرافیایی</div>
+                        <div>ستون 6: طول جغرافیایی</div>
+                        <div>ستون 7: آدرس / توضیحات</div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">ایمپورت</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <div class="modal-footer py-2">
+                    <button type="submit" class="btn btn-success btn-sm px-3">ایمپورت</button>
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
                 </div>
             </form>
         </div>

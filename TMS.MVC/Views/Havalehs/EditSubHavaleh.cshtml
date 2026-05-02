@@ -4,7 +4,54 @@
     ViewData["Title"] = "ویرایش زیرحواله";
 }
 
-<div class="container-fluid">
+<style>
+    .havaleh-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .form-control,
+    .havaleh-compact .form-select,
+    .havaleh-compact .btn,
+    .havaleh-compact .table,
+    .havaleh-compact .badge,
+    .havaleh-compact .input-group-text {
+        font-size: 0.82rem;
+    }
+
+    .havaleh-compact .table > :not(caption) > * > * {
+        padding: 0.35rem 0.45rem;
+    }
+
+    .havaleh-compact .card-header {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .havaleh-compact .card-body {
+        padding: 0.85rem;
+    }
+
+    .havaleh-compact .modal-header,
+    .havaleh-compact .modal-body,
+    .havaleh-compact .modal-footer {
+        padding: 0.75rem 0.9rem;
+    }
+
+    .havaleh-compact .small-muted {
+        font-size: 0.78rem;
+        color: #6c757d;
+    }
+
+    .havaleh-compact .info-box {
+        padding: 0.65rem;
+    }
+
+    .havaleh-compact .pagination {
+        margin-bottom: 0;
+    }
+</style>
+
+<div class="container-fluid havaleh-compact">
     <div class="page-title">
         <div class="row">
             <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
@@ -19,49 +66,49 @@
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid havaleh-compact">
     <form asp-action="EditSubHavaleh" method="post" id="subHavalehForm">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="HavalehId" />
 
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
 
         <div class="card shadow-sm mb-3">
-            <div class="card-header"><h4 class="mb-0">اطلاعات پایه</h4></div>
-            <div class="card-body row g-3">
+            <div class="card-header"><h6 class="mb-0">اطلاعات پایه</h6></div>
+            <div class="card-body row g-2">
                 <div class="col-md-4">
                     <label asp-for="HavalehNumber" class="form-label"></label>
-                    <input asp-for="HavalehNumber" class="form-control" readonly />
+                    <input asp-for="HavalehNumber" class="form-control form-control-sm" readonly />
                 </div>
 
                 <div class="col-md-4">
-                    <label asp-for="OriginCityDisplayName" class="form-label"></label>
-                    <input asp-for="OriginCityDisplayName" class="form-control" readonly />
+                    <label asp-for="OriginPlaceDisplayName" class="form-label"></label>
+                    <input asp-for="OriginPlaceDisplayName" class="form-control form-control-sm" readonly />
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">مقصد نهایی</label>
                     <div class="input-group">
-                        <input asp-for="DestinationCityId" type="hidden" />
-                        <input asp-for="DestinationCityDisplayName" class="form-control" readonly />
-                        <button type="button" class="btn btn-outline-secondary" id="openDestinationCityModal">انتخاب</button>
+                        <input asp-for="DestinationPlaceId" type="hidden" />
+                        <input asp-for="DestinationPlaceDisplayName" class="form-control form-control-sm" readonly />
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="openDestinationCityModal">انتخاب</button>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <label asp-for="Title" class="form-label"></label>
-                    <input asp-for="Title" class="form-control" />
+                    <input asp-for="Title" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-4">
                     <label asp-for="ContractType" class="form-label"></label>
-                    <input asp-for="ContractType" class="form-control" />
+                    <input asp-for="ContractType" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-4">
                     <label asp-for="SettlementBase" class="form-label"></label>
-                    <input asp-for="SettlementBase" class="form-control" />
+                    <input asp-for="SettlementBase" class="form-control form-control-sm" />
                 </div>
 
             </div>
@@ -69,24 +116,24 @@
 
         <div class="card shadow-sm mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">مسیر حمل</h4>
-                <button type="button" class="btn btn-primary" id="addIntermediateCityBtn">افزودن شهر میانی</button>
+                <h6 class="mb-0">مسیر حمل</h6>
+                <button type="button" class="btn btn-primary btn-sm" id="addIntermediateCityBtn">افزودن شهر میانی</button>
             </div>
             <div class="card-body">
-                <div class="alert alert-info border">
-                    <strong>مبدا:</strong> @Model.OriginCityDisplayName
+                <div class="alert alert-info border py-2">
+                    <strong>مبدا:</strong> @Model.OriginPlaceDisplayName
                 </div>
 
                 <div id="intermediateCitiesContainer">
-                    @for (int i = 0; i < Model.IntermediateCities.Count; i++)
+                    @for (int i = 0; i < Model.IntermediatePlaces.Count; i++)
                     {
                         <div class="row g-2 mb-2 intermediate-city-row">
-                            <input type="hidden" name="IntermediateCities[@i].Id" value="@Model.IntermediateCities[i].Id" />
-                            <input type="hidden" name="IntermediateCities[@i].CityId" value="@Model.IntermediateCities[i].CityId" class="city-id-input" />
+                            <input type="hidden" name="IntermediateCities[@i].Id" value="@Model.IntermediatePlaces[i].Id" />
+                            <input type="hidden" name="IntermediateCities[@i].CityId" value="@Model.IntermediatePlaces[i].PlaceId" class="city-id-input" />
                             <input type="hidden" name="IntermediateCities[@i].SortOrder" value="@(i + 1)" class="sort-order-input" />
 
                             <div class="col-md-10">
-                                <input type="text" name="IntermediateCities[@i].CityDisplayName" value="@Model.IntermediateCities[i].CityDisplayName" class="form-control city-display-input" readonly />
+                                <input type="text" name="IntermediateCities[@i].CityDisplayName" value="@Model.IntermediatePlaces[i].PlaceDisplayName" class="form-control city-display-input form-control-sm" readonly />
                             </div>
                             <div class="col-md-2 d-flex gap-2">
                                 <button type="button" class="btn btn-outline-secondary btn-sm select-city-btn">انتخاب</button>
@@ -96,119 +143,119 @@
                     }
                 </div>
 
-                <div class="alert alert-info border mt-3">
-                    <strong>مقصد نهایی:</strong> <span id="destinationSummary">@(Model.DestinationCityDisplayName ?? "-")</span>
+                <div class="alert alert-info border mt-3 py-2">
+                    <strong>مقصد نهایی:</strong> <span id="destinationSummary">@(Model.DestinationPlaceDisplayName ?? "-")</span>
                 </div>
             </div>
         </div>
 
         <div class="card shadow-sm mb-3">
-            <div class="card-header"><h4 class="mb-0">اطلاعات مالی</h4></div>
-            <div class="card-body row g-3">
+            <div class="card-header"><h6 class="mb-0">اطلاعات مالی</h6></div>
+            <div class="card-body row g-2">
                 <div class="col-md-3">
                     <label asp-for="DriverCurrencyType" class="form-label"></label>
-                    <input asp-for="DriverCurrencyType" class="form-control" />
+                    <input asp-for="DriverCurrencyType" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="DriverCurrencyRate" class="form-label"></label>
-                    <input asp-for="DriverCurrencyRate" class="form-control" />
+                    <input asp-for="DriverCurrencyRate" class="form-control form-control-sm" />
                 </div>
                 <div class="col-md-6"> </div>
                 <div class="col-md-3">
                     <label asp-for="GoodsOwnerCurrencyType" class="form-label"></label>
-                    <input asp-for="GoodsOwnerCurrencyType" class="form-control" />
+                    <input asp-for="GoodsOwnerCurrencyType" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="GoodsOwnerCurrencyRate" class="form-label"></label>
-                    <input asp-for="GoodsOwnerCurrencyRate" class="form-control" />
+                    <input asp-for="GoodsOwnerCurrencyRate" class="form-control form-control-sm" />
                 </div>
                 <div class="col-md-6"> </div>
 
                 <div class="col-md-3">
                     <label asp-for="GoodsOwnerPricePerTon" class="form-label"></label>
-                    <input asp-for="GoodsOwnerPricePerTon" class="form-control" />
+                    <input asp-for="GoodsOwnerPricePerTon" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="GoodsOwnerTip" class="form-label"></label>
-                    <input asp-for="GoodsOwnerTip" class="form-control" />
+                    <input asp-for="GoodsOwnerTip" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="GoodsOwnerStopFee" class="form-label"></label>
-                    <input asp-for="GoodsOwnerStopFee" class="form-control" />
+                    <input asp-for="GoodsOwnerStopFee" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3"> </div>
 
                 <div class="col-md-3">
                     <label asp-for="DriverPricePerTon" class="form-label"></label>
-                    <input asp-for="DriverPricePerTon" class="form-control" />
+                    <input asp-for="DriverPricePerTon" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="DriverTip" class="form-label"></label>
-                    <input asp-for="DriverTip" class="form-control" />
+                    <input asp-for="DriverTip" class="form-control form-control-sm" />
                 </div>
 
 
                 <div class="col-md-3">
                     <label asp-for="DriverStopFee" class="form-label"></label>
-                    <input asp-for="DriverStopFee" class="form-control" />
+                    <input asp-for="DriverStopFee" class="form-control form-control-sm" />
                 </div>
             </div>
         </div>
 
         <div class="card shadow-sm mb-3">
-            <div class="card-header"><h4 class="mb-0">محدودیت‌ها و جریمه‌ها</h4></div>
-            <div class="card-body row g-3">
+            <div class="card-header"><h6 class="mb-0">محدودیت‌ها و جریمه‌ها</h6></div>
+            <div class="card-body row g-2">
                 <div class="col-md-3">
                     <label asp-for="AllowedLoadingTime" class="form-label"></label>
-                    <input asp-for="AllowedLoadingTime" class="form-control" />
+                    <input asp-for="AllowedLoadingTime" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="AllowedDeliveryTime" class="form-label"></label>
-                    <input asp-for="AllowedDeliveryTime" class="form-control" />
+                    <input asp-for="AllowedDeliveryTime" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-6"> </div>
 
                 <div class="col-md-3">
                     <label asp-for="LateDeliveryPenalty" class="form-label"></label>
-                    <input asp-for="LateDeliveryPenalty" class="form-control" />
+                    <input asp-for="LateDeliveryPenalty" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="LateDeliveryPenaltyType" class="form-label"></label>
-                    <input asp-for="LateDeliveryPenaltyType" class="form-control" />
+                    <input asp-for="LateDeliveryPenaltyType" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-6"> </div>
 
                 <div class="col-md-3">
                     <label asp-for="FixedShortageAmount" class="form-label"></label>
-                    <input asp-for="FixedShortageAmount" class="form-control" />
+                    <input asp-for="FixedShortageAmount" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="ShortagePenaltyType" class="form-label"></label>
-                    <input asp-for="ShortagePenaltyType" class="form-control" />
+                    <input asp-for="ShortagePenaltyType" class="form-control form-control-sm" />
                 </div>
 
 
                 <div class="col-md-3">
                     <label asp-for="AcceptableWeightLoss" class="form-label"></label>
-                    <input asp-for="AcceptableWeightLoss" class="form-control" />
+                    <input asp-for="AcceptableWeightLoss" class="form-control form-control-sm" />
                 </div>
             </div>
         </div>
 
         <div class="card shadow-sm mb-3">
-            <div class="card-header"><h4 class="mb-0">بار و زمان‌بندی</h4></div>
-            <div class="card-body row g-3">
+            <div class="card-header"><h6 class="mb-0">بار و زمان‌بندی</h6></div>
+            <div class="card-body row g-2">
                 <div class="col-md-3">
                     <div class="form-check mt-4">
                         <input asp-for="IsUnderSupervisor" class="form-check-input" />
@@ -219,26 +266,26 @@
 
                 <div class="col-md-3">
                     <label asp-for="RequestedCargoAmount" class="form-label"></label>
-                    <input asp-for="RequestedCargoAmount" class="form-control" />
+                    <input asp-for="RequestedCargoAmount" class="form-control form-control-sm" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="StartDate" class="form-label"></label>
                     <input type="hidden" asp-for="StartDate" id="StartDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
-                    <input id="StartDate_shamsi" class="form-control" autocomplete="off" />
+                    <input id="StartDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
                 </div>
 
                 <div class="col-md-3">
                     <label asp-for="EndDate" class="form-label"></label>
                     <input type="hidden" asp-for="EndDate" id="EndDate" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
-                    <input id="EndDate_shamsi" class="form-control" autocomplete="off" />
+                    <input id="EndDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
                 </div>
             </div>
         </div>
 
         <div class="mt-4 d-flex gap-2">
-            <button type="submit" class="btn btn-primary">ذخیره</button>
-            <a asp-action="Details" asp-route-id="@Model.HavalehId" class="btn btn-secondary">انصراف</a>
+            <button type="submit" class="btn btn-primary btn-sm">ذخیره</button>
+            <a asp-action="Details" asp-route-id="@Model.HavalehId" class="btn btn-secondary btn-sm">انصراف</a>
         </div>
     </form>
 </div>
@@ -247,12 +294,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">انتخاب شهر</h5>
+                <h6 class="modal-title">انتخاب شهر</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="citySearchInput" class="form-control mb-3" placeholder="جستجو..." />
-                <table class="table table-hover">
+                <input type="text" id="citySearchInput" class="form-control mb-3 form-control-sm" placeholder="جستجو..." />
+                <table class="table table-hover table-sm">
                     <thead><tr><th>شهر</th><th>انتخاب</th></tr></thead>
                     <tbody id="citySearchResults"></tbody>
                 </table>
@@ -355,7 +402,7 @@
                         <input type="hidden" name="IntermediateCities[${index}].SortOrder" value="${index + 1}" class="sort-order-input" />
 
                         <div class="col-md-10">
-                            <input type="text" name="IntermediateCities[${index}].CityDisplayName" value="" class="form-control city-display-input" readonly />
+                            <input type="text" name="IntermediateCities[${index}].CityDisplayName" value="" class="form-control city-display-input form-control-sm" readonly />
                         </div>
                         <div class="col-md-2 d-flex gap-2">
                             <button type="button" class="btn btn-outline-secondary btn-sm select-city-btn">انتخاب</button>

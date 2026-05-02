@@ -1,8 +1,22 @@
-﻿@model TMS.MVC.ViewModels.DriverBankAccountUpsertViewModel
+@model TMS.MVC.ViewModels.DriverBankAccountUpsertViewModel
 
 @{
     ViewData["Title"] = "افزودن اطلاعات بانکی راننده";
 }
+
+<style>
+    .driver-form-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .driver-form-compact .form-control,
+    .driver-form-compact .btn,
+    .driver-form-compact .form-check-label { font-size: 0.82rem; }
+    .driver-form-compact .field-validation-valid,
+    .driver-form-compact .field-validation-error { font-size: 0.75rem; }
+    .driver-form-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+    .driver-form-compact .card-body { padding-top: 0.85rem; }
+    .driver-form-compact .small-muted { font-size: 0.78rem; }
+    .driver-form-compact .form-check { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0; height: 31px; }
+    .driver-form-compact .form-check-input { margin-top: 0; }
+</style>
 
 <div class="container-fluid">
     <div class="page-title">
@@ -10,32 +24,40 @@
             <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">رانندگان</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">رانندگان</a></li>
+                    <li class="breadcrumb-item active">اطلاعات بانکی</li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="card shadow-sm">
+<div class="container-fluid driver-form-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">افزودن اطلاعات بانکی</h6>
+                <small class="text-muted small-muted">ثبت حساب بانکی جدید برای راننده</small>
+            </div>
+        </div>
+
         <div class="card-body">
             <form asp-action="AddBankAccount" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="DriverProfileId" />
 
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-4">
                         <label asp-for="AccountOwnerName" class="form-label"></label>
-                        <input asp-for="AccountOwnerName" class="form-control" />
+                        <input asp-for="AccountOwnerName" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="BankName" class="form-label"></label>
-                        <input asp-for="BankName" class="form-control" />
+                        <input asp-for="BankName" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
@@ -48,28 +70,30 @@
 
                     <div class="col-md-4">
                         <label asp-for="AccountNumber" class="form-label"></label>
-                        <input asp-for="AccountNumber" class="form-control" />
+                        <input asp-for="AccountNumber" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="CardNumber" class="form-label"></label>
-                        <input asp-for="CardNumber" class="form-control" />
+                        <input asp-for="CardNumber" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="ShebaNumber" class="form-label"></label>
-                        <input asp-for="ShebaNumber" class="form-control" />
+                        <input asp-for="ShebaNumber" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-12">
                         <label asp-for="Description" class="form-label"></label>
-                        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                        <textarea asp-for="Description" class="form-control form-control-sm" rows="3"></textarea>
                     </div>
                 </div>
 
-                <div class="mt-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">ذخیره</button>
-                    <a asp-action="Details" asp-route-id="@Model.DriverProfileId" class="btn btn-secondary">انصراف</a>
+                <hr class="my-3" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm px-3">ذخیره</button>
+                    <a asp-action="Details" asp-route-id="@Model.DriverProfileId" class="btn btn-secondary btn-sm px-3">انصراف</a>
                 </div>
             </form>
         </div>

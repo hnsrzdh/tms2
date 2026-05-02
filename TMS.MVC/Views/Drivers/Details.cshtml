@@ -1,3 +1,5 @@
+@using System.Globalization
+@using TMS.MVC.Models
 @model TMS.MVC.Models.DriverProfile
 
 @{
@@ -10,21 +12,278 @@
                 ? ((Model.ApplicationUser.FirstName ?? "") + " " + (Model.ApplicationUser.LastName ?? "")).Trim()
                 : (Model.ApplicationUser.Email ?? "-")
           );
+
+    var assignments = ViewBag.Assignments as List<TractorAssignment> ?? new List<TractorAssignment>();
+    var walletTransactions = (ViewBag.WalletTransactions as IEnumerable<dynamic> ?? new List<dynamic>()).ToList();
+
+    int totalAssignments = ViewBag.TotalAssignments ?? 0;
+    int activeAssignments = ViewBag.ActiveAssignments ?? 0;
+    int completedAssignments = ViewBag.CompletedAssignments ?? 0;
+    int cancelledAssignments = ViewBag.CancelledAssignments ?? 0;
+
+    decimal totalAssignedAmount = ViewBag.TotalAssignedAmount ?? 0;
+    decimal totalLoadedAmount = ViewBag.TotalLoadedAmount ?? 0;
+    decimal totalUnloadedAmount = ViewBag.TotalUnloadedAmount ?? 0;
+    decimal totalPaidAmount = ViewBag.TotalPaidAmount ?? 0;
+
+    int ReadPage(string key)
+    {
+        var value = Context.Request.Query[key].ToString();
+        return int.TryParse(value, out var page) && page > 0 ? page : 1;
+    }
+
+    int ReadPageSize(string key, int defaultValue = 10)
+    {
+        var value = Context.Request.Query[key].ToString();
+        return int.TryParse(value, out var pageSize) && pageSize > 0 ? pageSize : defaultValue;
+    }
+
+    int contactPage = ReadPage("contactPage");
+    int addressPage = ReadPage("addressPage");
+    int bankPage = ReadPage("bankPage");
+    int walletPage = ReadPage("walletPage");
+    int assignmentPage = ReadPage("assignmentPage");
+
+    int contactPageSize = ReadPageSize("contactPageSize", 10);
+    int addressPageSize = ReadPageSize("addressPageSize", 10);
+    int bankPageSize = ReadPageSize("bankPageSize", 10);
+    int walletPageSize = ReadPageSize("walletPageSize", 10);
+    int assignmentPageSize = ReadPageSize("assignmentPageSize", 10);
+
+    var contactsAll = Model.Contacts.OrderBy(x => x.Id).ToList();
+    var addressesAll = Model.Addresses.OrderBy(x => x.Id).ToList();
+    var bankAccountsAll = Model.BankAccounts.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id).ToList();
+    var walletTransactionsAll = walletTransactions;
+    var assignmentsAll = assignments.OrderByDescending(x => x.AssignmentDate).ToList();
+
+    int contactTotalItems = contactsAll.Count;
+    int addressTotalItems = addressesAll.Count;
+    int bankTotalItems = bankAccountsAll.Count;
+    int walletTotalItems = walletTransactionsAll.Count;
+    int assignmentTotalItems = assignmentsAll.Count;
+
+    int contactTotalPages = Math.Max(1, (int)Math.Ceiling((double)contactTotalItems / contactPageSize));
+    int addressTotalPages = Math.Max(1, (int)Math.Ceiling((double)addressTotalItems / addressPageSize));
+    int bankTotalPages = Math.Max(1, (int)Math.Ceiling((double)bankTotalItems / bankPageSize));
+    int walletTotalPages = Math.Max(1, (int)Math.Ceiling((double)walletTotalItems / walletPageSize));
+    int assignmentTotalPages = Math.Max(1, (int)Math.Ceiling((double)assignmentTotalItems / assignmentPageSize));
+
+    contactPage = Math.Min(contactPage, contactTotalPages);
+    addressPage = Math.Min(addressPage, addressTotalPages);
+    bankPage = Math.Min(bankPage, bankTotalPages);
+    walletPage = Math.Min(walletPage, walletTotalPages);
+    assignmentPage = Math.Min(assignmentPage, assignmentTotalPages);
+
+    var contacts = contactsAll.Skip((contactPage - 1) * contactPageSize).Take(contactPageSize).ToList();
+    var addresses = addressesAll.Skip((addressPage - 1) * addressPageSize).Take(addressPageSize).ToList();
+    var bankAccounts = bankAccountsAll.Skip((bankPage - 1) * bankPageSize).Take(bankPageSize).ToList();
+    var walletItems = walletTransactionsAll.Skip((walletPage - 1) * walletPageSize).Take(walletPageSize).ToList();
+    var assignmentItems = assignmentsAll.Skip((assignmentPage - 1) * assignmentPageSize).Take(assignmentPageSize).ToList();
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string Amount(decimal? amount, string? unit = null)
+    {
+        if (!amount.HasValue) return "-";
+        return string.IsNullOrWhiteSpace(unit)
+            ? amount.Value.ToString("N0")
+            : $"{amount.Value:N0} {unit}";
+    }
+
+    string StatusText(AssignmentStatus status)
+    {
+        return status switch
+        {
+            AssignmentStatus.Assigned => "تخصیص داده شده",
+            AssignmentStatus.ArrivedAtOrigin => "رسیده به مبدا",
+            AssignmentStatus.Loading => "در حال بارگیری",
+            AssignmentStatus.Loaded => "بارگیری شده",
+            AssignmentStatus.InTransit => "در راه",
+            AssignmentStatus.ArrivedAtDestination => "رسیده به مقصد",
+            AssignmentStatus.Unloading => "در حال تخلیه",
+            AssignmentStatus.Unloaded => "تخلیه شده",
+            AssignmentStatus.Completed => "تکمیل شده",
+            AssignmentStatus.CancellationRequested => "درخواست لغو",
+            AssignmentStatus.Cancelled => "لغو شده",
+            _ => status.ToString()
+        };
+    }
+
+    string StatusBadge(AssignmentStatus status)
+    {
+        return status switch
+        {
+            AssignmentStatus.Assigned => "bg-secondary",
+            AssignmentStatus.ArrivedAtOrigin => "bg-info",
+            AssignmentStatus.Loading => "bg-warning",
+            AssignmentStatus.Loaded => "bg-primary",
+            AssignmentStatus.InTransit => "bg-primary",
+            AssignmentStatus.ArrivedAtDestination => "bg-info",
+            AssignmentStatus.Unloading => "bg-warning",
+            AssignmentStatus.Unloaded => "bg-success",
+            AssignmentStatus.Completed => "bg-success",
+            AssignmentStatus.CancellationRequested => "bg-warning",
+            AssignmentStatus.Cancelled => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
 }
 
 <style>
-    .driver-details-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .driver-details-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
     .driver-details-compact .form-control,
     .driver-details-compact .form-select,
     .driver-details-compact .btn,
     .driver-details-compact .table,
-    .driver-details-compact .badge { font-size: 0.82rem; }
-    .driver-details-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
-    .driver-details-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
-    .driver-details-compact .card-body { padding-top: 0.85rem; }
-    .driver-details-compact .small-muted { font-size: 0.78rem; }
-    .driver-details-compact .info-item { font-size: 0.84rem; margin-bottom: 0.45rem; }
-    .driver-details-compact .detail-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .driver-details-compact .badge {
+        font-size: 0.82rem;
+    }
+
+        .driver-details-compact .table > :not(caption) > * > * {
+            padding: 0.45rem 0.55rem;
+        }
+
+    .driver-details-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .driver-details-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .driver-details-compact .pagination .page-link {
+        padding: 0.22rem 0.48rem;
+        font-size: 0.78rem;
+    }
+
+    .driver-details-compact .small-muted {
+        font-size: 0.78rem;
+    }
+
+    .driver-details-compact .info-item {
+        font-size: 0.84rem;
+        margin-bottom: 0.45rem;
+    }
+
+    .driver-details-compact .detail-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .driver-details-compact .summary-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.7rem 0.8rem;
+        background: #f8f9fa;
+        height: 100%;
+    }
+
+        .driver-details-compact .summary-box small {
+            display: block;
+            color: #6c757d;
+            font-size: 0.76rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .driver-details-compact .summary-box .value {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #343a40;
+        }
+
+    .driver-details-compact .wallet-balance-box {
+        border: 1px solid rgba(25, 135, 84, 0.25);
+        background: rgba(25, 135, 84, 0.06);
+    }
+
+        .driver-details-compact .wallet-balance-box .value {
+            color: #198754;
+            font-size: 1.15rem;
+        }
+
+    .driver-details-compact .driver-status-box.active {
+        border-color: rgba(25, 135, 84, 0.25);
+        background: rgba(25, 135, 84, 0.06);
+    }
+
+    .driver-details-compact .driver-status-box.blocked {
+        border-color: rgba(220, 53, 69, 0.25);
+        background: rgba(220, 53, 69, 0.06);
+    }
+
+    .driver-details-compact .route-mini {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 190px;
+    }
+
+    .driver-details-compact .route-point {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        line-height: 1.35;
+    }
+
+        .driver-details-compact .route-point strong {
+            display: block;
+            font-size: 0.82rem;
+            color: #343a40;
+            font-weight: 600;
+        }
+
+    .driver-details-compact .route-label {
+        display: inline-block;
+        font-size: 0.68rem;
+        color: #6c757d;
+        margin-bottom: 0.05rem;
+    }
+
+    .driver-details-compact .route-dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        flex: 0 0 0.55rem;
+    }
+
+    .driver-details-compact .route-origin .route-dot {
+        background: #198754;
+        box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.12);
+    }
+
+    .driver-details-compact .route-destination .route-dot {
+        background: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+    }
+
+    .driver-details-compact .route-line {
+        width: 1px;
+        height: 0.55rem;
+        margin-right: 0.25rem;
+        background: repeating-linear-gradient(to bottom, #adb5bd 0, #adb5bd 3px, transparent 3px, transparent 6px);
+    }
+
+    .driver-details-compact .amount-cell {
+        white-space: nowrap;
+    }
+
+    .driver-details-compact .activity-note {
+        font-size: 0.76rem;
+        color: #6c757d;
+    }
 </style>
 
 <div class="container-fluid">
@@ -35,8 +294,12 @@
             </div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index">رانندگان</a></li>
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-action="Index">رانندگان</a>
+                    </li>
                     <li class="breadcrumb-item active">جزئیات</li>
                 </ol>
             </div>
@@ -50,6 +313,48 @@
         <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
 
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <div class="summary-box driver-status-box @(Model.IsBlocked ? "blocked" : "active")">
+                <small>وضعیت راننده</small>
+                @if (Model.IsBlocked)
+                {
+                    <span class="value text-danger">محدود</span>
+                }
+                else
+                {
+                    <span class="value text-success">فعال</span>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="summary-box wallet-balance-box">
+                <small>موجودی کیف پول</small>
+                <span class="value">@Amount(Model.WalletBalance, "ریال")</span>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>کل تخصیص‌ها</small>
+                <span class="value">@totalAssignments</span>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>مبلغ واریزشده به کیف پول</small>
+                <span class="value text-success">@Amount(totalPaidAmount, "ریال")</span>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
@@ -57,14 +362,19 @@
                 <small class="text-muted small-muted">اطلاعات هویتی و وضعیت راننده</small>
             </div>
             <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm px-3">ویرایش</a>
                 <a asp-action="Index" class="btn btn-secondary btn-sm px-3">بازگشت</a>
             </div>
         </div>
+
         <div class="card-body row">
             <div class="col-md-4 info-item"><strong>نام راننده:</strong> @fullName</div>
             <div class="col-md-4 info-item"><strong>کد ملی:</strong> @(Model.ApplicationUser?.NationalId ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>ایمیل:</strong> @(Model.ApplicationUser?.Email ?? "-")</div>
+            <div class="col-md-4 info-item"><strong>شماره موبایل:</strong> @(Model.ApplicationUser?.PhoneNumber ?? "-")</div>
             <div class="col-md-4 info-item"><strong>شماره کارت هوشمند:</strong> @(Model.SmartCardNumber ?? "-")</div>
             <div class="col-md-4 info-item"><strong>شماره گواهینامه:</strong> @(Model.DrivingLicenseNumber ?? "-")</div>
+
             <div class="col-md-4 info-item">
                 <strong>وضعیت:</strong>
                 @if (Model.IsBlocked)
@@ -76,10 +386,77 @@
                     <span class="badge bg-success">فعال</span>
                 }
             </div>
-            <div class="col-md-12 info-item"><strong>توضیحات محدودیت:</strong> @(string.IsNullOrWhiteSpace(Model.BlockDescription) ? "-" : Model.BlockDescription)</div>
+
+            <div class="col-md-12 info-item">
+                <strong>توضیحات محدودیت:</strong>
+                @(string.IsNullOrWhiteSpace(Model.BlockDescription) ? "-" : Model.BlockDescription)
+            </div>
         </div>
     </div>
 
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">خلاصه فعالیت راننده</h6>
+            <small class="text-muted small-muted">خلاصه وضعیت حمل‌ها، مقدار بار و عملکرد کلی راننده</small>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <div class="summary-box">
+                        <small>حمل‌های فعال</small>
+                        <span class="value text-primary">@activeAssignments</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="summary-box">
+                        <small>حمل‌های تکمیل / تخلیه شده</small>
+                        <span class="value text-success">@completedAssignments</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="summary-box">
+                        <small>حمل‌های لغو شده</small>
+                        <span class="value text-danger">@cancelledAssignments</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="summary-box">
+                        <small>جمع مقدار تخصیص</small>
+                        <span class="value">@Amount(totalAssignedAmount)</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="summary-box">
+                        <small>جمع مقدار بارگیری</small>
+                        <span class="value">@Amount(totalLoadedAmount)</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="summary-box">
+                        <small>جمع مقدار تخلیه</small>
+                        <span class="value">@Amount(totalUnloadedAmount)</span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="summary-box">
+                        <small>توضیح</small>
+                        <span class="activity-note">
+                            این خلاصه بر اساس تخصیص‌هایی محاسبه شده که راننده در آن‌ها ثبت شده است. تخصیص‌های لغو شده در مقدار بار لحاظ نشده‌اند.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- راه‌های ارتباطی -->
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
@@ -88,6 +465,7 @@
             </div>
             <a asp-action="AddContact" asp-route-driverProfileId="@Model.Id" class="btn btn-primary btn-sm px-3">افزودن</a>
         </div>
+
         <div class="card-body table-responsive">
             <table class="table table-hover table-sm align-middle">
                 <thead>
@@ -103,9 +481,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Contacts.Any())
+                    @if (contacts.Any())
                     {
-                        @foreach (var item in Model.Contacts.OrderBy(x => x.Id))
+                        foreach (var item in contacts)
                         {
                             <tr>
                                 <td>@item.Title</td>
@@ -135,9 +513,43 @@
                     }
                 </tbody>
             </table>
+
+            @if (contactTotalItems > contactPageSize)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @contactPage از @contactTotalPages - تعداد کل: @contactTotalItems</div>
+                    <nav>
+                        <ul class="pagination pagination-primary mb-0">
+                            <li class="page-item @(contactPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="1" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">اول</a>
+                            </li>
+                            <li class="page-item @(contactPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@(contactPage - 1)" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">قبلی</a>
+                            </li>
+                            @{
+                                var contactStart = Math.Max(1, contactPage - 2);
+                                var contactEnd = Math.Min(contactTotalPages, contactPage + 2);
+                            }
+                            @for (int i = contactStart; i <= contactEnd; i++)
+                            {
+                                <li class="page-item @(i == contactPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@i" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(contactPage >= contactTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@(contactPage + 1)" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">بعدی</a>
+                            </li>
+                            <li class="page-item @(contactPage >= contactTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactTotalPages" asp-route-contactPageSize="@contactPageSize" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
         </div>
     </div>
 
+    <!-- آدرس‌ها -->
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
@@ -146,6 +558,7 @@
             </div>
             <a asp-action="AddAddress" asp-route-driverProfileId="@Model.Id" class="btn btn-primary btn-sm px-3">افزودن</a>
         </div>
+
         <div class="card-body table-responsive">
             <table class="table table-hover table-sm align-middle">
                 <thead>
@@ -156,9 +569,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Addresses.Any())
+                    @if (addresses.Any())
                     {
-                        @foreach (var item in Model.Addresses.OrderBy(x => x.Id))
+                        foreach (var item in addresses)
                         {
                             <tr>
                                 <td>@item.Title</td>
@@ -183,9 +596,43 @@
                     }
                 </tbody>
             </table>
+
+            @if (addressTotalItems > addressPageSize)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @addressPage از @addressTotalPages - تعداد کل: @addressTotalItems</div>
+                    <nav>
+                        <ul class="pagination pagination-primary mb-0">
+                            <li class="page-item @(addressPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="1" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">اول</a>
+                            </li>
+                            <li class="page-item @(addressPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@(addressPage - 1)" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">قبلی</a>
+                            </li>
+                            @{
+                                var addressStart = Math.Max(1, addressPage - 2);
+                                var addressEnd = Math.Min(addressTotalPages, addressPage + 2);
+                            }
+                            @for (int i = addressStart; i <= addressEnd; i++)
+                            {
+                                <li class="page-item @(i == addressPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@i" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(addressPage >= addressTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@(addressPage + 1)" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">بعدی</a>
+                            </li>
+                            <li class="page-item @(addressPage >= addressTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressTotalPages" asp-route-addressPageSize="@addressPageSize" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
         </div>
     </div>
 
+    <!-- حساب‌های بانکی -->
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
@@ -194,6 +641,7 @@
             </div>
             <a asp-action="AddBankAccount" asp-route-driverProfileId="@Model.Id" class="btn btn-primary btn-sm px-3">افزودن</a>
         </div>
+
         <div class="card-body table-responsive">
             <table class="table table-hover table-sm align-middle">
                 <thead>
@@ -209,9 +657,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.BankAccounts.Any())
+                    @if (bankAccounts.Any())
                     {
-                        @foreach (var item in Model.BankAccounts.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id))
+                        foreach (var item in bankAccounts)
                         {
                             <tr>
                                 <td>@(item.AccountOwnerName ?? "-")</td>
@@ -250,7 +698,258 @@
                     }
                 </tbody>
             </table>
+
+            @if (bankTotalItems > bankPageSize)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @bankPage از @bankTotalPages - تعداد کل: @bankTotalItems</div>
+                    <nav>
+                        <ul class="pagination pagination-primary mb-0">
+                            <li class="page-item @(bankPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="1" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">اول</a>
+                            </li>
+                            <li class="page-item @(bankPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@(bankPage - 1)" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">قبلی</a>
+                            </li>
+                            @{
+                                var bankStart = Math.Max(1, bankPage - 2);
+                                var bankEnd = Math.Min(bankTotalPages, bankPage + 2);
+                            }
+                            @for (int i = bankStart; i <= bankEnd; i++)
+                            {
+                                <li class="page-item @(i == bankPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@i" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(bankPage >= bankTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@(bankPage + 1)" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">بعدی</a>
+                            </li>
+                            <li class="page-item @(bankPage >= bankTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankTotalPages" asp-route-bankPageSize="@bankPageSize" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentPage">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
         </div>
     </div>
 
+    <!-- تراکنش‌های کیف پول -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">تراکنش‌های کیف پول</h6>
+            <small class="text-muted small-muted">واریزها و برداشت‌های کیف پول راننده</small>
+        </div>
+
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>تاریخ</th>
+                        <th>نوع تراکنش</th>
+                        <th>مبلغ</th>
+                        <th>شرح</th>
+                        <th style="width:120px;">ارجاع</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (walletItems.Any())
+                    {
+                        var rowNo = ((walletPage - 1) * walletPageSize) + 1;
+                        foreach (var item in walletItems)
+                        {
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@ToJalali(item.Date)</td>
+                                <td><span class="badge bg-success">@item.Type</span></td>
+                                <td class="amount-cell fw-bold text-success">@Amount(item.Amount, "ریال")</td>
+                                <td>@item.Description</td>
+                                <td>
+                                    <a asp-controller="TractorAssignment"
+                                       asp-action="Details"
+                                       asp-route-id="@item.ReferenceId"
+                                       class="btn btn-outline-info btn-sm">
+                                        جزئیات
+                                    </a>
+                                </td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                تراکنشی برای کیف پول این راننده ثبت نشده است.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (walletTotalItems > walletPageSize)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @walletPage از @walletTotalPages - تعداد کل: @walletTotalItems</div>
+                    <nav>
+                        <ul class="pagination pagination-primary mb-0">
+                            <li class="page-item @(walletPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="1" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">اول</a>
+                            </li>
+                            <li class="page-item @(walletPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@(walletPage - 1)" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">قبلی</a>
+                            </li>
+                            @{
+                                var walletStart = Math.Max(1, walletPage - 2);
+                                var walletEnd = Math.Min(walletTotalPages, walletPage + 2);
+                            }
+                            @for (int i = walletStart; i <= walletEnd; i++)
+                            {
+                                <li class="page-item @(i == walletPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@i" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(walletPage >= walletTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@(walletPage + 1)" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">بعدی</a>
+                            </li>
+                            <li class="page-item @(walletPage >= walletTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletTotalPages" asp-route-walletPageSize="@walletPageSize" asp-route-assignmentPage="@assignmentPage">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+
+            <div class="alert alert-info py-2 small mb-0 mt-2">
+                برداشت از کیف پول زمانی نمایش داده می‌شود که برای کیف پول جدول تراکنش مستقل یا عملیات برداشت تعریف شود. در وضعیت فعلی، واریزهای ناشی از تسویه حمل نمایش داده می‌شوند.
+            </div>
+        </div>
+    </div>
+
+    <!-- تخصیص‌های راننده -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">تخصیص‌های راننده</h6>
+            <small class="text-muted small-muted">تمام تخصیص‌هایی که این راننده در آن‌ها ثبت شده است</small>
+        </div>
+
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>حواله</th>
+                        <th>ریزحواله</th>
+                        <th>کشنده</th>
+                        <th>مسیر</th>
+                        <th>تاریخ تخصیص</th>
+                        <th>تخصیص</th>
+                        <th>بارگیری</th>
+                        <th>تخلیه</th>
+                        <th>وضعیت</th>
+                        <th style="width:105px;">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (assignmentItems.Any())
+                    {
+                        var rowNo = ((assignmentPage - 1) * assignmentPageSize) + 1;
+                        foreach (var item in assignmentItems)
+                        {
+                            var unit = item.SubHavaleh?.Havaleh?.Unit;
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@(item.SubHavaleh?.Havaleh?.HavalehNumber ?? "-")</td>
+                                <td>@(item.SubHavaleh?.Title ?? "-")</td>
+                                <td>@(item.Tractor?.PolicePlateNumber ?? "-")</td>
+
+                                <td>
+                                    <div class="route-mini">
+                                        <div class="route-point route-origin">
+                                            <span class="route-dot"></span>
+                                            <div>
+                                                <span class="route-label">مبدا</span>
+                                                <strong>@(item.SubHavaleh?.Havaleh?.OriginPlace?.Name ?? "-")</strong>
+                                            </div>
+                                        </div>
+
+                                        <div class="route-line"></div>
+
+                                        <div class="route-point route-destination">
+                                            <span class="route-dot"></span>
+                                            <div>
+                                                <span class="route-label">مقصد</span>
+                                                <strong>@(item.SubHavaleh?.DestinationPlace?.Name ?? "-")</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>@ToJalali(item.AssignmentDate)</td>
+                                <td class="amount-cell">@Amount(item.AssignedCargoAmount, unit)</td>
+                                <td class="amount-cell">@Amount(item.LoadedAmount, unit)</td>
+                                <td class="amount-cell">@Amount(item.UnloadedAmount, unit)</td>
+                                <td>
+                                    <span class="badge @StatusBadge(item.Status)">
+                                        @StatusText(item.Status)
+                                    </span>
+                                </td>
+                                <td>
+                                    <a asp-controller="TractorAssignment"
+                                       asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-outline-info btn-sm">
+                                        جزئیات
+                                    </a>
+                                </td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="11" class="text-center text-muted py-4">
+                                تخصیصی برای این راننده ثبت نشده است.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (assignmentTotalItems > assignmentPageSize)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @assignmentPage از @assignmentTotalPages - تعداد کل: @assignmentTotalItems</div>
+                    <nav>
+                        <ul class="pagination pagination-primary mb-0">
+                            <li class="page-item @(assignmentPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="1" asp-route-assignmentPageSize="@assignmentPageSize">اول</a>
+                            </li>
+                            <li class="page-item @(assignmentPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@(assignmentPage - 1)" asp-route-assignmentPageSize="@assignmentPageSize">قبلی</a>
+                            </li>
+                            @{
+                                var assignmentStart = Math.Max(1, assignmentPage - 2);
+                                var assignmentEnd = Math.Min(assignmentTotalPages, assignmentPage + 2);
+                            }
+                            @for (int i = assignmentStart; i <= assignmentEnd; i++)
+                            {
+                                <li class="page-item @(i == assignmentPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@i" asp-route-assignmentPageSize="@assignmentPageSize">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(assignmentPage >= assignmentTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@(assignmentPage + 1)" asp-route-assignmentPageSize="@assignmentPageSize">بعدی</a>
+                            </li>
+                            <li class="page-item @(assignmentPage >= assignmentTotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Details" asp-route-id="@Model.Id" asp-route-contactPage="@contactPage" asp-route-addressPage="@addressPage" asp-route-bankPage="@bankPage" asp-route-walletPage="@walletPage" asp-route-assignmentPage="@assignmentTotalPages" asp-route-assignmentPageSize="@assignmentPageSize">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
 </div>

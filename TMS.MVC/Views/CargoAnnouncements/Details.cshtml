@@ -1,0 +1,139 @@
+@using System.Globalization
+@model TMS.MVC.ViewModels.CargoAnnouncementDetailsViewModel
+
+@{
+    ViewData["Title"] = "جزئیات اعلام بار";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string Amount(decimal amount, string? unit) => $"{amount:N0} {unit}";
+}
+
+<style>
+    .cargo-announcement-details-compact .btn,
+    .cargo-announcement-details-compact .badge,
+    .cargo-announcement-details-compact .form-control,
+    .cargo-announcement-details-compact .form-label {
+        font-size: .82rem;
+    }
+
+    .cargo-announcement-details-compact .card-header {
+        padding-top: .65rem;
+        padding-bottom: .65rem;
+    }
+
+    .cargo-announcement-details-compact .card-body {
+        padding-top: .85rem;
+    }
+
+    .cargo-announcement-details-compact .small-muted {
+        font-size: .78rem;
+    }
+
+    .cargo-announcement-details-compact .info-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .75rem;
+        padding: .65rem .75rem;
+        background: #f8f9fa;
+        height: 100%;
+    }
+
+    .cargo-announcement-details-compact .info-box small {
+        color: #6c757d;
+        font-size: .76rem;
+        display: block;
+    }
+
+    .cargo-announcement-details-compact .info-box .value {
+        display: block;
+        margin-top: .25rem;
+        font-weight: 600;
+        color: #495057;
+    }
+</style>
+
+<div class="container-fluid cargo-announcement-details-compact">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">سامانه اعلام بار</a></li>
+                    <li class="breadcrumb-item active">جزئیات</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid cargo-announcement-details-compact">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">اطلاعات اعلام بار</h6>
+                <small class="text-muted small-muted">این اعلام بار مستقل از حواله‌هاست و فقط جهت تماس اپراتور ثبت شده است.</small>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge @Model.StatusBadgeClass">@Model.StatusDisplay</span>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-3">بازگشت</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-3"><div class="info-box"><small>نام شرکت / صاحب کالا</small><span class="value">@Model.Entity.CustomerCompanyName</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>شخص رابط</small><span class="value">@(Model.Entity.ContactPersonName ?? "-")</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>موبایل</small><span class="value">@Model.Entity.ContactMobile</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>تلفن / ایمیل</small><span class="value">@(Model.Entity.ContactPhone ?? "-") / @(Model.Entity.ContactEmail ?? "-")</span></div></div>
+
+                <div class="col-md-3"><div class="info-box"><small>نوع درخواست</small><span class="value">@(Model.Entity.AnnouncementType ?? "-")</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>مجوز ورود ناوگان</small><span class="value">@(Model.Entity.RequiresFleetEntryPermit ? "نیاز دارد" : "نیاز ندارد")</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>ثبت‌کننده</small><span class="value">@(Model.Entity.CreatedByDisplayName ?? "-")</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>تاریخ ثبت</small><span class="value">@ToJalali(Model.Entity.CreatedAt)</span></div></div>
+
+                <div class="col-md-3"><div class="info-box"><small>مبدا</small><span class="value">@Model.Entity.OriginPlaceName</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>مقصد</small><span class="value">@Model.Entity.DestinationPlaceName</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>شروع بارگیری</small><span class="value">@ToJalali(Model.Entity.LoadingStartDate)</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>پایان بارگیری</small><span class="value">@ToJalali(Model.Entity.LoadingEndDate)</span></div></div>
+
+                <div class="col-md-3"><div class="info-box"><small>محصول</small><span class="value">@Model.Entity.ProductName</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>مقدار</small><span class="value text-primary">@Amount(Model.Entity.ProductAmount, Model.Entity.Unit)</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>جریمه کسری / واحد</small><span class="value">@(Model.Entity.ShortagePenaltyPerUnit.HasValue ? $"{Model.Entity.ShortagePenaltyPerUnit:N0} ریال" : "-")</span></div></div>
+                <div class="col-md-3"><div class="info-box"><small>شماره حواله ایجاد شده</small><span class="value">@(Model.Entity.CreatedHavalehNumber ?? "-")</span></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">توضیحات</h6>
+        </div>
+        <div class="card-body small">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <small>توضیحات مشتری</small>
+                        <span class="value">@(Model.Entity.CustomerNotes ?? "-")</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <small>یادداشت اپراتور</small>
+                        <span class="value">@(Model.Entity.OperatorNote ?? "-")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

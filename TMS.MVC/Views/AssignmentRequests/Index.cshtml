@@ -1,0 +1,511 @@
+@using System.Globalization
+@using TMS.MVC.Models
+@model TMS.MVC.ViewModels.AssignmentRequestIndexViewModel
+
+@{
+    ViewData["Title"] = "درخواست‌های تخصیص";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string Amount(decimal amount, string? unit) => $"{amount:N0} {unit}";
+}
+
+<style>
+    .assignment-requests-compact .form-label {
+        margin-bottom: .25rem;
+        font-size: .82rem;
+    }
+
+    .assignment-requests-compact .form-control,
+    .assignment-requests-compact .form-select,
+    .assignment-requests-compact .btn,
+    .assignment-requests-compact .table,
+    .assignment-requests-compact .badge {
+        font-size: .82rem;
+    }
+
+        .assignment-requests-compact .table > :not(caption) > * > * {
+            padding: .45rem .55rem;
+        }
+
+    .assignment-requests-compact .card-header {
+        padding-top: .65rem;
+        padding-bottom: .65rem;
+    }
+
+    .assignment-requests-compact .card-body {
+        padding-top: .85rem;
+    }
+
+    .assignment-requests-compact .pagination .page-link {
+        padding: .22rem .48rem;
+        font-size: .78rem;
+    }
+
+    .assignment-requests-compact .small-muted {
+        font-size: .78rem;
+    }
+
+    .assignment-requests-compact .route-text {
+        max-width: 260px;
+        white-space: normal;
+    }
+
+    .assignment-requests-compact .amount-cell {
+        white-space: nowrap;
+    }
+
+    .assignment-requests-compact .actions-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+    }
+
+    .route-mini {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 190px;
+    }
+
+    .route-point {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        line-height: 1.35;
+    }
+
+        .route-point strong {
+            display: block;
+            font-size: 0.82rem;
+            color: #343a40;
+            font-weight: 600;
+        }
+
+    .route-label {
+        display: inline-block;
+        font-size: 0.68rem;
+        color: #6c757d;
+        margin-bottom: 0.05rem;
+    }
+
+    .route-dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        flex: 0 0 0.55rem;
+    }
+
+    .route-origin .route-dot {
+        background: #198754;
+        box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.12);
+    }
+
+    .route-destination .route-dot {
+        background: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+    }
+
+    .route-line {
+        width: 1px;
+        height: 0.55rem;
+        margin-right: 0.25rem;
+        background: repeating-linear-gradient( to bottom, #adb5bd 0, #adb5bd 3px, transparent 3px, transparent 6px );
+    }
+
+    .route-summary {
+        margin-top: 0.15rem;
+        padding: 0.25rem 0.45rem;
+        border-radius: 0.5rem;
+        background: #f8f9fa;
+        color: #6c757d;
+        font-size: 0.74rem;
+        border: 1px dashed #dee2e6;
+    }
+
+    .request-title {
+        font-weight: 600;
+        color: #343a40;
+        font-size: .82rem;
+    }
+
+    .request-subtitle {
+        display: block;
+        color: #6c757d;
+        font-size: .74rem;
+        margin-top: .1rem;
+    }
+
+    .capacity-text {
+        display: block;
+        color: #6c757d;
+        font-size: .74rem;
+        margin-top: .1rem;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item active">درخواست‌های تخصیص</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid assignment-requests-compact">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
+    }
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">درخواست‌های تخصیص کشنده</h6>
+                <small class="text-muted small-muted">اپراتور می‌تواند درخواست‌های کاربران را تایید یا رد کند. با تایید، تخصیص واقعی برای ریزحواله ایجاد می‌شود.</small>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 mb-3">
+                <input type="hidden" name="page" value="1" />
+
+                <div class="col-md-6">
+                    <label class="form-label">جستجو</label>
+                    <input name="search"
+                           value="@Model.Search"
+                           class="form-control form-control-sm"
+                           placeholder="شماره حواله، عنوان، پلاک، نام یا ایمیل درخواست‌دهنده..." />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">وضعیت</label>
+                    <select name="statusFilter" class="form-select form-select-sm">
+                        <option value="">همه وضعیت‌ها</option>
+                        @foreach (var status in Enum.GetValues<AssignmentRequestStatus>())
+                        {
+                            var name = status.ToString();
+                            var text = status switch
+                            {
+                                AssignmentRequestStatus.Pending => "در انتظار بررسی",
+                                AssignmentRequestStatus.Approved => "تایید شده",
+                                AssignmentRequestStatus.Rejected => "رد شده",
+                                AssignmentRequestStatus.Cancelled => "لغو شده",
+                                _ => name
+                            };
+
+                            if (Model.StatusFilter == name)
+                            {
+                                <option value="@name" selected>@text</option>
+                            }
+                            else
+                            {
+                                <option value="@name">@text</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">تعداد</label>
+                    <select name="pageSize" class="form-select form-select-sm">
+                        @foreach (var size in new[] { 10, 20, 50, 100 })
+                        {
+                            if (Model.PageSize == size)
+                            {
+                                <option value="@size" selected>@size رکورد</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size رکورد</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-info btn-sm w-100">فیلتر</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>حواله</th>
+                            <th>عنوان</th>
+                            <th>درخواست‌دهنده</th>
+                            <th>کشنده</th>
+                            <th>مسیر</th>
+                            <th>مقدار</th>
+                            <th>تاریخ مراجعه</th>
+                            <th>ثبت</th>
+                            <th>وضعیت</th>
+                            <th style="width: 190px;">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            var rowNo = Model.RowNumberStart;
+
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>@rowNo</td>
+
+                                    <td>
+                                        <span class="request-title">@item.HavalehNumber</span>
+                                    </td>
+
+                                    <td>
+                                        <span class="request-title">@(item.SubHavalehTitle ?? "-")</span>
+                                    </td>
+
+                                    <td>
+                                        <span class="request-title">@(item.RequesterName ?? "-")</span>
+                                    </td>
+
+                                    <td>
+                                        <span class="request-title">@(item.TractorPlateNumber ?? "-")</span>
+                                        <span class="capacity-text">
+                                            @(item.IsTruckCapacityFull ? "ظرفیت کامل" : "ظرفیت ناقص / قابل استفاده مجدد")
+                                        </span>
+                                    </td>
+
+                                    <td class="route-text">
+                                        <div class="route-mini">
+                                            <div class="route-point route-origin">
+                                                <span class="route-dot"></span>
+                                                <div>
+                                                    <span class="route-label">مبدا</span>
+                                                    <strong>@(item.OriginPlaceName ?? "-")</strong>
+                                                </div>
+                                            </div>
+
+                                            <div class="route-line"></div>
+
+                                            <div class="route-point route-destination">
+                                                <span class="route-dot"></span>
+                                                <div>
+                                                    <span class="route-label">مقصد</span>
+                                                    <strong>@(item.DestinationPlaceName ?? "-")</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td class="amount-cell fw-bold text-primary">
+                                        @Amount(item.RequestedCargoAmount, item.Unit)
+                                    </td>
+
+                                    <td>
+                                        <div>@ToJalali(item.RequestedLoadingDate)</div>
+                                        <small class="text-muted">مراجعه بارگیری</small>
+                                    </td>
+
+                                    <td>
+                                        <div>@ToJalali(item.CreatedAt)</div>
+                                        <small class="text-muted">ثبت درخواست</small>
+                                    </td>
+
+                                    <td>
+                                        <span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span>
+                                    </td>
+
+                                    <td>
+                                        @if (item.Status == AssignmentRequestStatus.Pending)
+                                        {
+                                            <div class="actions-wrap">
+                                                <button type="button"
+                                                        class="btn btn-outline-success btn-sm"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#approveModal_@item.Id">
+                                                    تایید
+                                                </button>
+
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-sm"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#rejectModal_@item.Id">
+                                                    رد
+                                                </button>
+                                            </div>
+
+                                            <div class="modal fade" id="approveModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <form asp-action="Approve" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.Id" />
+
+                                                            <div class="modal-header py-2">
+                                                                <h6 class="modal-title">تایید درخواست تخصیص</h6>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+
+                                                            <div class="modal-body small">
+                                                                <p>آیا این درخواست تایید شود و تخصیص کشنده برای ریزحواله ایجاد شود؟</p>
+
+                                                                <div class="alert alert-info py-2">
+                                                                    <div><strong>حواله:</strong> @item.HavalehNumber</div>
+                                                                    <div><strong>ریزحواله:</strong> @(item.SubHavalehTitle ?? "-")</div>
+                                                                    <div><strong>کشنده:</strong> @(item.TractorPlateNumber ?? "-")</div>
+                                                                    <div><strong>مقدار:</strong> @Amount(item.RequestedCargoAmount, item.Unit)</div>
+                                                                    <div><strong>تاریخ مراجعه:</strong> @ToJalali(item.RequestedLoadingDate)</div>
+                                                                </div>
+
+                                                                <label class="form-label">توضیح اپراتور</label>
+                                                                <textarea name="operatorNote" class="form-control form-control-sm" rows="3"></textarea>
+                                                            </div>
+
+                                                            <div class="modal-footer py-2 gap-2">
+                                                                <button type="submit" class="btn btn-success btn-sm px-3">تایید</button>
+                                                                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="modal fade" id="rejectModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <form asp-action="Reject" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.Id" />
+
+                                                            <div class="modal-header py-2">
+                                                                <h6 class="modal-title">رد درخواست تخصیص</h6>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+
+                                                            <div class="modal-body small">
+                                                                <p>آیا این درخواست رد شود؟</p>
+
+                                                                <div class="alert alert-warning py-2">
+                                                                    <div><strong>حواله:</strong> @item.HavalehNumber</div>
+                                                                    <div><strong>ریزحواله:</strong> @(item.SubHavalehTitle ?? "-")</div>
+                                                                    <div><strong>کشنده:</strong> @(item.TractorPlateNumber ?? "-")</div>
+                                                                    <div><strong>مقدار:</strong> @Amount(item.RequestedCargoAmount, item.Unit)</div>
+                                                                </div>
+
+                                                                <label class="form-label">دلیل / توضیح اپراتور</label>
+                                                                <textarea name="operatorNote" class="form-control form-control-sm" rows="3"></textarea>
+                                                            </div>
+
+                                                            <div class="modal-footer py-2 gap-2">
+                                                                <button type="submit" class="btn btn-danger btn-sm px-3">رد درخواست</button>
+                                                                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">بررسی شده</small>
+                                        }
+                                    </td>
+                                </tr>
+
+                                rowNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="11" class="text-center text-muted py-4">درخواستی یافت نشد.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">
+                        صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems
+                    </div>
+
+                    <nav>
+                        <ul class="pagination pagination-primary">
+                            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="1"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search"
+                                   asp-route-statusFilter="@Model.StatusFilter">اول</a>
+                            </li>
+
+                            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@(Model.Page - 1)"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search"
+                                   asp-route-statusFilter="@Model.StatusFilter">قبلی</a>
+                            </li>
+
+                            @{
+                                var startPage = Math.Max(1, Model.Page - 2);
+                                var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                            }
+
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link"
+                                       asp-action="Index"
+                                       asp-route-page="@i"
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.Search"
+                                       asp-route-statusFilter="@Model.StatusFilter">@i</a>
+                                </li>
+                            }
+
+                            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@(Model.Page + 1)"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search"
+                                   asp-route-statusFilter="@Model.StatusFilter">بعدی</a>
+                            </li>
+
+                            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@Model.TotalPages"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.Search"
+                                   asp-route-statusFilter="@Model.StatusFilter">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+</div>

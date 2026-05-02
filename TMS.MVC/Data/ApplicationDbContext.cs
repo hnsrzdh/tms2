@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Models;
@@ -30,23 +30,22 @@ namespace TMS.MVC.Data
         public DbSet<TractorContact> TractorContacts => Set<TractorContact>();
         public DbSet<TractorAddress> TractorAddresses => Set<TractorAddress>();
 
-
         public DbSet<DriverProfile> DriverProfiles => Set<DriverProfile>();
         public DbSet<DriverBankAccount> DriverBankAccounts => Set<DriverBankAccount>();
         public DbSet<DriverContact> DriverContacts => Set<DriverContact>();
         public DbSet<DriverAddress> DriverAddresses => Set<DriverAddress>();
 
-
         public DbSet<Havaleh> Havalehs => Set<Havaleh>();
         public DbSet<SubHavaleh> SubHavalehs => Set<SubHavaleh>();
         public DbSet<SubHavalehIntermediatePlace> SubHavalehIntermediatePlaces => Set<SubHavalehIntermediatePlace>();
+        public DbSet<SubHavalehAssignmentRequest> SubHavalehAssignmentRequests => Set<SubHavalehAssignmentRequest>();
+
         public DbSet<TractorAssignment> TractorAssignments { get; set; }
         public DbSet<LoadingDocument> LoadingDocuments { get; set; }
         public DbSet<UnloadingDocument> UnloadingDocuments { get; set; }
         public DbSet<LocationTracking> LocationTrackings { get; set; }
-
-        // ========== جدید: چت ==========
         public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<CargoAnnouncement> CargoAnnouncements => Set<CargoAnnouncement>();
 
         public DbSet<Ticket> Tickets => Set<Ticket>();
         public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>();
@@ -125,8 +124,8 @@ namespace TMS.MVC.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<DriverProfile>()
-            .HasIndex(x => x.ApplicationUserId)
-            .IsUnique();
+                .HasIndex(x => x.ApplicationUserId)
+                .IsUnique();
 
             builder.Entity<DriverBankAccount>()
                 .HasOne(x => x.DriverProfile)
@@ -198,6 +197,51 @@ namespace TMS.MVC.Data
                 .HasForeignKey(x => x.PlaceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasOne(x => x.SubHavaleh)
+                .WithMany()
+                .HasForeignKey(x => x.SubHavalehId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasOne(x => x.Tractor)
+                .WithMany()
+                .HasForeignKey(x => x.TractorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasOne(x => x.RequesterUser)
+                .WithMany()
+                .HasForeignKey(x => x.RequesterUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasOne(x => x.ReviewedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasOne(x => x.DriverProfile)
+                .WithMany()
+                .HasForeignKey(x => x.DriverProfileId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasOne(x => x.CreatedTractorAssignment)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedTractorAssignmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasIndex(x => new { x.Status, x.CreatedAt });
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasIndex(x => new { x.SubHavalehId, x.Status });
+
+            builder.Entity<SubHavalehAssignmentRequest>()
+                .HasIndex(x => new { x.TractorId, x.Status });
+
             builder.Entity<TractorAssignment>()
                 .HasOne(a => a.SubHavaleh)
                 .WithMany(s => s.TractorAssignments)
@@ -216,21 +260,18 @@ namespace TMS.MVC.Data
                 .HasForeignKey(a => a.DriverProfileId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // تنظیمات LoadingDocument
             builder.Entity<LoadingDocument>()
                 .HasOne(d => d.TractorAssignment)
                 .WithMany(t => t.LoadingDocuments)
                 .HasForeignKey(d => d.TractorAssignmentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // تنظیمات UnloadingDocument
             builder.Entity<UnloadingDocument>()
                 .HasOne(d => d.TractorAssignment)
                 .WithMany(t => t.UnloadingDocuments)
                 .HasForeignKey(d => d.TractorAssignmentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // تنظیمات LocationTracking
             builder.Entity<LocationTracking>()
                 .HasOne(l => l.TractorAssignment)
                 .WithMany()
@@ -240,7 +281,6 @@ namespace TMS.MVC.Data
             builder.Entity<LocationTracking>()
                 .HasIndex(l => new { l.TractorAssignmentId, l.Timestamp });
 
-            // ========== جدید: تنظیمات ChatMessage ==========
             builder.Entity<ChatMessage>()
                 .HasOne(c => c.TractorAssignment)
                 .WithMany(t => t.ChatMessages)
@@ -252,7 +292,14 @@ namespace TMS.MVC.Data
 
             builder.Entity<ChatMessage>()
                 .HasIndex(c => new { c.TractorAssignmentId, c.IsRead });
+            builder.Entity<CargoAnnouncement>()
+                .HasIndex(x => new { x.Status, x.CreatedAt });
 
+            builder.Entity<CargoAnnouncement>()
+                .HasIndex(x => x.CustomerCompanyName);
+
+            builder.Entity<CargoAnnouncement>()
+                .HasIndex(x => x.ContactMobile);
             builder.Entity<Ticket>()
                 .HasIndex(x => x.Code)
                 .IsUnique();

@@ -1,0 +1,247 @@
+@using System.Globalization
+@model TMS.MVC.ViewModels.AssignmentRequestCreateViewModel
+
+@{
+    ViewData["Title"] = "ثبت درخواست تخصیص";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string Amount(decimal amount, string? unit) => $"{amount:N0} {unit}";
+}
+
+<style>
+    .assignment-request-compact .form-label { margin-bottom: .25rem; font-size: .82rem; }
+    .assignment-request-compact .form-control,
+    .assignment-request-compact .form-select,
+    .assignment-request-compact .input-group-text,
+    .assignment-request-compact .btn,
+    .assignment-request-compact .table,
+    .assignment-request-compact .badge,
+    .assignment-request-compact .form-check-label { font-size: .82rem; }
+    .assignment-request-compact .table > :not(caption) > * > * { padding: .45rem .55rem; }
+    .assignment-request-compact .card-header { padding-top: .65rem; padding-bottom: .65rem; }
+    .assignment-request-compact .card-body { padding-top: .85rem; }
+    .assignment-request-compact .small-muted { font-size: .78rem; }
+    .assignment-request-compact .field-validation-error,
+    .assignment-request-compact span.text-danger { font-size: .75rem; }
+    .assignment-request-compact .summary-box { border: 1px solid #e5e7eb; border-radius: .75rem; padding: .65rem .75rem; background: #f8f9fa; height: 100%; }
+    .assignment-request-compact .summary-box small { font-size: .76rem; color: #6c757d; }
+    .assignment-request-compact .summary-box .value { display: block; margin-top: .25rem; font-weight: 600; color: #495057; }
+</style>
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">ریزحواله‌های قابل درخواست</a></li>
+                    <li class="breadcrumb-item active">ثبت درخواست</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid assignment-request-compact">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">ثبت درخواست تخصیص</h6>
+                <small class="text-muted small-muted">کشنده، مقدار پیشنهادی و تاریخ مراجعه برای بارگیری را ثبت کنید. درخواست بعد از تایید اپراتور به تخصیص تبدیل می‌شود.</small>
+            </div>
+            <a asp-action="Index" class="btn btn-secondary btn-sm px-3">بازگشت</a>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-2 mb-3">
+                <div class="col-md-3"><div class="summary-box"><small>شماره حواله</small><span class="value">@(Model.HavalehNumber ?? "-")</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>ریزحواله</small><span class="value">@(Model.SubHavalehTitle ?? "-")</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>محصول</small><span class="value">@(Model.ProductName ?? "-")</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>بازه بارگیری</small><span class="value">@ToJalali(Model.StartDate) تا @ToJalali(Model.EndDate)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>مقدار کل ریزحواله</small><span class="value">@Amount(Model.RequestedCargoAmountTotal, Model.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>تخصیص داده شده</small><span class="value">@Amount(Model.AssignedAmount, Model.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>درخواست‌های در انتظار</small><span class="value">@Amount(Model.PendingRequestedAmount, Model.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>باقی‌مانده قابل درخواست</small><span class="value text-primary">@Amount(Model.RemainingAssignableAmount, Model.Unit)</span></div></div>
+            </div>
+
+            <form asp-action="Request" method="post" id="assignmentRequestForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="SubHavalehId" />
+                <input type="hidden" asp-for="HavalehNumber" />
+                <input type="hidden" asp-for="SubHavalehTitle" />
+                <input type="hidden" asp-for="OriginPlaceName" />
+                <input type="hidden" asp-for="DestinationPlaceName" />
+                <input type="hidden" asp-for="ProductName" />
+                <input type="hidden" asp-for="Unit" />
+                <input type="hidden" asp-for="RequestedCargoAmountTotal" />
+                <input type="hidden" asp-for="AssignedAmount" />
+                <input type="hidden" asp-for="PendingRequestedAmount" />
+                <input type="hidden" asp-for="RemainingAssignableAmount" />
+                <input type="hidden" asp-for="StartDate" />
+                <input type="hidden" asp-for="EndDate" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">کشنده <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="TractorId" type="hidden" />
+                            <input asp-for="TractorPlateNumber" class="form-control form-control-sm" readonly placeholder="انتخاب کنید..." />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="openTractorModal">انتخاب</button>
+                        </div>
+                        <span asp-validation-for="TractorId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="RequestedCargoAmount" class="form-label"></label>
+                        <input asp-for="RequestedCargoAmount" class="form-control form-control-sm" type="number" step="0.001" min="0.001" max="@Model.RemainingAssignableAmount" placeholder="مثلاً 10" />
+                        <span asp-validation-for="RequestedCargoAmount" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="RequestedLoadingDate" class="form-label"></label>
+                        <input asp-for="RequestedLoadingDate" class="form-control form-control-sm" type="date" />
+                        <span asp-validation-for="RequestedLoadingDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label d-block">&nbsp;</label>
+                        <div class="form-check mt-1">
+                            <input asp-for="IsTruckCapacityFull" class="form-check-input" />
+                            <label asp-for="IsTruckCapacityFull" class="form-check-label"></label>
+                        </div>
+                        <small class="text-muted d-block mt-1">اگر فعال باشد، پس از تایید اپراتور کشنده برای حمل فعال دیگری نمایش داده نمی‌شود.</small>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label asp-for="RequesterNote" class="form-label"></label>
+                        <textarea asp-for="RequesterNote" class="form-control form-control-sm" rows="3" placeholder="توضیحات اختیاری برای اپراتور..."></textarea>
+                        <span asp-validation-for="RequesterNote" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mt-3 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm px-3">ثبت درخواست</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-sm px-3">انصراف</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="tractorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">انتخاب کشنده</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body small">
+                <input type="text" id="tractorSearchInput" class="form-control form-control-sm mb-2" placeholder="حداقل ۲ کاراکتر از پلاک را وارد کنید..." />
+                <small class="text-muted d-block mb-3">کشنده‌هایی که ظرفیت کامل آن‌ها قبلاً در حمل فعال ثبت شده باشد نمایش داده نمی‌شوند. ظرفیت مصرف‌شده شامل تخصیص‌های فعال و درخواست‌های در انتظار بررسی است.</small>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>پلاک</th>
+                                <th>نوع</th>
+                                <th>ظرفیت کل</th>
+                                <th>مصرف‌شده</th>
+                                <th>آزاد</th>
+                                <th>توضیح مصرف</th>
+                                <th style="width:90px;">انتخاب</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tractorSearchResults">
+                            <tr><td colspan="7" class="text-muted text-center py-3">برای نمایش همه کشنده‌های قابل استفاده، دکمه انتخاب را بزنید یا حداقل ۲ کاراکتر جستجو کنید.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tractorModal = new bootstrap.Modal(document.getElementById("tractorModal"));
+            const tractorSearchInput = document.getElementById("tractorSearchInput");
+            const tractorResults = document.getElementById("tractorSearchResults");
+
+            document.getElementById("openTractorModal")?.addEventListener("click", function () {
+                tractorSearchInput.value = "";
+                tractorResults.innerHTML = '<tr><td colspan="7" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> در حال بارگذاری...</td></tr>';
+                tractorModal.show();
+                loadTractors("");
+                setTimeout(() => tractorSearchInput.focus(), 200);
+            });
+
+            let tractorTimeout;
+            tractorSearchInput?.addEventListener("input", function () {
+                clearTimeout(tractorTimeout);
+                const term = this.value.trim();
+                tractorResults.innerHTML = '<tr><td colspan="7" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> در حال جستجو...</td></tr>';
+                tractorTimeout = setTimeout(() => loadTractors(term), 350);
+            });
+
+            function htmlEscape(value) {
+                return (value ?? "").toString()
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll('"', "&quot;");
+            }
+
+            function loadTractors(term) {
+                fetch(`/OpenSubHavalehs/SearchRequestTractors?term=${encodeURIComponent(term)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data || data.length === 0) {
+                            tractorResults.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">کشنده قابل استفاده‌ای یافت نشد.</td></tr>';
+                            return;
+                        }
+
+                        tractorResults.innerHTML = data.map(x => `
+                            <tr>
+                                <td>${htmlEscape(x.policePlateNumber)}</td>
+                                <td>${htmlEscape(x.tractorType || "-")}</td>
+                                <td>${x.capacity ?? "-"} ${htmlEscape(x.capacityUnit || "")}</td>
+                                <td>${x.usedCapacity ?? 0} ${htmlEscape(x.capacityUnit || "")}</td>
+                                <td>${x.freeCapacity ?? "-"} ${htmlEscape(x.capacityUnit || "")}</td>
+                                <td style="min-width:220px; white-space:normal;">${htmlEscape(x.usedCapacityDescription || "-")}</td>
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-primary btn-sm js-select-tractor"
+                                            data-id="${x.id}"
+                                            data-text="${htmlEscape(x.policePlateNumber)}">
+                                        انتخاب
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join("");
+
+                        tractorResults.querySelectorAll(".js-select-tractor").forEach(btn => {
+                            btn.addEventListener("click", function () {
+                                document.getElementById("TractorId").value = this.dataset.id;
+                                document.getElementById("TractorPlateNumber").value = this.dataset.text;
+                                tractorModal.hide();
+                            });
+                        });
+                    })
+                    .catch(() => {
+                        tractorResults.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">خطا در جستجو.</td></tr>';
+                    });
+            }
+        });
+    </script>
+}

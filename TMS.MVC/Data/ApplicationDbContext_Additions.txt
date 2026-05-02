@@ -1,0 +1,15 @@
+// 1) این using لازم نیست اگر از قبل TMS.MVC.Models را دارید:
+// using TMS.MVC.Models;
+
+// 2) داخل کلاس ApplicationDbContext کنار DbSet های دیگر اضافه شود:
+public DbSet<CargoAnnouncement> CargoAnnouncements => Set<CargoAnnouncement>();
+
+// 3) داخل OnModelCreating، قبل از انتهای متد اضافه شود:
+builder.Entity<CargoAnnouncement>()
+    .HasIndex(x => new { x.Status, x.CreatedAt });
+
+builder.Entity<CargoAnnouncement>()
+    .HasIndex(x => x.CustomerCompanyName);
+
+builder.Entity<CargoAnnouncement>()
+    .HasIndex(x => x.ContactMobile);

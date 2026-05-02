@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMS.MVC.Data;
 
@@ -11,9 +12,11 @@ using TMS.MVC.Data;
 namespace TMS.MVC.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260502054616_mig2")]
+    partial class mig2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1365,55 +1368,13 @@ namespace TMS.MVC.Migrations
                     b.Property<string>("CancelledBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("ChargeableShortageAmount")
-                        .HasColumnType("decimal(18,3)");
-
                     b.Property<decimal?>("DelayPenalty")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("DelayPenaltyExchangeRateToBase")
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<int?>("DeliveryDelayDays")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("DriverPriceExchangeRateToBase")
-                        .HasColumnType("decimal(18,6)");
 
                     b.Property<int?>("DriverProfileId")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("DriverStopFeeExchangeRateToBase")
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<decimal?>("DriverTipExchangeRateToBase")
-                        .HasColumnType("decimal(18,6)");
-
                     b.Property<decimal?>("FinalFare")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("FinancialAdjustmentNote")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<decimal?>("FinancialApprovedAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("FinancialApprovedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("FinancialApprovedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FinancialBaseCurrency")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<decimal?>("FinancialCalculatedAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("FinancialManualAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsArrivalAtDestinationConfirmed")
@@ -1423,9 +1384,6 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsCancellationRequestedByDriver")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsFinancialApproved")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsLoadingConfirmed")
@@ -1442,9 +1400,6 @@ namespace TMS.MVC.Migrations
 
                     b.Property<string>("LoadingConfirmedBy")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("LoadingDelayDays")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("LoadingEndDate")
                         .HasColumnType("datetime2");
@@ -1475,17 +1430,11 @@ namespace TMS.MVC.Migrations
                     b.Property<decimal?>("ShortagePenalty")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal?>("ShortagePenaltyExchangeRateToBase")
-                        .HasColumnType("decimal(18,6)");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<long>("SubHavalehId")
                         .HasColumnType("bigint");
-
-                    b.Property<int?>("TotalDelayDays")
-                        .HasColumnType("int");
 
                     b.Property<int>("TractorId")
                         .HasColumnType("int");

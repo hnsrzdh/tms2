@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Models;
 using TMS.MVC.ViewModels;
-using Microsoft.AspNetCore.Authorization;
 
 namespace TMS.MVC.Controllers
 {
     [Authorize]
-    public class TractorAssignmentController : Controller
+    public partial class TractorAssignmentController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
@@ -19,9 +19,11 @@ namespace TMS.MVC.Controllers
             _environment = environment;
         }
 
-        // نمایش لیست کشنده‌های یک زیرحواله
         public async Task<IActionResult> Index(long subHavalehId, string? search, string? statusFilter, int page = 1, int pageSize = 10)
         {
+            if (page < 1) page = 1;
+            if (pageSize <= 0) pageSize = 10;
+
             var subHavaleh = await _context.SubHavalehs
                 .Include(s => s.Havaleh)
                 .FirstOrDefaultAsync(s => s.Id == subHavalehId);
@@ -36,40 +38,44 @@ namespace TMS.MVC.Controllers
                     .ThenInclude(d => d.ApplicationUser)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(statusFilter))
+            if (!string.IsNullOrWhiteSpace(statusFilter) &&
+                Enum.TryParse<AssignmentStatus>(statusFilter, out var status))
             {
-                if (Enum.TryParse<AssignmentStatus>(statusFilter, out var status))
-                {
-                    query = query.Where(a => a.Status == status);
-                }
+                query = query.Where(a => a.Status == status);
             }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim();
-                // استفاده از FirstName و LastName به جای FullName
+
                 query = query.Where(a =>
                     a.Tractor.PolicePlateNumber.Contains(search) ||
-                    (a.DriverProfile != null &&
-                     (a.DriverProfile.ApplicationUser.FirstName + " " + a.DriverProfile.ApplicationUser.LastName).Contains(search))
+                    (
+                        a.DriverProfile != null &&
+                        (
+                            a.DriverProfile.ApplicationUser.FirstName.Contains(search) ||
+                            a.DriverProfile.ApplicationUser.LastName.Contains(search) ||
+                            (a.DriverProfile.ApplicationUser.FirstName + " " + a.DriverProfile.ApplicationUser.LastName).Contains(search)
+                        )
+                    )
                 );
             }
 
             var totalItems = await query.CountAsync();
 
-            // اول داده‌ها رو از دیتابیس بگیر
             var assignments = await query
                 .OrderByDescending(a => a.AssignmentDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            // بعد در حافظه وضعیت‌ها رو محاسبه کن
             var items = assignments.Select(a => new TractorAssignmentItemViewModel
             {
                 Id = a.Id,
                 PolicePlateNumber = a.Tractor.PolicePlateNumber,
-                DriverName = a.DriverProfile != null ? $"{a.DriverProfile.ApplicationUser.FirstName} {a.DriverProfile.ApplicationUser.LastName}" : "-",
+                DriverName = a.DriverProfile != null
+                    ? $"{a.DriverProfile.ApplicationUser.FirstName} {a.DriverProfile.ApplicationUser.LastName}"
+                    : "-",
                 Status = a.Status,
                 StatusDisplay = GetStatusDisplay(a.Status),
                 StatusBadgeClass = GetStatusBadgeClass(a.Status),
@@ -86,6 +92,7 @@ namespace TMS.MVC.Controllers
                 HavalehNumber = subHavaleh.Havaleh.HavalehNumber,
                 Items = items,
                 Search = search,
+                StatusFilter = statusFilter,
                 Page = page,
                 PageSize = pageSize,
                 TotalItems = totalItems
@@ -93,7 +100,7 @@ namespace TMS.MVC.Controllers
 
             return View(model);
         }
-        // فرم تخصیص کشنده جدید
+
         [HttpGet]
         public async Task<IActionResult> Assign(long subHavalehId)
         {
@@ -118,81 +125,54 @@ namespace TMS.MVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(TractorAssignmentUpsertViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                var subHavaleh = await _context.SubHavalehs
-                    .Include(s => s.Havaleh)
-                    .FirstOrDefaultAsync(s => s.Id == model.SubHavalehId);
-                if (subHavaleh != null)
-                {
-                    model.SubHavalehTitle = subHavaleh.Title;
-                    model.HavalehNumber = subHavaleh.Havaleh.HavalehNumber;
-                }
-                return View(model);
-            }
+            await FillAssignmentHeaderAsync(model);
 
-            // ===== اعتبارسنجی کشنده =====
+            if (!ModelState.IsValid)
+                return View(model);
+
             var tractor = await _context.Tractors.FindAsync(model.TractorId);
             if (tractor == null)
             {
-                ModelState.AddModelError("TractorId", "کشنده انتخاب شده معتبر نیست.");
+                ModelState.AddModelError(nameof(model.TractorId), "کشنده انتخاب شده معتبر نیست.");
                 return View(model);
             }
 
-            // چک کن کشنده توی حمل فعال دیگه‌ای نیست
             var tractorInActiveAssignment = await _context.TractorAssignments
-                .AnyAsync(a => a.TractorId == model.TractorId &&
-                               a.Status != AssignmentStatus.Completed &&
-                               a.Status != AssignmentStatus.Cancelled &&
-                               a.Status != AssignmentStatus.Unloaded);
+                .AnyAsync(a =>
+                    a.TractorId == model.TractorId &&
+                    a.Status != AssignmentStatus.Completed &&
+                    a.Status != AssignmentStatus.Cancelled &&
+                    a.Status != AssignmentStatus.Unloaded);
 
             if (tractorInActiveAssignment)
             {
-                ModelState.AddModelError("TractorId", "این کشنده در حال حاضر در یک حمل فعال دیگر تخصیص داده شده است.");
-                var subHavaleh = await _context.SubHavalehs
-                    .Include(s => s.Havaleh)
-                    .FirstOrDefaultAsync(s => s.Id == model.SubHavalehId);
-                if (subHavaleh != null)
-                {
-                    model.SubHavalehTitle = subHavaleh.Title;
-                    model.HavalehNumber = subHavaleh.Havaleh.HavalehNumber;
-                }
+                ModelState.AddModelError(nameof(model.TractorId), "این کشنده در حال حاضر در یک حمل فعال دیگر تخصیص داده شده است.");
                 return View(model);
             }
 
-            // ===== اعتبارسنجی راننده =====
             if (model.DriverProfileId.HasValue)
             {
                 var driver = await _context.DriverProfiles.FindAsync(model.DriverProfileId);
                 if (driver == null)
                 {
-                    ModelState.AddModelError("DriverProfileId", "راننده انتخاب شده معتبر نیست.");
+                    ModelState.AddModelError(nameof(model.DriverProfileId), "راننده انتخاب شده معتبر نیست.");
                     return View(model);
                 }
 
-                // چک کن راننده توی حمل فعال دیگه‌ای نیست
                 var driverInActiveAssignment = await _context.TractorAssignments
-                    .AnyAsync(a => a.DriverProfileId == model.DriverProfileId &&
-                                   a.Status != AssignmentStatus.Completed &&
-                                   a.Status != AssignmentStatus.Cancelled &&
-                                   a.Status != AssignmentStatus.Unloaded);
+                    .AnyAsync(a =>
+                        a.DriverProfileId == model.DriverProfileId &&
+                        a.Status != AssignmentStatus.Completed &&
+                        a.Status != AssignmentStatus.Cancelled &&
+                        a.Status != AssignmentStatus.Unloaded);
 
                 if (driverInActiveAssignment)
                 {
-                    ModelState.AddModelError("DriverProfileId", "این راننده در حال حاضر در یک حمل فعال دیگر تخصیص داده شده است.");
-                    var subHavaleh = await _context.SubHavalehs
-                        .Include(s => s.Havaleh)
-                        .FirstOrDefaultAsync(s => s.Id == model.SubHavalehId);
-                    if (subHavaleh != null)
-                    {
-                        model.SubHavalehTitle = subHavaleh.Title;
-                        model.HavalehNumber = subHavaleh.Havaleh.HavalehNumber;
-                    }
+                    ModelState.AddModelError(nameof(model.DriverProfileId), "این راننده در حال حاضر در یک حمل فعال دیگر تخصیص داده شده است.");
                     return View(model);
                 }
             }
 
-            // ===== ایجاد تخصیص - بدون تغییر وضعیت کشنده یا راننده =====
             var assignment = new TractorAssignment
             {
                 SubHavalehId = model.SubHavalehId,
@@ -209,8 +189,7 @@ namespace TMS.MVC.Controllers
             TempData["Ok"] = "کشنده با موفقیت به زیرحواله تخصیص داده شد.";
             return RedirectToAction(nameof(Details), new { id = assignment.Id });
         }
-        
-        // صفحه جزئیات و رهگیری
+
         [HttpGet]
         public async Task<IActionResult> Details(long id)
         {
@@ -245,10 +224,10 @@ namespace TMS.MVC.Controllers
                 TractorPlateNumber = assignment.Tractor.PolicePlateNumber,
                 DriverFullName = assignment.DriverProfile?.ApplicationUser.FullName ?? "تعیین نشده",
                 OriginCityDisplay = assignment.SubHavaleh.Havaleh.OriginPlace != null
-                    ? $"{assignment.SubHavaleh.Havaleh.OriginPlace.Name}"
+                    ? assignment.SubHavaleh.Havaleh.OriginPlace.Name
                     : "نامشخص",
                 DestinationCityDisplay = assignment.SubHavaleh.DestinationPlace != null
-                    ? $"{assignment.SubHavaleh.DestinationPlace.Name}"
+                    ? assignment.SubHavaleh.DestinationPlace.Name
                     : "نامشخص",
 
                 LoadingDocuments = assignment.LoadingDocuments.Select(d => new DocumentItemViewModel
@@ -296,33 +275,23 @@ namespace TMS.MVC.Controllers
                 CanConfirmDestinationArrival = assignment.Status == AssignmentStatus.Loaded,
                 CanConfirmUnloading = assignment.Status == AssignmentStatus.ArrivedAtDestination,
 
-                // پراپرتی‌های جدید برای لغو
-                CanCancelByAdmin = assignment.Status == AssignmentStatus.Assigned ||
-                                   assignment.Status == AssignmentStatus.ArrivedAtOrigin ||
-                                   assignment.Status == AssignmentStatus.CancellationRequested,
-                CanRequestCancellation = assignment.Status == AssignmentStatus.Assigned ||
-                                         assignment.Status == AssignmentStatus.ArrivedAtOrigin,
+                CanCancelByAdmin =
+                    assignment.Status == AssignmentStatus.Assigned ||
+                    assignment.Status == AssignmentStatus.ArrivedAtOrigin ||
+                    assignment.Status == AssignmentStatus.CancellationRequested,
+
+                CanRequestCancellation =
+                    assignment.Status == AssignmentStatus.Assigned ||
+                    assignment.Status == AssignmentStatus.ArrivedAtOrigin,
+
                 ShowCancellationActions = assignment.Status == AssignmentStatus.CancellationRequested
             };
 
-            // محاسبات
-            if (assignment.LoadedAmount.HasValue && assignment.UnloadedAmount.HasValue)
-            {
-                model.ShortageAmount = assignment.LoadedAmount.Value - assignment.UnloadedAmount.Value;
-                if (model.ShortageAmount > 0)
-                {
-                    var penaltyPerUnit = assignment.SubHavaleh.Havaleh.ShortagePenaltyPerUnit ?? 0;
-                    model.ShortagePenalty = model.ShortageAmount * penaltyPerUnit;
-                }
-
-                var pricePerTon = assignment.SubHavaleh.DriverPricePerTon ?? 0;
-                model.FinalFare = (assignment.UnloadedAmount.Value / 1000) * pricePerTon;
-            }
+            ApplyFinancialCalculationToDetailsModel(assignment, model);
 
             return View(model);
         }
 
-        // ثبت رسیدن به مبدا
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmArrivalAtOrigin(long assignmentId)
@@ -336,6 +305,7 @@ namespace TMS.MVC.Controllers
             assignment.ArrivalAtOriginConfirmedBy = User.Identity?.Name;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "رسیدن به مبدا ثبت شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
@@ -357,11 +327,11 @@ namespace TMS.MVC.Controllers
             assignment.LoadingConfirmedBy = User.Identity?.Name;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "بارگیری با موفقیت ثبت شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
 
-        // ثبت رسیدن به مقصد
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmArrivalAtDestination(long assignmentId)
@@ -375,6 +345,7 @@ namespace TMS.MVC.Controllers
             assignment.ArrivalAtDestinationConfirmedBy = User.Identity?.Name;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "رسیدن به مقصد ثبت شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
@@ -384,6 +355,8 @@ namespace TMS.MVC.Controllers
         public async Task<IActionResult> ConfirmUnloading(long assignmentId, decimal unloadedAmount)
         {
             var assignment = await _context.TractorAssignments
+                .Include(a => a.SubHavaleh)
+                    .ThenInclude(s => s.Havaleh)
                 .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
             if (assignment == null) return NotFound();
@@ -398,14 +371,14 @@ namespace TMS.MVC.Controllers
             if (assignment.LoadedAmount.HasValue)
                 assignment.ShortageAmount = assignment.LoadedAmount.Value - unloadedAmount;
 
+            ApplyFinancialCalculationToAssignment(assignment);
+
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "تخلیه با موفقیت ثبت شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
 
-        // ========== متدهای لغو ==========
-
-        // درخواست لغو توسط راننده
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RequestCancellation(long assignmentId, string reason)
@@ -426,11 +399,11 @@ namespace TMS.MVC.Controllers
             assignment.CancellationReason = reason;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "درخواست لغو با موفقیت ثبت شد. منتظر تایید ادمین باشید.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
 
-        // لغو توسط ادمین
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CancelAssignment(long assignmentId, string reason)
@@ -452,6 +425,7 @@ namespace TMS.MVC.Controllers
             assignment.CancellationReason = reason;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "حمل با موفقیت لغو شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
@@ -474,6 +448,7 @@ namespace TMS.MVC.Controllers
             assignment.CancelledBy = User.Identity?.Name;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "درخواست لغو تایید و سفر کنسل شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
@@ -491,28 +466,29 @@ namespace TMS.MVC.Controllers
                 return RedirectToAction(nameof(Details), new { id = assignmentId });
             }
 
-            // برگشت به وضعیت قبل از درخواست لغو
-            assignment.Status = assignment.ArrivalAtOriginDate.HasValue ?
-                AssignmentStatus.ArrivedAtOrigin : AssignmentStatus.Assigned;
+            assignment.Status = assignment.ArrivalAtOriginDate.HasValue
+                ? AssignmentStatus.ArrivedAtOrigin
+                : AssignmentStatus.Assigned;
+
             assignment.IsCancellationRequestedByDriver = false;
             assignment.CancellationRequestDate = null;
             assignment.CancellationReason = null;
 
             if (!string.IsNullOrWhiteSpace(reason))
-            {
                 assignment.CancellationReason = $"رد شد - {reason}";
-            }
 
             await _context.SaveChangesAsync();
+
             TempData["Warning"] = "درخواست لغو رد شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
 
-        // تایید مدرک
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveDocument(long documentId, string documentType)
         {
+            long? assignmentId = null;
+
             if (documentType == "Loading")
             {
                 var doc = await _context.LoadingDocuments.FindAsync(documentId);
@@ -521,6 +497,7 @@ namespace TMS.MVC.Controllers
                     doc.IsApproved = true;
                     doc.ApprovedBy = User.Identity?.Name;
                     doc.ApprovalDate = DateTime.Now;
+                    assignmentId = doc.TractorAssignmentId;
                 }
             }
             else if (documentType == "Unloading")
@@ -531,28 +508,25 @@ namespace TMS.MVC.Controllers
                     doc.IsApproved = true;
                     doc.ApprovedBy = User.Identity?.Name;
                     doc.ApprovalDate = DateTime.Now;
+                    assignmentId = doc.TractorAssignmentId;
                 }
             }
 
             await _context.SaveChangesAsync();
-            TempData["Ok"] = "مدرک تایید شد.";
-
-            // چک تکمیل مدارک
-            var assignmentId = documentType == "Loading"
-                ? (await _context.LoadingDocuments.FindAsync(documentId))?.TractorAssignmentId
-                : (await _context.UnloadingDocuments.FindAsync(documentId))?.TractorAssignmentId;
 
             if (assignmentId.HasValue)
                 await CheckAndCompleteAssignment(assignmentId.Value);
 
+            TempData["Ok"] = "مدرک تایید شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId ?? 0 });
         }
 
-        // رد مدرک
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectDocument(long documentId, string documentType, string rejectionNote)
         {
+            long? assignmentId = null;
+
             if (documentType == "Loading")
             {
                 var doc = await _context.LoadingDocuments.FindAsync(documentId);
@@ -562,6 +536,7 @@ namespace TMS.MVC.Controllers
                     doc.RejectionNote = rejectionNote;
                     doc.ApprovedBy = User.Identity?.Name;
                     doc.ApprovalDate = DateTime.Now;
+                    assignmentId = doc.TractorAssignmentId;
                 }
             }
             else if (documentType == "Unloading")
@@ -573,20 +548,16 @@ namespace TMS.MVC.Controllers
                     doc.RejectionNote = rejectionNote;
                     doc.ApprovedBy = User.Identity?.Name;
                     doc.ApprovalDate = DateTime.Now;
+                    assignmentId = doc.TractorAssignmentId;
                 }
             }
 
             await _context.SaveChangesAsync();
+
             TempData["Warning"] = "مدرک رد شد.";
-            return RedirectToAction(nameof(Details), new
-            {
-                id = (await _context.TractorAssignments.FindAsync(
-                documentType == "Loading"
-                    ? (await _context.LoadingDocuments.FindAsync(documentId))?.TractorAssignmentId
-                    : (await _context.UnloadingDocuments.FindAsync(documentId))?.TractorAssignmentId))?.Id ?? 0
-            });
+            return RedirectToAction(nameof(Details), new { id = assignmentId ?? 0 });
         }
-        // حذف مدرک
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteDocument(long documentId, string documentType)
@@ -613,11 +584,11 @@ namespace TMS.MVC.Controllers
             }
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "مدرک حذف شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId ?? 0 });
         }
 
-        // تایید همه مدارک
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveAllDocuments(long assignmentId, string documentType)
@@ -627,10 +598,11 @@ namespace TMS.MVC.Controllers
                 var docs = await _context.LoadingDocuments
                     .Where(d => d.TractorAssignmentId == assignmentId)
                     .ToListAsync();
+
                 foreach (var doc in docs)
                 {
                     doc.IsApproved = true;
-                    doc.RejectionNote = null; // پاک کردن دلیل رد قبلی
+                    doc.RejectionNote = null;
                     doc.ApprovedBy = User.Identity?.Name;
                     doc.ApprovalDate = DateTime.Now;
                 }
@@ -640,10 +612,11 @@ namespace TMS.MVC.Controllers
                 var docs = await _context.UnloadingDocuments
                     .Where(d => d.TractorAssignmentId == assignmentId)
                     .ToListAsync();
+
                 foreach (var doc in docs)
                 {
                     doc.IsApproved = true;
-                    doc.RejectionNote = null; // پاک کردن دلیل رد قبلی
+                    doc.RejectionNote = null;
                     doc.ApprovedBy = User.Identity?.Name;
                     doc.ApprovalDate = DateTime.Now;
                 }
@@ -656,7 +629,6 @@ namespace TMS.MVC.Controllers
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
 
-        // رد همه مدارک (حتی اونایی که قبلاً تایید شدن)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectAllDocuments(long assignmentId, string documentType, string rejectionNote)
@@ -666,6 +638,7 @@ namespace TMS.MVC.Controllers
                 var docs = await _context.LoadingDocuments
                     .Where(d => d.TractorAssignmentId == assignmentId)
                     .ToListAsync();
+
                 foreach (var doc in docs)
                 {
                     doc.IsApproved = false;
@@ -679,6 +652,7 @@ namespace TMS.MVC.Controllers
                 var docs = await _context.UnloadingDocuments
                     .Where(d => d.TractorAssignmentId == assignmentId)
                     .ToListAsync();
+
                 foreach (var doc in docs)
                 {
                     doc.IsApproved = false;
@@ -688,20 +662,16 @@ namespace TMS.MVC.Controllers
                 }
             }
 
-            await _context.SaveChangesAsync();
-
-            // اگه قبلاً Completed بود، برگرده به Unloaded
             var assignment = await _context.TractorAssignments.FindAsync(assignmentId);
             if (assignment != null && assignment.Status == AssignmentStatus.Completed)
-            {
                 assignment.Status = AssignmentStatus.Unloaded;
-                await _context.SaveChangesAsync();
-            }
+
+            await _context.SaveChangesAsync();
 
             TempData["Warning"] = "همه مدارک رد شدند.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
-        // آپلود مدرک
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UploadDocument(long assignmentId, string documentType, IFormFile document, string? title)
@@ -719,12 +689,13 @@ namespace TMS.MVC.Controllers
                 var loadingDoc = new LoadingDocument
                 {
                     TractorAssignmentId = assignmentId,
-                    Title = title ?? document.FileName,
+                    Title = string.IsNullOrWhiteSpace(title) ? document.FileName : title.Trim(),
                     FilePath = filePath,
                     DocumentType = documentType,
                     UploadDate = DateTime.Now,
                     UploadedBy = User.Identity?.Name
                 };
+
                 _context.LoadingDocuments.Add(loadingDoc);
             }
             else if (documentType == "Unloading")
@@ -732,20 +703,22 @@ namespace TMS.MVC.Controllers
                 var unloadingDoc = new UnloadingDocument
                 {
                     TractorAssignmentId = assignmentId,
-                    Title = title ?? document.FileName,
+                    Title = string.IsNullOrWhiteSpace(title) ? document.FileName : title.Trim(),
                     FilePath = filePath,
                     DocumentType = documentType,
                     UploadDate = DateTime.Now,
                     UploadedBy = User.Identity?.Name
                 };
+
                 _context.UnloadingDocuments.Add(unloadingDoc);
             }
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "مدرک با موفقیت آپلود شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
-        // واریز به راننده
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SettleToDriver(long assignmentId)
@@ -753,25 +726,25 @@ namespace TMS.MVC.Controllers
             var assignment = await _context.TractorAssignments
                 .Include(a => a.DriverProfile)
                 .Include(a => a.SubHavaleh)
+                    .ThenInclude(s => s.Havaleh)
                 .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
             if (assignment == null) return NotFound();
-            if (assignment.IsSettled) return RedirectToAction(nameof(Details), new { id = assignmentId });
 
-            // محاسبه مبلغ
-            var totalFare = (assignment.UnloadedAmount ?? 0) / 1000 * (assignment.SubHavaleh?.DriverPricePerTon ?? 0)
-                + (assignment.SubHavaleh?.DriverTip ?? 0)
-                + (assignment.SubHavaleh?.DriverStopFee ?? 0)
-                - (assignment.ShortagePenalty ?? 0)
-                - (assignment.DelayPenalty ?? 0);
+            if (assignment.IsSettled)
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
 
-            // اضافه به کیف پول راننده
-            if (assignment.DriverProfile != null)
+            if (!assignment.IsFinancialApproved || !assignment.FinancialApprovedAmount.HasValue)
             {
-                assignment.DriverProfile.WalletBalance = (assignment.DriverProfile.WalletBalance ?? 0) + totalFare;
+                TempData["Error"] = "قبل از واریز، مبلغ نهایی باید توسط اپراتور تایید شود.";
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
             }
 
-            // ذخیره مبلغ نهایی و تغییر وضعیت
+            var totalFare = assignment.FinancialApprovedAmount.Value;
+
+            if (assignment.DriverProfile != null)
+                assignment.DriverProfile.WalletBalance = (assignment.DriverProfile.WalletBalance ?? 0) + totalFare;
+
             assignment.FinalFare = totalFare;
             assignment.PayableAmount = totalFare;
             assignment.IsSettled = true;
@@ -780,11 +753,11 @@ namespace TMS.MVC.Controllers
             assignment.SettledDate = DateTime.Now;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = $"مبلغ {totalFare:N0} به کیف پول راننده واریز شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
 
-        // واریز به کشنده
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SettleToTractor(long assignmentId)
@@ -792,25 +765,25 @@ namespace TMS.MVC.Controllers
             var assignment = await _context.TractorAssignments
                 .Include(a => a.Tractor)
                 .Include(a => a.SubHavaleh)
+                    .ThenInclude(s => s.Havaleh)
                 .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
             if (assignment == null) return NotFound();
-            if (assignment.IsSettled) return RedirectToAction(nameof(Details), new { id = assignmentId });
 
-            // محاسبه مبلغ
-            var totalFare = (assignment.UnloadedAmount ?? 0) / 1000 * (assignment.SubHavaleh?.DriverPricePerTon ?? 0)
-                + (assignment.SubHavaleh?.DriverTip ?? 0)
-                + (assignment.SubHavaleh?.DriverStopFee ?? 0)
-                - (assignment.ShortagePenalty ?? 0)
-                - (assignment.DelayPenalty ?? 0);
+            if (assignment.IsSettled)
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
 
-            // اضافه به کیف پول کشنده
-            if (assignment.Tractor != null)
+            if (!assignment.IsFinancialApproved || !assignment.FinancialApprovedAmount.HasValue)
             {
-                assignment.Tractor.WalletBalance = (assignment.Tractor.WalletBalance ?? 0) + totalFare;
+                TempData["Error"] = "قبل از واریز، مبلغ نهایی باید توسط اپراتور تایید شود.";
+                return RedirectToAction(nameof(Details), new { id = assignmentId });
             }
 
-            // ذخیره مبلغ نهایی و تغییر وضعیت
+            var totalFare = assignment.FinancialApprovedAmount.Value;
+
+            if (assignment.Tractor != null)
+                assignment.Tractor.WalletBalance = (assignment.Tractor.WalletBalance ?? 0) + totalFare;
+
             assignment.FinalFare = totalFare;
             assignment.PayableAmount = totalFare;
             assignment.IsSettled = true;
@@ -819,11 +792,11 @@ namespace TMS.MVC.Controllers
             assignment.SettledDate = DateTime.Now;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = $"مبلغ {totalFare:N0} به کیف پول کشنده واریز شد.";
             return RedirectToAction(nameof(Details), new { id = assignmentId });
         }
 
-        // رهگیری لحظه‌ای
         [HttpPost]
         public async Task<IActionResult> UpdateLocation([FromBody] LocationTrackingInputModel model)
         {
@@ -837,34 +810,37 @@ namespace TMS.MVC.Controllers
                 Heading = model.Heading,
                 Notes = model.Notes
             };
+
             _context.LocationTrackings.Add(location);
             await _context.SaveChangesAsync();
+
             return Json(new { success = true });
         }
 
         [HttpGet]
         public async Task<IActionResult> SearchAvailableTractors(string? term)
         {
-            // اول ID کشنده‌هایی که توی حمل فعال هستن رو بگیر
             var busyTractorIds = await _context.TractorAssignments
-                .Where(a => a.Status != AssignmentStatus.Completed &&
-                            a.Status != AssignmentStatus.Cancelled &&
-                            a.Status != AssignmentStatus.Unloaded)
+                .Where(a =>
+                    a.Status != AssignmentStatus.Completed &&
+                    a.Status != AssignmentStatus.Cancelled &&
+                    a.Status != AssignmentStatus.Unloaded)
                 .Select(a => a.TractorId)
                 .Distinct()
                 .ToListAsync();
 
             var query = _context.Tractors
-                .Where(t => t.Status == "فعال" && !busyTractorIds.Contains(t.Id)) // فقط فعال‌های غیرمشغول
+                .Where(t => t.Status == "فعال" && !busyTractorIds.Contains(t.Id))
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(term) && term.Trim().Length >= 2)
+            if (!string.IsNullOrWhiteSpace(term) && term.Trim().Length >= 2)
             {
                 term = term.Trim();
                 query = query.Where(t => t.PolicePlateNumber.Contains(term));
             }
 
             var tractors = await query
+                .OrderBy(t => t.PolicePlateNumber)
                 .Select(t => new TractorSearchResultViewModel
                 {
                     Id = t.Id,
@@ -882,24 +858,25 @@ namespace TMS.MVC.Controllers
         [HttpGet]
         public async Task<IActionResult> SearchAvailableDrivers(string? term)
         {
-            // اول ID راننده‌هایی که توی حمل فعال هستن رو بگیر
             var busyDriverIds = await _context.TractorAssignments
-                .Where(a => a.Status != AssignmentStatus.Completed &&
-                            a.Status != AssignmentStatus.Cancelled &&
-                            a.Status != AssignmentStatus.Unloaded &&
-                            a.DriverProfileId != null)
+                .Where(a =>
+                    a.Status != AssignmentStatus.Completed &&
+                    a.Status != AssignmentStatus.Cancelled &&
+                    a.Status != AssignmentStatus.Unloaded &&
+                    a.DriverProfileId != null)
                 .Select(a => a.DriverProfileId!.Value)
                 .Distinct()
                 .ToListAsync();
 
             var query = _context.DriverProfiles
                 .Include(d => d.ApplicationUser)
-                .Where(d => !d.IsBlocked && !busyDriverIds.Contains(d.Id)) // فقط غیرمسدودهای غیرمشغول
+                .Where(d => !d.IsBlocked && !busyDriverIds.Contains(d.Id))
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(term) && term.Trim().Length >= 2)
+            if (!string.IsNullOrWhiteSpace(term) && term.Trim().Length >= 2)
             {
                 term = term.Trim();
+
                 query = query.Where(d =>
                     d.ApplicationUser.FirstName.Contains(term) ||
                     d.ApplicationUser.LastName.Contains(term) ||
@@ -907,6 +884,8 @@ namespace TMS.MVC.Controllers
             }
 
             var drivers = await query
+                .OrderBy(d => d.ApplicationUser.LastName)
+                .ThenBy(d => d.ApplicationUser.FirstName)
                 .Select(d => new DriverSearchResultViewModel
                 {
                     Id = d.Id,
@@ -937,13 +916,18 @@ namespace TMS.MVC.Controllers
                     Speed = l.Speed,
                     Heading = l.Heading,
                     Notes = l.Notes
-                }).ToListAsync();
+                })
+                .ToListAsync();
+
             return Json(locations);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAssignmentsList(long subHavalehId, string? search, string? statusFilter, int page = 1, int pageSize = 10)
         {
+            if (page < 1) page = 1;
+            if (pageSize <= 0) pageSize = 10;
+
             var subHavaleh = await _context.SubHavalehs
                 .Include(s => s.Havaleh)
                 .FirstOrDefaultAsync(s => s.Id == subHavalehId);
@@ -958,24 +942,27 @@ namespace TMS.MVC.Controllers
                     .ThenInclude(d => d.ApplicationUser)
                 .AsQueryable();
 
-            // جستجو
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim();
+
                 query = query.Where(a =>
                     a.Tractor.PolicePlateNumber.Contains(search) ||
-                    (a.DriverProfile != null &&
-                     (a.DriverProfile.ApplicationUser.FirstName + " " + a.DriverProfile.ApplicationUser.LastName).Contains(search))
+                    (
+                        a.DriverProfile != null &&
+                        (
+                            a.DriverProfile.ApplicationUser.FirstName.Contains(search) ||
+                            a.DriverProfile.ApplicationUser.LastName.Contains(search) ||
+                            (a.DriverProfile.ApplicationUser.FirstName + " " + a.DriverProfile.ApplicationUser.LastName).Contains(search)
+                        )
+                    )
                 );
             }
 
-            // فیلتر وضعیت
-            if (!string.IsNullOrWhiteSpace(statusFilter))
+            if (!string.IsNullOrWhiteSpace(statusFilter) &&
+                Enum.TryParse<AssignmentStatus>(statusFilter, out var status))
             {
-                if (Enum.TryParse<AssignmentStatus>(statusFilter, out var status))
-                {
-                    query = query.Where(a => a.Status == status);
-                }
+                query = query.Where(a => a.Status == status);
             }
 
             var totalItems = await query.CountAsync();
@@ -990,8 +977,12 @@ namespace TMS.MVC.Controllers
             {
                 Id = a.Id,
                 PolicePlateNumber = a.Tractor.PolicePlateNumber,
-                DriverName = a.DriverProfile != null ? $"{a.DriverProfile.ApplicationUser.FirstName} {a.DriverProfile.ApplicationUser.LastName}" : "-",
+                DriverName = a.DriverProfile != null
+                    ? $"{a.DriverProfile.ApplicationUser.FirstName} {a.DriverProfile.ApplicationUser.LastName}"
+                    : "-",
                 Status = a.Status,
+                StatusDisplay = GetStatusDisplay(a.Status),
+                StatusBadgeClass = GetStatusBadgeClass(a.Status),
                 AssignmentDate = a.AssignmentDate,
                 LoadedAmount = a.LoadedAmount,
                 UnloadedAmount = a.UnloadedAmount,
@@ -1013,41 +1004,149 @@ namespace TMS.MVC.Controllers
 
             return PartialView("_TractorAssignmentsList", model);
         }
-        
-        // متد کمکی برای بررسی تایید همه مدارک و تکمیل سفر
+
+        private async Task FillAssignmentHeaderAsync(TractorAssignmentUpsertViewModel model)
+        {
+            var subHavaleh = await _context.SubHavalehs
+                .Include(s => s.Havaleh)
+                .FirstOrDefaultAsync(s => s.Id == model.SubHavalehId);
+
+            if (subHavaleh == null) return;
+
+            model.SubHavalehTitle = subHavaleh.Title;
+            model.HavalehNumber = subHavaleh.Havaleh.HavalehNumber;
+        }
+
+        private void ApplyFinancialCalculationToDetailsModel(TractorAssignment assignment, TractorAssignmentDetailsViewModel model)
+        {
+            if (assignment.LoadedAmount.HasValue && assignment.UnloadedAmount.HasValue)
+            {
+                model.ShortageAmount = assignment.LoadedAmount.Value - assignment.UnloadedAmount.Value;
+
+                if (model.ShortageAmount > 0)
+                {
+                    var penaltyPerUnit = assignment.SubHavaleh.Havaleh.ShortagePenaltyPerUnit ?? 0;
+                    model.ShortagePenalty = model.ShortageAmount * penaltyPerUnit;
+                }
+            }
+
+            model.FinalFare = CalculateDriverPayableAmount(assignment);
+        }
+
+        private void ApplyFinancialCalculationToAssignment(TractorAssignment assignment)
+        {
+            if (assignment.LoadedAmount.HasValue && assignment.UnloadedAmount.HasValue)
+            {
+                var shortageAmount = assignment.LoadedAmount.Value - assignment.UnloadedAmount.Value;
+                assignment.ShortageAmount = shortageAmount;
+
+                if (shortageAmount > 0)
+                {
+                    var penaltyPerUnit = assignment.SubHavaleh.Havaleh.ShortagePenaltyPerUnit ?? 0;
+                    assignment.ShortagePenalty = shortageAmount * penaltyPerUnit;
+                }
+                else
+                {
+                    assignment.ShortagePenalty = 0;
+                }
+            }
+
+            assignment.FinalFare = CalculateDriverPayableAmount(assignment);
+            assignment.PayableAmount = assignment.FinalFare;
+        }
+
+        private decimal CalculateDriverPayableAmount(TractorAssignment assignment)
+        {
+            var sub = assignment.SubHavaleh;
+            if (sub == null) return 0;
+
+            var unloadedAmount = assignment.UnloadedAmount ?? 0;
+            var pricePer1000Unit = sub.DriverPricePer1000Unit ?? 0;
+            var baseFare = (unloadedAmount / 1000m) * pricePer1000Unit;
+
+            var driverTip = sub.DriverTip ?? 0;
+
+            var stopHours = CalculateDriverStopHours(assignment);
+            var stopFeeRatePerHour = sub.DriverStopFee ?? 0;
+            var stopFee = stopHours * stopFeeRatePerHour;
+
+            var shortagePenalty = assignment.ShortagePenalty ?? 0;
+            var delayPenalty = assignment.DelayPenalty ?? 0;
+
+            var total = baseFare + driverTip + stopFee - shortagePenalty - delayPenalty;
+
+            return total < 0 ? 0 : total;
+        }
+
+        private decimal CalculateDriverStopHours(TractorAssignment assignment)
+        {
+            var sub = assignment.SubHavaleh;
+            if (sub == null) return 0;
+
+            decimal totalStopHours = 0;
+
+            if (assignment.ArrivalAtOriginDate.HasValue && assignment.LoadingEndDate.HasValue && sub.AllowedLoadingTime.HasValue)
+            {
+                var loadingHours = (decimal)(assignment.LoadingEndDate.Value - assignment.ArrivalAtOriginDate.Value).TotalHours;
+                var allowedLoadingHours = sub.AllowedLoadingTime.Value;
+
+                if (loadingHours > allowedLoadingHours)
+                    totalStopHours += Math.Ceiling(loadingHours - allowedLoadingHours);
+            }
+
+            if (assignment.ArrivalAtDestinationDate.HasValue && assignment.UnloadingEndDate.HasValue && sub.AllowedDeliveryTime.HasValue)
+            {
+                var unloadingHours = (decimal)(assignment.UnloadingEndDate.Value - assignment.ArrivalAtDestinationDate.Value).TotalHours;
+                var allowedDeliveryHours = sub.AllowedDeliveryTime.Value;
+
+                if (unloadingHours > allowedDeliveryHours)
+                    totalStopHours += Math.Ceiling(unloadingHours - allowedDeliveryHours);
+            }
+
+            return totalStopHours;
+        }
+
         private async Task CheckAndCompleteAssignment(long assignmentId)
         {
             var assignment = await _context.TractorAssignments
                 .Include(a => a.LoadingDocuments)
                 .Include(a => a.UnloadingDocuments)
+                .Include(a => a.SubHavaleh)
+                    .ThenInclude(s => s.Havaleh)
                 .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
             if (assignment == null) return;
 
-            // فقط وقتی وضعیت Unloaded هست می‌تونیم بررسی کنیم
             if (assignment.Status != AssignmentStatus.Unloaded) return;
 
-            // چک کن همه مدارک بارگیری و تخلیه تایید شدن
             var allLoadingApproved = assignment.LoadingDocuments.Any() &&
                                      assignment.LoadingDocuments.All(d => d.IsApproved);
+
             var allUnloadingApproved = assignment.UnloadingDocuments.Any() &&
                                        assignment.UnloadingDocuments.All(d => d.IsApproved);
 
             if (allLoadingApproved && allUnloadingApproved)
             {
+                ApplyFinancialCalculationToAssignment(assignment);
                 assignment.Status = AssignmentStatus.Completed;
                 await _context.SaveChangesAsync();
             }
         }
-        // متدهای کمکی
+
         private async Task<string> SaveFileAsync(IFormFile file, string folder)
         {
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", folder);
-            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var safeFileName = Path.GetFileName(file.FileName);
+            var uniqueFileName = $"{Guid.NewGuid():N}_{safeFileName}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
             using (var stream = new FileStream(filePath, FileMode.Create))
                 await file.CopyToAsync(stream);
+
             return $"/uploads/{folder}/{uniqueFileName}";
         }
 
@@ -1070,9 +1169,12 @@ namespace TMS.MVC.Controllers
         private string GetStatusBadgeClass(AssignmentStatus status) => status switch
         {
             AssignmentStatus.Assigned => "bg-secondary",
-            AssignmentStatus.ArrivedAtOrigin => "bg-info",
+            AssignmentStatus.ArrivedAtOrigin => "bg-info text-dark",
+            AssignmentStatus.Loading => "bg-info text-dark",
             AssignmentStatus.Loaded => "bg-primary",
+            AssignmentStatus.InTransit => "bg-primary",
             AssignmentStatus.ArrivedAtDestination => "bg-success",
+            AssignmentStatus.Unloading => "bg-warning text-dark",
             AssignmentStatus.Unloaded => "bg-warning text-dark",
             AssignmentStatus.Completed => "bg-success",
             AssignmentStatus.CancellationRequested => "bg-warning text-dark",

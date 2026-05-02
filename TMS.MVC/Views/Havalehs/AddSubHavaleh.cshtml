@@ -2,392 +2,356 @@
 
 @{
     ViewData["Title"] = "افزودن زیرحواله";
+    var cargoUnit = string.IsNullOrWhiteSpace(Model.HavalehUnit) ? "واحد حواله" : Model.HavalehUnit;
+    var priceBaseLabel = $"برای هر 1000 {cargoUnit}";
 }
 
 <style>
-    .havaleh-compact .form-label {
+    .havaleh-page-compact .form-label {
         margin-bottom: 0.25rem;
         font-size: 0.82rem;
     }
 
-    .havaleh-compact .form-control,
-    .havaleh-compact .form-select,
-    .havaleh-compact .btn,
-    .havaleh-compact .table,
-    .havaleh-compact .badge,
-    .havaleh-compact .input-group-text {
+    .havaleh-page-compact .form-control,
+    .havaleh-page-compact .form-select,
+    .havaleh-page-compact .input-group-text,
+    .havaleh-page-compact .btn,
+    .havaleh-page-compact .table,
+    .havaleh-page-compact .badge,
+    .havaleh-page-compact .form-check-label {
         font-size: 0.82rem;
     }
 
-    .havaleh-compact .table > :not(caption) > * > * {
-        padding: 0.35rem 0.45rem;
+        .havaleh-page-compact .table > :not(caption) > * > * {
+            padding: 0.45rem 0.55rem;
+        }
+
+    .havaleh-page-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
     }
 
-    .havaleh-compact .card-header {
-        padding: 0.65rem 0.85rem;
+    .havaleh-page-compact .card-body {
+        padding-top: 0.85rem;
     }
 
-    .havaleh-compact .card-body {
-        padding: 0.85rem;
+    .havaleh-page-compact .small-muted {
+        font-size: 0.78rem;
     }
 
-    .havaleh-compact .modal-header,
-    .havaleh-compact .modal-body,
-    .havaleh-compact .modal-footer {
-        padding: 0.75rem 0.9rem;
+    .havaleh-page-compact .field-validation-valid,
+    .havaleh-page-compact .field-validation-error,
+    .havaleh-page-compact span.text-danger {
+        font-size: 0.75rem;
     }
 
-    .havaleh-compact .small-muted {
+    .havaleh-page-compact .section-note {
         font-size: 0.78rem;
         color: #6c757d;
     }
 
-    .havaleh-compact .info-box {
-        padding: 0.65rem;
+    .havaleh-page-compact .mini-help {
+        display: block;
+        margin-top: .2rem;
+        color: #6c757d;
+        font-size: .74rem;
     }
 
-    .havaleh-compact .pagination {
-        margin-bottom: 0;
+    .havaleh-page-compact .route-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .75rem;
+        padding: .65rem .75rem;
+        background: #f8f9fa;
     }
+
+    .havaleh-page-compact .currency-select {
+        max-width: 92px;
+    }
+
+    .currency-select {
+        text-align: right;
+        text-align-last: right;
+        direction: rtl;
+        padding-right: 0.75rem !important;
+        padding-left: 2.25rem !important;
+        background-position: left 0.75rem center !important;
+    }
+
+        .currency-select option {
+            text-align: right;
+            direction: rtl;
+        }
 </style>
 
-<div class="container-fluid havaleh-compact">
+
+<div class="container-fluid havaleh-page-compact">
     <div class="page-title">
         <div class="row">
-            <div class="col-sm-6 col-12">
-                <h4>@ViewData["Title"]</h4>
-            </div>
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">حواله‌ها</li>
-                    <li class="breadcrumb-item">زیرحواله</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">حواله‌ها</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.HavalehId">جزئیات حواله</a></li>
+                    <li class="breadcrumb-item active">زیرحواله</li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid havaleh-compact">
+<div class="container-fluid havaleh-page-compact">
     <form asp-action="AddSubHavaleh" method="post" id="subHavalehForm">
         @Html.AntiForgeryToken()
-
         <input type="hidden" asp-for="HavalehId" />
+        <input type="hidden" asp-for="HavalehUnit" />
 
-        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
-        <div class="card shadow-sm mb-3">
+        <div class="alert alert-info py-2 small mb-3">
+            مبالغ مالی در همین فرم با واحد پولی مستقل ثبت می‌شوند. کرایه‌ها بر اساس @priceBaseLabel، حق توقف به‌صورت ساعتی و جریمه تاخیر به‌صورت روزانه محاسبه می‌شود.
+        </div>
+
+        <div class="card mb-3">
             <div class="card-header">
                 <h6 class="mb-0">اطلاعات پایه</h6>
+                <small class="text-muted small-muted">شماره حواله، مسیر اصلی و اطلاعات قراردادی زیرحواله را تکمیل کنید.</small>
             </div>
-
-            <div class="card-body row g-2">
-                <div class="col-md-4">
-                    <label asp-for="HavalehNumber" class="form-label"></label>
-                    <input asp-for="HavalehNumber" class="form-control form-control-sm" readonly />
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="OriginPlaceDisplayName" class="form-label"></label>
-                    <input asp-for="OriginPlaceDisplayName" class="form-control form-control-sm" readonly />
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">مقصد نهایی</label>
-                    <div class="input-group">
-                        <input asp-for="DestinationPlaceId" type="hidden" />
-                        <input asp-for="DestinationPlaceDisplayName" class="form-control form-control-sm" readonly />
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="openDestinationPlaceModal">
-                            انتخاب
-                        </button>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label asp-for="HavalehNumber" class="form-label"></label>
+                        <input asp-for="HavalehNumber" class="form-control form-control-sm" readonly />
                     </div>
-                    <span asp-validation-for="DestinationPlaceId" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="Title" class="form-label"></label>
-                    <input asp-for="Title" class="form-control form-control-sm" />
-                    <span asp-validation-for="Title" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="ContractType" class="form-label"></label>
-                    <input asp-for="ContractType" class="form-control form-control-sm" />
-                    <span asp-validation-for="ContractType" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="SettlementBase" class="form-label"></label>
-                    <input asp-for="SettlementBase" class="form-control form-control-sm" />
-                    <span asp-validation-for="SettlementBase" class="text-danger small"></span>
+                    <div class="col-md-3">
+                        <label asp-for="OriginPlaceDisplayName" class="form-label"></label>
+                        <input asp-for="OriginPlaceDisplayName" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">مقصد نهایی</label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="DestinationPlaceId" type="hidden" />
+                            <input asp-for="DestinationPlaceDisplayName" class="form-control form-control-sm" readonly />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="openDestinationPlaceModal">انتخاب</button>
+                        </div>
+                        <span asp-validation-for="DestinationPlaceId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="TransportType" class="form-label"></label>
+                        <input asp-for="TransportType" class="form-control form-control-sm" placeholder="مثلاً جاده‌ای، ترکیبی..." />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Title" class="form-label"></label>
+                        <input asp-for="Title" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="ContractType" class="form-label"></label>
+                        <input asp-for="ContractType" class="form-control form-control-sm" placeholder="مثلاً پیمانی، توافقی..." />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="SettlementBase" class="form-label"></label>
+                        <input asp-for="SettlementBase" class="form-control form-control-sm" placeholder="مثلاً براساس باسکول مقصد" />
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">مسیر حمل</h6>
-                <button type="button" class="btn btn-primary btn-sm" id="addIntermediatePlaceBtn">
-                    افزودن مکان میانی
-                </button>
-            </div>
-
-            <div class="card-body">
-                <div class="alert alert-info border py-2">
-                    <strong>مبدا:</strong> @Model.OriginPlaceDisplayName
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h6 class="mb-0">مسیر حمل</h6>
+                    <small class="text-muted small-muted">مکان‌های میانی را فقط در صورت نیاز و به ترتیب حرکت اضافه کنید.</small>
                 </div>
-
+                <button type="button" class="btn btn-primary btn-sm px-3" id="addIntermediatePlaceBtn">افزودن مکان میانی</button>
+            </div>
+            <div class="card-body">
+                <div class="route-box mb-2"><strong>مبدا:</strong> @Model.OriginPlaceDisplayName</div>
                 <div id="intermediatePlacesContainer">
                     @for (int i = 0; i < Model.IntermediatePlaces.Count; i++)
                     {
                         <div class="row g-2 mb-2 intermediate-place-row">
-                            <input type="hidden"
-                                   name="IntermediatePlaces[@i].Id"
-                                   value="@Model.IntermediatePlaces[i].Id" />
-
-                            <input type="hidden"
-                                   name="IntermediatePlaces[@i].PlaceId"
-                                   value="@Model.IntermediatePlaces[i].PlaceId"
-                                   class="place-id-input" />
-
-                            <input type="hidden"
-                                   name="IntermediatePlaces[@i].SortOrder"
-                                   value="@(i + 1)"
-                                   class="sort-order-input" />
-
+                            <input type="hidden" name="IntermediatePlaces[@i].Id" value="@Model.IntermediatePlaces[i].Id" />
+                            <input type="hidden" name="IntermediatePlaces[@i].PlaceId" value="@Model.IntermediatePlaces[i].PlaceId" class="place-id-input" />
+                            <input type="hidden" name="IntermediatePlaces[@i].SortOrder" value="@(i + 1)" class="sort-order-input" />
                             <div class="col-md-10">
-                                <input type="text"
-                                       name="IntermediatePlaces[@i].PlaceDisplayName"
-                                       value="@Model.IntermediatePlaces[i].PlaceDisplayName"
-                                       class="form-control place-display-input form-control-sm"
-                                       readonly />
+                                <input type="text" name="IntermediatePlaces[@i].PlaceDisplayName" value="@Model.IntermediatePlaces[i].PlaceDisplayName" class="form-control form-control-sm place-display-input" readonly />
                             </div>
-
                             <div class="col-md-2 d-flex gap-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm select-place-btn">
-                                    انتخاب
-                                </button>
-
-                                <button type="button" class="btn btn-outline-danger btn-sm remove-place-btn">
-                                    حذف
-                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm select-place-btn">انتخاب</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-place-btn">حذف</button>
                             </div>
                         </div>
                     }
                 </div>
-
-                <div class="alert alert-info border mt-3 py-2">
-                    <strong>مقصد نهایی:</strong>
-                    <span id="destinationSummary">@(Model.DestinationPlaceDisplayName ?? "-")</span>
-                </div>
+                <div class="route-box mt-2"><strong>مقصد نهایی:</strong> <span id="destinationSummary">@(Model.DestinationPlaceDisplayName ?? "-")</span></div>
             </div>
         </div>
 
-        <div class="card shadow-sm mb-3">
+        <div class="card mb-3">
             <div class="card-header">
                 <h6 class="mb-0">اطلاعات مالی</h6>
+                <small class="text-muted small-muted">برای هر مبلغ، واحد پولی همان مبلغ را انتخاب کنید.</small>
             </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-12"><label class="form-label fw-bold">بخش صاحب کالا</label></div>
+                    <div class="col-md-4">
+                        <label asp-for="GoodsOwnerPricePer1000Unit" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="GoodsOwnerPricePer1000Unit" class="form-control form-control-sm" />
+                            <select asp-for="GoodsOwnerPriceCurrency"
+                                    class="form-select form-select-sm currency-select text-center">
+                                <option value="ریال">ریال</option>
+                                <option value="دلار">دلار</option>
+                                <option value="یورو">یورو</option>
+                            </select>
+                        </div>
+                        <small class="mini-help">کرایه @priceBaseLabel</small>
+                        <span asp-validation-for="GoodsOwnerPricePer1000Unit" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="GoodsOwnerTip" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="GoodsOwnerTip" class="form-control form-control-sm" />
+                            <select asp-for="GoodsOwnerTipCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
+                        </div>
+                        <small class="mini-help">انعام ثابت از طرف صاحب کالا</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="GoodsOwnerStopFee" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="GoodsOwnerStopFee" class="form-control form-control-sm" />
+                            <select asp-for="GoodsOwnerStopFeeCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
+                        </div>
+                        <small class="mini-help">حق توقف به ازای هر ساعت محاسبه می‌شود.</small>
+                    </div>
 
-            <div class="card-body row g-2">
-                <div class="col-md-3">
-                    <label asp-for="DriverCurrencyType" class="form-label"></label>
-                    <input asp-for="DriverCurrencyType" class="form-control form-control-sm" />
-                    <span asp-validation-for="DriverCurrencyType" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="DriverCurrencyRate" class="form-label"></label>
-                    <input asp-for="DriverCurrencyRate" class="form-control form-control-sm" />
-                    <span asp-validation-for="DriverCurrencyRate" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6"></div>
-
-                <div class="col-md-3">
-                    <label asp-for="GoodsOwnerCurrencyType" class="form-label"></label>
-                    <input asp-for="GoodsOwnerCurrencyType" class="form-control form-control-sm" />
-                    <span asp-validation-for="GoodsOwnerCurrencyType" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="GoodsOwnerCurrencyRate" class="form-label"></label>
-                    <input asp-for="GoodsOwnerCurrencyRate" class="form-control form-control-sm" />
-                    <span asp-validation-for="GoodsOwnerCurrencyRate" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6"></div>
-
-                <div class="col-md-3">
-                    <label asp-for="GoodsOwnerPricePerTon" class="form-label"></label>
-                    <input asp-for="GoodsOwnerPricePerTon" class="form-control form-control-sm" />
-                    <span asp-validation-for="GoodsOwnerPricePerTon" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="GoodsOwnerTip" class="form-label"></label>
-                    <input asp-for="GoodsOwnerTip" class="form-control form-control-sm" />
-                    <span asp-validation-for="GoodsOwnerTip" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="GoodsOwnerStopFee" class="form-label"></label>
-                    <input asp-for="GoodsOwnerStopFee" class="form-control form-control-sm" />
-                    <span asp-validation-for="GoodsOwnerStopFee" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3"></div>
-
-                <div class="col-md-3">
-                    <label asp-for="DriverPricePerTon" class="form-label"></label>
-                    <input asp-for="DriverPricePerTon" class="form-control form-control-sm" />
-                    <span asp-validation-for="DriverPricePerTon" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="DriverTip" class="form-label"></label>
-                    <input asp-for="DriverTip" class="form-control form-control-sm" />
-                    <span asp-validation-for="DriverTip" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="DriverStopFee" class="form-label"></label>
-                    <input asp-for="DriverStopFee" class="form-control form-control-sm" />
-                    <span asp-validation-for="DriverStopFee" class="text-danger small"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm mb-3">
-            <div class="card-header">
-                <h6 class="mb-0">محدودیت‌ها و جریمه‌ها</h6>
-            </div>
-
-            <div class="card-body row g-2">
-                <div class="col-md-3">
-                    <label asp-for="AllowedLoadingTime" class="form-label"></label>
-                    <input asp-for="AllowedLoadingTime" class="form-control form-control-sm" />
-                    <span asp-validation-for="AllowedLoadingTime" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="AllowedDeliveryTime" class="form-label"></label>
-                    <input asp-for="AllowedDeliveryTime" class="form-control form-control-sm" />
-                    <span asp-validation-for="AllowedDeliveryTime" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6"></div>
-
-                <div class="col-md-3">
-                    <label asp-for="LateDeliveryPenalty" class="form-label"></label>
-                    <input asp-for="LateDeliveryPenalty" class="form-control form-control-sm" />
-                    <span asp-validation-for="LateDeliveryPenalty" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="LateDeliveryPenaltyType" class="form-label"></label>
-                    <input asp-for="LateDeliveryPenaltyType" class="form-control form-control-sm" />
-                    <span asp-validation-for="LateDeliveryPenaltyType" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6"></div>
-
-                <div class="col-md-3">
-                    <label asp-for="FixedShortageAmount" class="form-label"></label>
-                    <input asp-for="FixedShortageAmount" class="form-control form-control-sm" />
-                    <span asp-validation-for="FixedShortageAmount" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="ShortagePenaltyType" class="form-label"></label>
-                    <input asp-for="ShortagePenaltyType" class="form-control form-control-sm" />
-                    <span asp-validation-for="ShortagePenaltyType" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="AcceptableWeightLoss" class="form-label"></label>
-                    <input asp-for="AcceptableWeightLoss" class="form-control form-control-sm" />
-                    <span asp-validation-for="AcceptableWeightLoss" class="text-danger small"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm mb-3">
-            <div class="card-header">
-                <h6 class="mb-0">بار و زمان‌بندی</h6>
-            </div>
-
-            <div class="card-body row g-2">
-                <div class="col-md-3">
-                    <div class="form-check mt-4">
-                        <input asp-for="IsUnderSupervisor" class="form-check-input" />
-                        <label asp-for="IsUnderSupervisor" class="form-check-label"></label>
+                    <div class="col-12 mt-2"><label class="form-label fw-bold">بخش راننده</label></div>
+                    <div class="col-md-4">
+                        <label asp-for="DriverPricePer1000Unit" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="DriverPricePer1000Unit" class="form-control form-control-sm" />
+                            <select asp-for="DriverPriceCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
+                        </div>
+                        <small class="mini-help">کرایه پرداختی به راننده @priceBaseLabel</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="DriverTip" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="DriverTip" class="form-control form-control-sm" />
+                            <select asp-for="DriverTipCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
+                        </div>
+                        <small class="mini-help">انعام ثابت پرداختی به راننده</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="DriverStopFee" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="DriverStopFee" class="form-control form-control-sm" />
+                            <select asp-for="DriverStopFeeCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
+                        </div>
+                        <small class="mini-help">حق توقف پرداختی به راننده که به ازای هر ساعت محاسبه می‌شود.</small>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="col-md-9"></div>
-
-                <div class="col-md-3">
-                    <label asp-for="RequestedCargoAmount" class="form-label"></label>
-                    <input asp-for="RequestedCargoAmount" class="form-control form-control-sm" />
-                    <span asp-validation-for="RequestedCargoAmount" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="StartDate" class="form-label"></label>
-                    <input type="hidden"
-                           asp-for="StartDate"
-                           id="StartDate"
-                           value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
-                    <input id="StartDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
-                    <span asp-validation-for="StartDate" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-3">
-                    <label asp-for="EndDate" class="form-label"></label>
-                    <input type="hidden"
-                           asp-for="EndDate"
-                           id="EndDate"
-                           value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
-                    <input id="EndDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
-                    <span asp-validation-for="EndDate" class="text-danger small"></span>
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">محدودیت‌ها، کسری و جریمه‌ها</h6>
+                <small class="text-muted small-muted">زمان‌های مجاز، جریمه روزانه تاخیر و کسری مجاز را مشخص کنید.</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label asp-for="AllowedLoadingTime" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="AllowedLoadingTime" class="form-control form-control-sm" />
+                            <span class="input-group-text">روز</span>
+                            </div>
+                        <small class="mini-help">از زمان تخصیص کشنده محاسبه می شود</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="AllowedDeliveryTime" class="form-label"></label>
+                        <div class="input-group input-group-sm"><input asp-for="AllowedDeliveryTime" class="form-control form-control-sm" /><span class="input-group-text">روز</span></div>
+                        <small class="mini-help">از زمان تخصیص کشنده محاسبه می شود</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="LateDeliveryPenalty" class="form-label"></label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="LateDeliveryPenalty" class="form-control form-control-sm" />
+                            <select asp-for="LateDeliveryPenaltyCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
+                            <span class="input-group-text">روز</span>
+                        </div>
+                        <small class="mini-help">جریمه تاخیر به ازای هر روز محاسبه می‌شود.</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="AcceptableWeightLoss" class="form-label"></label>
+                        <div class="input-group input-group-sm"><input asp-for="AcceptableWeightLoss" class="form-control form-control-sm" /><span class="input-group-text">@cargoUnit</span></div>
+                        <span class="mini-help">کسری بیشتر مشمول جریمه می شود.</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="mt-4 d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm">ذخیره</button>
-            <a asp-action="Details" asp-route-id="@Model.HavalehId" class="btn btn-secondary btn-sm">انصراف</a>
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">بار و زمان‌بندی</h6>
+                <small class="text-muted small-muted">مقدار بار درخواستی با واحد حواله و بازه زمانی اجرای زیرحواله ثبت می‌شود.</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label asp-for="RequestedCargoAmount" class="form-label"></label>
+                        <div class="input-group input-group-sm"><input asp-for="RequestedCargoAmount" class="form-control form-control-sm" /><span class="input-group-text">@cargoUnit</span></div>
+                        <small class="mini-help">باید کمتر یا مساوی مقدار باقیمانده حواله باشد.</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="StartDate" class="form-label"></label>
+                        <input type="hidden" asp-for="StartDate" id="StartDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+                        <input id="StartDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
+                        <small class="mini-help">امکان تخصیص کشنده از این تاریخ وجود دارد.</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="EndDate" class="form-label"></label>
+                        <input type="hidden" asp-for="EndDate" id="EndDate" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+                        <input id="EndDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
+                        <small class="mini-help">بعد از این تاریخ امکان تخصیص کشنده وجود ندارد.</small>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check mb-3 mx-3">
+                            <input asp-for="IsUnderSupervisor" class="form-check-input" />
+                            <label asp-for="IsUnderSupervisor" class="form-check-label"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary btn-sm px-3">ذخیره</button>
+            <a asp-action="Details" asp-route-id="@Model.HavalehId" class="btn btn-secondary btn-sm px-3">انصراف</a>
         </div>
     </form>
 </div>
 
 <div class="modal fade" id="placeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header py-2">
                 <h6 class="modal-title">انتخاب مکان</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
-            <div class="modal-body">
-                <input type="text"
-                       id="placeSearchInput"
-                       class="form-control mb-3 form-control-sm"
-                       placeholder="جستجوی کشور، استان، شهر، مکان یا آدرس..." />
-
-                <table class="table table-hover align-middle table-sm">
-                    <thead>
-                        <tr>
-                            <th>مکان</th>
-                            <th style="width:100px">انتخاب</th>
-                        </tr>
-                    </thead>
-                    <tbody id="placeSearchResults"></tbody>
+            <div class="modal-body small">
+                <input type="text" id="placeSearchInput" class="form-control form-control-sm mb-3" placeholder="جستجوی کشور، استان، شهر، مکان یا آدرس..." />
+                <table class="table table-sm table-hover align-middle">
+                    <thead><tr><th>مکان</th><th style="width:100px">انتخاب</th></tr></thead>
+                    <tbody id="placeSearchResults"><tr><td colspan="2" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td></tr></tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
+
 
 @section Scripts {
     <link rel="stylesheet" href="~/assets/css/persianDatepicker-default.css">
@@ -399,19 +363,18 @@
             const placeSearchInput = document.getElementById("placeSearchInput");
             const placeSearchResults = document.getElementById("placeSearchResults");
             const intermediateContainer = document.getElementById("intermediatePlacesContainer");
-
             let currentTarget = null;
 
-            document.getElementById("openDestinationPlaceModal").addEventListener("click", function () {
+            document.getElementById("openDestinationPlaceModal")?.addEventListener("click", function () {
                 currentTarget = { type: "destination" };
                 openPlaceModal();
             });
 
-            document.getElementById("addIntermediatePlaceBtn").addEventListener("click", function () {
+            document.getElementById("addIntermediatePlaceBtn")?.addEventListener("click", function () {
                 addIntermediatePlaceRow();
             });
 
-            intermediateContainer.addEventListener("click", function (e) {
+            intermediateContainer?.addEventListener("click", function (e) {
                 if (e.target.classList.contains("remove-place-btn")) {
                     e.target.closest(".intermediate-place-row").remove();
                     reindexIntermediateRows();
@@ -419,122 +382,93 @@
                 }
 
                 if (e.target.classList.contains("select-place-btn")) {
-                    currentTarget = {
-                        type: "intermediate",
-                        row: e.target.closest(".intermediate-place-row")
-                    };
-
+                    currentTarget = { type: "intermediate", row: e.target.closest(".intermediate-place-row") };
                     openPlaceModal();
                 }
             });
 
-            placeSearchInput.addEventListener("input", function () {
+            let searchTimeout;
+            placeSearchInput?.addEventListener("input", function () {
+                clearTimeout(searchTimeout);
                 const term = this.value.trim();
 
-                if (!term) {
-                    placeSearchResults.innerHTML = "";
-                    return;
-                }
+                searchTimeout = setTimeout(() => {
+                    if (!term) {
+                        placeSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td></tr>';
+                        return;
+                    }
 
-                fetch(`/Havalehs/SearchPlaces?term=${encodeURIComponent(term)}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        placeSearchResults.innerHTML = data.map(x => `
-                            <tr>
-                                <td>${x.text ?? ""}</td>
-                                <td>
-                                    <button type="button"
-                                            class="btn btn-sm btn-primary js-select-place"
-                                            data-id="${x.id}"
-                                            data-text="${x.text ?? ""}">
-                                        انتخاب
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join("");
+                    fetch(`/Havalehs/SearchPlaces?term=${encodeURIComponent(term)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data || data.length === 0) {
+                                placeSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">موردی یافت نشد.</td></tr>';
+                                return;
+                            }
 
-                        placeSearchResults.querySelectorAll(".js-select-place").forEach(btn => {
-                            btn.addEventListener("click", function () {
-                                const id = this.dataset.id;
-                                const text = this.dataset.text;
+                            placeSearchResults.innerHTML = data.map(x => `
+                                <tr>
+                                    <td>${x.text ?? ""}</td>
+                                    <td style="width:100px">
+                                        <button type="button" class="btn btn-primary btn-sm js-select-place" data-id="${x.id}" data-text="${x.text ?? ""}">انتخاب</button>
+                                    </td>
+                                </tr>
+                            `).join("");
 
-                                if (currentTarget?.type === "destination") {
-                                    document.getElementById("DestinationPlaceId").value = id;
-                                    document.getElementById("DestinationPlaceDisplayName").value = text;
-                                    document.getElementById("destinationSummary").textContent = text;
-                                }
-                                else if (currentTarget?.type === "intermediate" && currentTarget.row) {
-                                    currentTarget.row.querySelector(".place-id-input").value = id;
-                                    currentTarget.row.querySelector(".place-display-input").value = text;
-                                }
+                            placeSearchResults.querySelectorAll(".js-select-place").forEach(btn => {
+                                btn.addEventListener("click", function () {
+                                    const id = this.dataset.id;
+                                    const text = this.dataset.text;
 
-                                placeModal.hide();
+                                    if (currentTarget?.type === "destination") {
+                                        document.getElementById("DestinationPlaceId").value = id;
+                                        document.getElementById("DestinationPlaceDisplayName").value = text;
+                                        document.getElementById("destinationSummary").textContent = text;
+                                    }
+                                    else if (currentTarget?.type === "intermediate" && currentTarget.row) {
+                                        currentTarget.row.querySelector(".place-id-input").value = id;
+                                        currentTarget.row.querySelector(".place-display-input").value = text;
+                                    }
+
+                                    placeModal.hide();
+                                });
                             });
                         });
-                    });
+                }, 300);
             });
 
             function openPlaceModal() {
                 placeSearchInput.value = "";
-                placeSearchResults.innerHTML = "";
+                placeSearchResults.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">برای جستجو، عبارتی وارد کنید.</td></tr>';
                 placeModal.show();
-
                 setTimeout(() => placeSearchInput.focus(), 200);
             }
 
             function addIntermediatePlaceRow() {
                 const index = intermediateContainer.querySelectorAll(".intermediate-place-row").length;
-
                 const rowHtml = `
                     <div class="row g-2 mb-2 intermediate-place-row">
                         <input type="hidden" name="IntermediatePlaces[${index}].Id" value="" />
                         <input type="hidden" name="IntermediatePlaces[${index}].PlaceId" value="" class="place-id-input" />
                         <input type="hidden" name="IntermediatePlaces[${index}].SortOrder" value="${index + 1}" class="sort-order-input" />
-
                         <div class="col-md-10">
-                            <input type="text"
-                                   name="IntermediatePlaces[${index}].PlaceDisplayName"
-                                   value=""
-                                   class="form-control place-display-input form-control-sm"
-                                   readonly />
+                            <input type="text" name="IntermediatePlaces[${index}].PlaceDisplayName" value="" class="form-control form-control-sm place-display-input" readonly />
                         </div>
-
                         <div class="col-md-2 d-flex gap-2">
-                            <button type="button" class="btn btn-outline-secondary btn-sm select-place-btn">
-                                انتخاب
-                            </button>
-
-                            <button type="button" class="btn btn-outline-danger btn-sm remove-place-btn">
-                                حذف
-                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm select-place-btn">انتخاب</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-place-btn">حذف</button>
                         </div>
-                    </div>
-                `;
-
+                    </div>`;
                 intermediateContainer.insertAdjacentHTML("beforeend", rowHtml);
             }
 
             function reindexIntermediateRows() {
-                const rows = intermediateContainer.querySelectorAll(".intermediate-place-row");
-
-                rows.forEach((row, index) => {
+                intermediateContainer.querySelectorAll(".intermediate-place-row").forEach((row, index) => {
                     row.querySelectorAll("input").forEach(input => {
-                        if (input.name.includes(".Id")) {
-                            input.name = `IntermediatePlaces[${index}].Id`;
-                        }
-
-                        if (input.name.includes(".PlaceId")) {
-                            input.name = `IntermediatePlaces[${index}].PlaceId`;
-                        }
-
-                        if (input.name.includes(".SortOrder")) {
-                            input.name = `IntermediatePlaces[${index}].SortOrder`;
-                            input.value = index + 1;
-                        }
-
-                        if (input.name.includes(".PlaceDisplayName")) {
-                            input.name = `IntermediatePlaces[${index}].PlaceDisplayName`;
-                        }
+                        if (input.name.includes(".Id")) input.name = `IntermediatePlaces[${index}].Id`;
+                        if (input.name.includes(".PlaceId")) input.name = `IntermediatePlaces[${index}].PlaceId`;
+                        if (input.name.includes(".SortOrder")) { input.name = `IntermediatePlaces[${index}].SortOrder`; input.value = index + 1; }
+                        if (input.name.includes(".PlaceDisplayName")) input.name = `IntermediatePlaces[${index}].PlaceDisplayName`;
                     });
                 });
             }
@@ -545,195 +479,88 @@
             function setupJalaliDateField(hiddenInputId, shamsiInputId) {
                 const hiddenInput = document.getElementById(hiddenInputId);
                 const shamsiInput = document.getElementById(shamsiInputId);
-
                 if (!hiddenInput || !shamsiInput) return;
 
                 if (typeof $ !== "undefined" && typeof $(shamsiInput).persianDatepicker === "function") {
                     $(shamsiInput).persianDatepicker({
                         formatDate: "YYYY/0M/0D",
                         autoClose: true,
-                        onSelect: function () {
-                            syncShamsiToGregorian(hiddenInput, shamsiInput);
-                        }
+                        onSelect: function () { syncShamsiToGregorian(hiddenInput, shamsiInput); }
                     });
                 }
 
                 if (hiddenInput.value) {
                     const g = normalizeGregorianDate(hiddenInput.value);
-
                     if (g) {
                         const j = gregorianToJalali(g.y, g.m, g.d);
                         shamsiInput.value = j.y + "/" + pad2(j.m) + "/" + pad2(j.d);
                     }
                 }
 
-                const form = document.getElementById("subHavalehForm");
-
-                if (form) {
-                    form.addEventListener("submit", function () {
-                        syncShamsiToGregorian(hiddenInput, shamsiInput);
-                    });
-                }
+                document.getElementById("subHavalehForm")?.addEventListener("submit", function () {
+                    syncShamsiToGregorian(hiddenInput, shamsiInput);
+                });
             }
 
             function syncShamsiToGregorian(hiddenInput, shamsiInput) {
-                let value = (shamsiInput.value || "").trim();
-                value = toEnglishDigits(value);
-
-                if (!value) {
-                    hiddenInput.value = "";
-                    return;
-                }
-
+                let value = toEnglishDigits((shamsiInput.value || "").trim());
+                if (!value) { hiddenInput.value = ""; return; }
                 const parts = value.replace(/-/g, "/").split("/");
-
-                if (parts.length !== 3) {
-                    hiddenInput.value = "";
-                    return;
-                }
-
-                const jy = parseInt(parts[0], 10);
-                const jm = parseInt(parts[1], 10);
-                const jd = parseInt(parts[2], 10);
-
-                if (isNaN(jy) || isNaN(jm) || isNaN(jd)) {
-                    hiddenInput.value = "";
-                    return;
-                }
-
+                if (parts.length !== 3) { hiddenInput.value = ""; return; }
+                const jy = parseInt(parts[0], 10), jm = parseInt(parts[1], 10), jd = parseInt(parts[2], 10);
+                if (isNaN(jy) || isNaN(jm) || isNaN(jd)) { hiddenInput.value = ""; return; }
                 const g = jalaliToGregorian(jy, jm, jd);
                 hiddenInput.value = g.y + "-" + pad2(g.m) + "-" + pad2(g.d);
             }
 
             function normalizeGregorianDate(value) {
                 if (!value) return null;
-
-                if (value.includes("T")) {
-                    value = value.split("T")[0];
-                }
-
+                if (value.includes("T")) value = value.split("T")[0];
                 const parts = value.split("-");
-
-                if (parts.length !== 3) {
-                    return null;
-                }
-
-                return {
-                    y: parseInt(parts[0]),
-                    m: parseInt(parts[1]),
-                    d: parseInt(parts[2])
-                };
+                if (parts.length !== 3) return null;
+                return { y: parseInt(parts[0]), m: parseInt(parts[1]), d: parseInt(parts[2]) };
             }
 
             function toEnglishDigits(str) {
                 const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
                 const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-
-                for (let i = 0; i < 10; i++) {
-                    str = (str || "")
-                        .replaceAll(fa[i], i.toString())
-                        .replaceAll(ar[i], i.toString());
-                }
-
+                for (let i = 0; i < 10; i++) str = (str || "").replaceAll(fa[i], i.toString()).replaceAll(ar[i], i.toString());
                 return str;
             }
 
-            function pad2(n) {
-                return n < 10 ? "0" + n : n.toString();
-            }
+            function pad2(n) { return n < 10 ? "0" + n : n.toString(); }
 
             function gregorianToJalali(gy, gm, gd) {
-                var g_d_m, jy, jm, jd, gy2, days;
-
-                g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
-                gy2 = (gm > 2) ? (gy + 1) : gy;
-
-                days = 355666 +
-                    (365 * gy) +
-                    Math.floor((gy2 + 3) / 4) -
-                    Math.floor((gy2 + 99) / 100) +
-                    Math.floor((gy2 + 399) / 400) +
-                    gd +
-                    g_d_m[gm - 1];
-
-                jy = -1595 + (33 * Math.floor(days / 12053));
+                var g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+                var gy2 = (gm > 2) ? (gy + 1) : gy;
+                var days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
+                var jy = -1595 + (33 * Math.floor(days / 12053));
                 days %= 12053;
-
                 jy += 4 * Math.floor(days / 1461);
                 days %= 1461;
-
-                if (days > 365) {
-                    jy += Math.floor((days - 1) / 365);
-                    days = (days - 1) % 365;
-                }
-
-                if (days < 186) {
-                    jm = 1 + Math.floor(days / 31);
-                    jd = 1 + (days % 31);
-                } else {
-                    jm = 7 + Math.floor((days - 186) / 30);
-                    jd = 1 + ((days - 186) % 30);
-                }
-
+                if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+                var jm, jd;
+                if (days < 186) { jm = 1 + Math.floor(days / 31); jd = 1 + (days % 31); }
+                else { jm = 7 + Math.floor((days - 186) / 30); jd = 1 + ((days - 186) % 30); }
                 return { y: jy, m: jm, d: jd };
             }
 
             function jalaliToGregorian(jy, jm, jd) {
-                var sal_a, gy, gm, gd, days;
-
                 jy += 1595;
-
-                days = -355668 +
-                    (365 * jy) +
-                    Math.floor(jy / 33) * 8 +
-                    Math.floor(((jy % 33) + 3) / 4) +
-                    jd +
-                    ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
-
-                gy = 400 * Math.floor(days / 146097);
+                var days = -355668 + (365 * jy) + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4) + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+                var gy = 400 * Math.floor(days / 146097);
                 days %= 146097;
-
-                if (days > 36524) {
-                    gy += 100 * Math.floor(--days / 36524);
-                    days %= 36524;
-
-                    if (days >= 365) {
-                        days++;
-                    }
-                }
-
+                if (days > 36524) { gy += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
                 gy += 4 * Math.floor(days / 1461);
                 days %= 1461;
-
-                if (days > 365) {
-                    gy += Math.floor((days - 1) / 365);
-                    days = (days - 1) % 365;
-                }
-
-                gd = days + 1;
-
-                sal_a = [
-                    0,
-                    31,
-                    ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28,
-                    31,
-                    30,
-                    31,
-                    30,
-                    31,
-                    31,
-                    30,
-                    31,
-                    30,
-                    31
-                ];
-
-                for (gm = 1; gm <= 12 && gd > sal_a[gm]; gm++) {
-                    gd -= sal_a[gm];
-                }
-
+                if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+                var gd = days + 1;
+                var sal_a = [0,31,((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28,31,30,31,30,31,31,30,31,30,31];
+                var gm;
+                for (gm = 1; gm <= 12 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
                 return { y: gy, m: gm, d: gd };
             }
         });
     </script>
 }
+

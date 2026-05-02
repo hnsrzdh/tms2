@@ -6,13 +6,8 @@ namespace TMS.MVC.ViewModels
     public class SubHavalehIntermediatePlaceUpsertItemViewModel
     {
         public long? Id { get; set; }
-
-        [Display(Name = "مکان")]
         public long? PlaceId { get; set; }
-
-        [Display(Name = "نمایش مکان")]
         public string? PlaceDisplayName { get; set; }
-
         public int SortOrder { get; set; }
     }
 
@@ -32,7 +27,7 @@ namespace TMS.MVC.ViewModels
 
     public class SubHavalehUpsertViewModel
     {
-        public long Id { get; set; }
+        public long? Id { get; set; }
 
         [Required]
         public long HavalehId { get; set; }
@@ -43,81 +38,108 @@ namespace TMS.MVC.ViewModels
         [Display(Name = "مبدا")]
         public string? OriginPlaceDisplayName { get; set; }
 
+        [Display(Name = "واحد حواله")]
+        public string? HavalehUnit { get; set; }
+
+        [StringLength(300)]
         [Display(Name = "عنوان")]
         public string? Title { get; set; }
 
+        [StringLength(200)]
         [Display(Name = "نوع قرارداد")]
         public string? ContractType { get; set; }
 
+        [StringLength(200)]
         [Display(Name = "مبنای تسویه")]
         public string? SettlementBase { get; set; }
 
+        [StringLength(200)]
         [Display(Name = "نوع حمل")]
         public string? TransportType { get; set; }
 
         [Display(Name = "مقصد نهایی")]
         public long? DestinationPlaceId { get; set; }
 
-        [Display(Name = "نمایش مقصد نهایی")]
+        [Display(Name = "مقصد نهایی")]
         public string? DestinationPlaceDisplayName { get; set; }
 
-        [Display(Name = "نوع ارز راننده")]
-        public string? DriverCurrencyType { get; set; }
+        [Display(Name = "فی هر 1000 واحد - صاحب کالا")]
+        public decimal? GoodsOwnerPricePer1000Unit { get; set; }
 
-        [Display(Name = "نرخ برابری ارز راننده")]
-        public decimal? DriverCurrencyRate { get; set; }
-
-        [Display(Name = "نوع ارز صاحب کالا")]
-        public string? GoodsOwnerCurrencyType { get; set; }
-
-        [Display(Name = "نرخ برابری ارز صاحب کالا")]
-        public decimal? GoodsOwnerCurrencyRate { get; set; }
-
-        [Display(Name = "فی هر تن - صاحب کالا")]
-        public decimal? GoodsOwnerPricePerTon { get; set; }
+        [StringLength(30)]
+        [Display(Name = "واحد مبلغ")]
+        public string? GoodsOwnerPriceCurrency { get; set; } = "ریال";
 
         [Display(Name = "انعام - صاحب کالا")]
         public decimal? GoodsOwnerTip { get; set; }
 
-        [Display(Name = "فی هر تن - راننده")]
-        public decimal? DriverPricePerTon { get; set; }
+        [StringLength(30)]
+        [Display(Name = "واحد مبلغ")]
+        public string? GoodsOwnerTipCurrency { get; set; } = "ریال";
+
+        [Display(Name = "حق توقف ساعتی - صاحب کالا")]
+        public decimal? GoodsOwnerStopFee { get; set; }
+
+        [StringLength(30)]
+        [Display(Name = "واحد مبلغ")]
+        public string? GoodsOwnerStopFeeCurrency { get; set; } = "ریال";
+
+        [Display(Name = "فی هر 1000 واحد - راننده")]
+        public decimal? DriverPricePer1000Unit { get; set; }
+
+        [StringLength(30)]
+        [Display(Name = "واحد مبلغ")]
+        public string? DriverPriceCurrency { get; set; } = "ریال";
 
         [Display(Name = "انعام - راننده")]
         public decimal? DriverTip { get; set; }
 
-        [Display(Name = "فی حق توقف - صاحب کالا")]
-        public decimal? GoodsOwnerStopFee { get; set; }
+        [StringLength(30)]
+        [Display(Name = "واحد مبلغ")]
+        public string? DriverTipCurrency { get; set; } = "ریال";
 
-        [Display(Name = "فی حق توقف - راننده")]
+        [Display(Name = "حق توقف ساعتی - راننده")]
         public decimal? DriverStopFee { get; set; }
 
-        [Display(Name = "زمان مجاز بارگیری - روز")]
+        [StringLength(30)]
+        [Display(Name = "واحد مبلغ")]
+        public string? DriverStopFeeCurrency { get; set; } = "ریال";
+
+        [Display(Name = "زمان مجاز بارگیری")]
         public int? AllowedLoadingTime { get; set; }
 
-        [Display(Name = "زمان مجاز تحویل - روز")]
+        [Display(Name = "زمان مجاز تحویل")]
         public int? AllowedDeliveryTime { get; set; }
 
-        [Display(Name = "فی جریمه تاخیر در تحویل - روزانه")]
+        [Display(Name = "جریمه روزانه تاخیر در تحویل")]
         public decimal? LateDeliveryPenalty { get; set; }
 
-        [Display(Name = "نوع جریمه تاخیر در تحویل")]
+        [StringLength(30)]
+        [Display(Name = "واحد مبلغ")]
+        public string? LateDeliveryPenaltyCurrency { get; set; } = "ریال";
+
+        [StringLength(200)]
+        [Display(Name = "نوع جریمه تاخیر")]
         public string? LateDeliveryPenaltyType { get; set; }
 
+        [StringLength(200)]
         [Display(Name = "نوع جریمه کسری بار")]
         public string? ShortagePenaltyType { get; set; }
 
+        [StringLength(200)]
         [Display(Name = "نوع کسری")]
         public string? ShortageType { get; set; }
 
-        [Display(Name = "فی جریمه کسری بار")]
+        [Display(Name = "کسری بار ثابت")]
         public decimal? FixedShortageAmount { get; set; }
 
         [Display(Name = "کسر بار قابل قبول")]
         public decimal? AcceptableWeightLoss { get; set; }
 
-        [Display(Name = "فعال بودن حق سرویس")]
+        [Display(Name = "مشمول حق سرویس")]
         public bool IsUnderSupervisor { get; set; }
 
+        [StringLength(200)]
         [Display(Name = "نحوه تعیین میزان محموله درخواستی")]
         public string? RequestedCargoAmountType { get; set; }
 
@@ -132,4 +154,5 @@ namespace TMS.MVC.ViewModels
 
         public List<SubHavalehIntermediatePlaceUpsertItemViewModel> IntermediatePlaces { get; set; } = new();
     }
+
 }

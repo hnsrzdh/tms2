@@ -31,7 +31,7 @@
     .ticket-message .message-body { white-space: pre-wrap; font-size:.84rem; line-height:1.8; }
 </style>
 
-<div class="container-fluid"><div class="page-title"><div class="row"><div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div><div class="col-sm-6 col-12"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li><li class="breadcrumb-item"><a asp-action="Index">تیکت‌های من</a></li><li class="breadcrumb-item active">جزئیات</li></ol></div></div></div></div>
+<div class="container-fluid"><div class="page-title"><div class="row"><div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div><div class="col-sm-6 col-12"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li><li class="breadcrumb-item"><a asp-action="Index">مدیریت تیکت‌ها</a></li><li class="breadcrumb-item active">جزئیات</li></ol></div></div></div></div>
 
 <div class="container-fluid ticket-details-compact">
     @if (TempData["Ok"] != null) { <div class="alert alert-success py-2 small">@TempData["Ok"]</div> }
@@ -64,7 +64,7 @@
     @if (Model.CanReply)
     {
         <div class="card mb-3">
-            <div class="card-header"><h6 class="mb-0">ثبت پاسخ</h6><small class="text-muted small-muted">پاسخ شما برای اپراتور ارسال می‌شود.</small></div>
+            <div class="card-header"><h6 class="mb-0">ثبت پاسخ</h6><small class="text-muted small-muted">پاسخ شما برای کاربر ارسال می‌شود.</small></div>
             <div class="card-body">
                 <form asp-action="Reply" method="post">
                     @Html.AntiForgeryToken()
@@ -75,10 +75,32 @@
             </div>
         </div>
 
-        <form asp-action="Close" method="post" class="d-flex justify-content-end">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.Id" />
-            <button type="submit" class="btn btn-outline-success btn-sm px-3">بستن تیکت</button>
-        </form>
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0">مدیریت وضعیت</h6><small class="text-muted small-muted">اپراتور می‌تواند وضعیت تیکت را تغییر دهد.</small></div>
+            <div class="card-body">
+                <form asp-action="ChangeStatus" method="post" class="row g-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="TicketId" value="@Model.Id" />
+                    <div class="col-md-3">
+                        <label class="form-label">وضعیت</label>
+                        <select name="Status" class="form-select form-select-sm">
+                            <option value="Open">باز</option>
+                            <option value="WaitingForOperator">در انتظار اپراتور</option>
+                            <option value="WaitingForUser">در انتظار کاربر</option>
+                            <option value="Closed">بسته شده</option>
+                            <option value="Cancelled">لغو شده</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label">توضیح</label>
+                        <input name="Note" class="form-control form-control-sm" placeholder="توضیح اختیاری برای بستن یا لغو تیکت..." />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label d-block">&nbsp;</label>
+                        <button type="submit" class="btn btn-success btn-sm w-100">ثبت وضعیت</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     }
 </div>

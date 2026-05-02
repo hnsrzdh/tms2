@@ -1,0 +1,768 @@
+@using System.Globalization
+@using TMS.MVC.Models
+@model TMS.MVC.ViewModels.LoadingScheduleIndexViewModel
+
+@{
+    ViewData["Title"] = "برنامه زمانی بارگیری‌ها";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string Amount(decimal? amount, string? unit = null)
+    {
+        if (!amount.HasValue) return "-";
+        return string.IsNullOrWhiteSpace(unit)
+            ? amount.Value.ToString("N0")
+            : $"{amount.Value:N0} {unit}";
+    }
+
+    string GregorianValue(DateTime date) => date.ToString("yyyy-MM-dd");
+}
+
+<style>
+    .loading-schedule-compact .form-label { margin-bottom: .25rem; font-size: .82rem; }
+    .loading-schedule-compact .form-control,
+    .loading-schedule-compact .form-select,
+    .loading-schedule-compact .btn,
+    .loading-schedule-compact .table,
+    .loading-schedule-compact .badge { font-size: .82rem; }
+    .loading-schedule-compact .table > :not(caption) > * > * { padding: .45rem .55rem; }
+    .loading-schedule-compact .card-header { padding-top: .65rem; padding-bottom: .65rem; }
+    .loading-schedule-compact .card-body { padding-top: .85rem; }
+    .loading-schedule-compact .small-muted { font-size: .78rem; }
+    .loading-schedule-compact .amount-cell { white-space: nowrap; }
+
+    .loading-schedule-compact .summary-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .75rem;
+        padding: .7rem .8rem;
+        background: #f8f9fa;
+        height: 100%;
+    }
+
+    .loading-schedule-compact .summary-box small {
+        display: block;
+        color: #6c757d;
+        font-size: .76rem;
+        margin-bottom: .2rem;
+    }
+
+    .loading-schedule-compact .summary-box .value {
+        display: block;
+        font-size: .95rem;
+        font-weight: 700;
+        color: #343a40;
+    }
+
+    .loading-schedule-compact .today-box {
+        border-color: rgba(13, 110, 253, .25);
+        background: rgba(13, 110, 253, .06);
+    }
+
+    .loading-schedule-compact .day-section {
+        border: 1px solid #e5e7eb;
+        border-radius: .85rem;
+        overflow: hidden;
+        margin-bottom: .75rem;
+        background: #fff;
+    }
+
+    .loading-schedule-compact .day-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .5rem;
+        padding: .65rem .75rem;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .loading-schedule-compact .day-header.today {
+        background: rgba(13, 110, 253, .06);
+        border-bottom-color: rgba(13, 110, 253, .18);
+    }
+
+    .loading-schedule-compact .day-title {
+        font-weight: 700;
+        color: #343a40;
+        font-size: .88rem;
+    }
+
+    .loading-schedule-compact .day-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+        align-items: center;
+    }
+
+    .loading-schedule-compact .mini-stat {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        border-radius: 999px;
+        padding: .18rem .5rem;
+        color: #6c757d;
+        font-size: .74rem;
+    }
+
+    .loading-schedule-compact .route-mini {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        min-width: 190px;
+    }
+
+    .loading-schedule-compact .route-point {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        line-height: 1.35;
+    }
+
+    .loading-schedule-compact .route-point strong {
+        display: block;
+        font-size: .82rem;
+        color: #343a40;
+        font-weight: 600;
+    }
+
+    .loading-schedule-compact .route-label {
+        display: inline-block;
+        font-size: .68rem;
+        color: #6c757d;
+        margin-bottom: .05rem;
+    }
+
+    .loading-schedule-compact .route-dot {
+        width: .55rem;
+        height: .55rem;
+        border-radius: 50%;
+        flex: 0 0 .55rem;
+    }
+
+    .loading-schedule-compact .route-origin .route-dot {
+        background: #198754;
+        box-shadow: 0 0 0 3px rgba(25, 135, 84, .12);
+    }
+
+    .loading-schedule-compact .route-destination .route-dot {
+        background: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, .12);
+    }
+
+    .loading-schedule-compact .route-line {
+        width: 1px;
+        height: .55rem;
+        margin-right: .25rem;
+        background: repeating-linear-gradient(to bottom, #adb5bd 0, #adb5bd 3px, transparent 3px, transparent 6px);
+    }
+
+    .loading-schedule-compact .group-title {
+        font-weight: 700;
+        color: #343a40;
+        font-size: .83rem;
+    }
+
+    .loading-schedule-compact .group-subtitle {
+        display: block;
+        color: #6c757d;
+        font-size: .74rem;
+        margin-top: .1rem;
+    }
+
+    .loading-schedule-compact .detail-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item active">برنامه زمانی بارگیری‌ها</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid loading-schedule-compact">
+    <div class="row g-2 mb-3">
+        <div class="col-md-2">
+            <div class="summary-box">
+                <small>کل ردیف‌های برنامه</small>
+                <span class="value text-primary">@Model.TotalItems</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="summary-box">
+                <small>بارگیری شده</small>
+                <span class="value text-success">@Model.TotalLoadedItems</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="summary-box">
+                <small>برنامه بارگیری</small>
+                <span class="value">@Model.TotalPlannedItems</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="summary-box">
+                <small>عقب‌افتاده</small>
+                <span class="value text-danger">@Model.TotalOverdueItems</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="summary-box">
+                <small>کشنده‌های درگیر</small>
+                <span class="value">@Model.TotalTractors</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="summary-box">
+                <small>حواله‌های درگیر</small>
+                <span class="value">@Model.TotalHavalehs</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>بازه گزارش</small>
+                <span class="value">@ToJalali(Model.StartDate) تا @ToJalali(Model.EndDate)</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box today-box">
+                <small>امروز</small>
+                <span class="value">@ToJalali(DateTime.Today)</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>جمع مقدار تخصیص</small>
+                <span class="value">@Amount(Model.TotalAssignedAmount)</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>جمع مقدار بارگیری</small>
+                <span class="value text-success">@Amount(Model.TotalLoadedAmount)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">فیلتر گزارش</h6>
+            <small class="text-muted small-muted">بازه پیش‌فرض از سه روز قبل امروز تا یک هفته بعد امروز است.</small>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2" id="loadingScheduleFilterForm">
+                <div class="col-md-2">
+                    <label class="form-label">از تاریخ</label>
+                    <input type="hidden"
+                           name="startDate"
+                           id="startDate"
+                           value="@GregorianValue(Model.StartDate)" />
+                    <input id="startDate_shamsi"
+                           class="form-control form-control-sm jalali-date"
+                           autocomplete="off"
+                           placeholder="مثلاً 1405/02/12" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">تا تاریخ</label>
+                    <input type="hidden"
+                           name="endDate"
+                           id="endDate"
+                           value="@GregorianValue(Model.EndDate)" />
+                    <input id="endDate_shamsi"
+                           class="form-control form-control-sm jalali-date"
+                           autocomplete="off"
+                           placeholder="مثلاً 1405/02/19" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">جستجو</label>
+                    <input name="search"
+                           value="@Model.Search"
+                           class="form-control form-control-sm"
+                           placeholder="پلاک، راننده، حواله، ریزحواله، محصول، مبدا یا مقصد..." />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">وضعیت</label>
+                    <select name="statusFilter" class="form-select form-select-sm">
+                        <option value="">همه وضعیت‌ها</option>
+                        <option value="Assigned" selected="@(Model.StatusFilter == "Assigned")">تخصیص داده شده</option>
+                        <option value="ArrivedAtOrigin" selected="@(Model.StatusFilter == "ArrivedAtOrigin")">رسیده به مبدا</option>
+                        <option value="Loading" selected="@(Model.StatusFilter == "Loading")">در حال بارگیری</option>
+                        <option value="Loaded" selected="@(Model.StatusFilter == "Loaded")">بارگیری شده</option>
+                        <option value="InTransit" selected="@(Model.StatusFilter == "InTransit")">در مسیر</option>
+                        <option value="ArrivedAtDestination" selected="@(Model.StatusFilter == "ArrivedAtDestination")">رسیده به مقصد</option>
+                        <option value="Unloading" selected="@(Model.StatusFilter == "Unloading")">در حال تخلیه</option>
+                        <option value="Unloaded" selected="@(Model.StatusFilter == "Unloaded")">تخلیه شده</option>
+                        <option value="Completed" selected="@(Model.StatusFilter == "Completed")">تکمیل شده</option>
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-info btn-sm w-100">فیلتر</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">خلاصه روزانه</h6>
+            <small class="text-muted small-muted">تعداد ماشین‌های بارگیری شده یا برنامه‌ریزی شده به تفکیک روز</small>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>روز</th>
+                        <th>تعداد کل</th>
+                        <th>بارگیری شده</th>
+                        <th>برنامه بارگیری</th>
+                        <th>عقب‌افتاده</th>
+                        <th>کشنده</th>
+                        <th>حواله</th>
+                        <th>جمع تخصیص</th>
+                        <th>جمع بارگیری</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var day in Model.Days)
+                    {
+                        <tr class="@(day.IsToday ? "table-primary" : "")">
+                            <td>
+                                <strong>@ToJalali(day.Date)</strong>
+                                @if (day.IsToday)
+                                {
+                                    <span class="badge bg-primary ms-1">امروز</span>
+                                }
+                            </td>
+                            <td>@day.TotalItems</td>
+                            <td><span class="text-success fw-bold">@day.LoadedItems</span></td>
+                            <td>@day.PlannedItems</td>
+                            <td><span class="text-danger fw-bold">@day.OverdueItems</span></td>
+                            <td>@day.TractorCount</td>
+                            <td>@day.HavalehCount</td>
+                            <td class="amount-cell">@Amount(day.AssignedAmount)</td>
+                            <td class="amount-cell">@Amount(day.LoadedAmount)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">جزئیات برنامه زمانی بارگیری‌ها</h6>
+            <small class="text-muted small-muted">برای هر روز، حواله و ریزحواله‌های مربوط به همان روز همراه با کشنده‌ها نمایش داده می‌شود.</small>
+        </div>
+        <div class="card-body">
+            @if (Model.Days.Any(x => x.Groups.Any()))
+            {
+                foreach (var day in Model.Days)
+                {
+                    <div class="day-section" id="day_@day.Date.ToString("yyyyMMdd")">
+                        <div class="day-header @(day.IsToday ? "today" : "")">
+                            <div>
+                                <span class="day-title">@ToJalali(day.Date)</span>
+                                @if (day.IsToday)
+                                {
+                                    <span class="badge bg-primary ms-1">امروز</span>
+                                }
+                            </div>
+                            <div class="day-meta">
+                                <span class="mini-stat">کل: @day.TotalItems</span>
+                                <span class="mini-stat">بارگیری شده: @day.LoadedItems</span>
+                                <span class="mini-stat">برنامه: @day.PlannedItems</span>
+                                <span class="mini-stat">کشنده: @day.TractorCount</span>
+                                @if (day.OverdueItems > 0)
+                                {
+                                    <span class="mini-stat text-danger">عقب‌افتاده: @day.OverdueItems</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 100px;">حواله / ریزحواله</th>
+                                        <th>محصول</th>
+                                        <th>مسیر</th>
+                                        <th>ماشین‌ها</th>
+                                        <th>مقدارها</th>
+                                        <th style="width: 70%">جزئیات کشنده‌ها</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (day.Groups.Any())
+                                    {
+                                        foreach (var group in day.Groups)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="group-title">@(group.HavalehNumber ?? "-")</div>
+                                                    <span class="group-subtitle">@(group.SubHavalehTitle ?? "-")</span>
+                                                </td>
+                                                <td>
+                                                    <div>@(group.ProductName ?? "-")</div>
+                                                    <small class="text-muted">واحد: @(group.Unit ?? "-")</small>
+                                                </td>
+                                                <td>
+                                                    <div class="route-mini">
+                                                        <div class="route-point route-origin">
+                                                            <span class="route-dot"></span>
+                                                            <div>
+                                                                <span class="route-label">مبدا</span>
+                                                                <strong>@(group.OriginPlaceName ?? "-")</strong>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="route-line"></div>
+
+                                                        <div class="route-point route-destination">
+                                                            <span class="route-dot"></span>
+                                                            <div>
+                                                                <span class="route-label">مقصد</span>
+                                                                <strong>@(group.DestinationPlaceName ?? "-")</strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div><strong>کل:</strong> @group.TotalTrucks</div>
+                                                    <div><strong>بارگیری شده:</strong> <span class="text-success">@group.LoadedTrucks</span></div>
+                                                    <div><strong>برنامه:</strong> @group.PlannedTrucks</div>
+                                                    @if (group.OverdueTrucks > 0)
+                                                    {
+                                                        <div><strong>عقب‌افتاده:</strong> <span class="text-danger">@group.OverdueTrucks</span></div>
+                                                    }
+                                                </td>
+                                                <td class="amount-cell">
+                                                    <div><strong>تخصیص:</strong> @Amount(group.AssignedAmount, group.Unit)</div>
+                                                    <div><strong>بارگیری:</strong> @Amount(group.LoadedAmount, group.Unit)</div>
+                                                </td>
+                                                <td>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-bordered mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="width:200px">کشنده</th>
+                                                                    <th>راننده</th>
+                                                                    <th>وضعیت برنامه</th>
+                                                                    <th>وضعیت سفر</th>
+                                                                    <th>مقدار</th>
+                                                                    <th style="width: 120px;">عملیات</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var item in group.Items)
+                                                                {
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="fw-semibold">@(item.TractorPlateNumber ?? "-")</div>
+                                                                            <small class="text-muted">@(item.TractorType ?? "-")</small>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div>@(item.DriverName ?? "-")</div>
+                                                                            <small class="text-muted">@(item.DriverPhoneNumber ?? "-")</small>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="badge @item.ScheduleTypeBadgeClass">@item.ScheduleTypeDisplay</span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span>
+                                                                        </td>
+                                                                        <td class="amount-cell">
+                                                                            <div><strong>تخصیص:</strong> @Amount(item.AssignedCargoAmount, item.Unit)</div>
+                                                                            <div><strong>بارگیری:</strong> @Amount(item.LoadedAmount, item.Unit)</div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="detail-actions">
+                                                                                <a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.AssignmentId" class="btn btn-outline-info btn-sm">جزئیات</a>
+                                                                                <a asp-controller="Tractors" asp-action="Details" asp-route-id="@item.TractorId" class="btn btn-outline-primary btn-sm">کشنده</a>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-4">برای این روز برنامه بارگیری ثبت نشده است.</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center text-muted py-4">
+                    در این بازه زمانی، برنامه یا سابقه بارگیری یافت نشد.
+                </div>
+            }
+
+            <div class="alert alert-info py-2 small mb-0 mt-2">
+                منطق گزارش: اگر تاریخ واقعی بارگیری ثبت شده باشد، همان تاریخ در گزارش نمایش داده می‌شود. اگر هنوز بارگیری ثبت نشده باشد، برنامه بر اساس بازه بارگیری ریزحواله و وضعیت فعلی تخصیص نمایش داده می‌شود.
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <link rel="stylesheet" href="~/assets/css/persianDatepicker-default.css">
+    <script src="~/assets/js/persianDatepicker.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("loadingScheduleFilterForm");
+
+            setupJalaliDateField("startDate", "startDate_shamsi");
+            setupJalaliDateField("endDate", "endDate_shamsi");
+
+            if (form) {
+                form.addEventListener("submit", function () {
+                    syncShamsiToGregorian(
+                        document.getElementById("startDate"),
+                        document.getElementById("startDate_shamsi")
+                    );
+
+                    syncShamsiToGregorian(
+                        document.getElementById("endDate"),
+                        document.getElementById("endDate_shamsi")
+                    );
+                });
+            }
+
+            function setupJalaliDateField(hiddenInputId, shamsiInputId) {
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const shamsiInput = document.getElementById(shamsiInputId);
+
+                if (!hiddenInput || !shamsiInput) return;
+
+                if (typeof $ !== "undefined" && typeof $(shamsiInput).persianDatepicker === "function") {
+                    $(shamsiInput).persianDatepicker({
+                        formatDate: "YYYY/0M/0D",
+                        autoClose: true,
+                        onSelect: function () {
+                            syncShamsiToGregorian(hiddenInput, shamsiInput);
+                        }
+                    });
+                }
+
+                if (hiddenInput.value) {
+                    const g = normalizeGregorianDate(hiddenInput.value);
+                    if (g) {
+                        const j = gregorianToJalali(g.y, g.m, g.d);
+                        shamsiInput.value = j.y + "/" + pad2(j.m) + "/" + pad2(j.d);
+                    }
+                }
+
+                shamsiInput.addEventListener("change", function () {
+                    syncShamsiToGregorian(hiddenInput, shamsiInput);
+                });
+
+                shamsiInput.addEventListener("blur", function () {
+                    syncShamsiToGregorian(hiddenInput, shamsiInput);
+                });
+            }
+
+            function syncShamsiToGregorian(hiddenInput, shamsiInput) {
+                if (!hiddenInput || !shamsiInput) return;
+
+                let value = (shamsiInput.value || "").trim();
+                value = toEnglishDigits(value);
+
+                if (!value) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const parts = value.replace(/-/g, "/").split("/");
+                if (parts.length !== 3) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const jy = parseInt(parts[0], 10);
+                const jm = parseInt(parts[1], 10);
+                const jd = parseInt(parts[2], 10);
+
+                if (isNaN(jy) || isNaN(jm) || isNaN(jd)) {
+                    hiddenInput.value = "";
+                    return;
+                }
+
+                const g = jalaliToGregorian(jy, jm, jd);
+                hiddenInput.value = g.y + "-" + pad2(g.m) + "-" + pad2(g.d);
+            }
+
+            function normalizeGregorianDate(value) {
+                if (!value) return null;
+
+                value = toEnglishDigits(value).trim();
+
+                if (value.includes("T")) {
+                    value = value.split("T")[0];
+                }
+
+                const parts = value.split("-");
+                if (parts.length !== 3) return null;
+
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const d = parseInt(parts[2], 10);
+
+                if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+
+                return { y, m, d };
+            }
+
+            function toEnglishDigits(str) {
+                if (!str) return str;
+
+                const fa = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+                const ar = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+
+                for (let i = 0; i < 10; i++) {
+                    str = str.replaceAll(fa[i], i.toString());
+                    str = str.replaceAll(ar[i], i.toString());
+                }
+
+                return str;
+            }
+
+            function pad2(n) {
+                return n < 10 ? "0" + n : n.toString();
+            }
+
+            function gregorianToJalali(gy, gm, gd) {
+                var g_d_m, jy, jm, jd, gy2, days;
+
+                g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+                gy2 = (gm > 2) ? (gy + 1) : gy;
+
+                days = 355666
+                    + (365 * gy)
+                    + Math.floor((gy2 + 3) / 4)
+                    - Math.floor((gy2 + 99) / 100)
+                    + Math.floor((gy2 + 399) / 400)
+                    + gd
+                    + g_d_m[gm - 1];
+
+                jy = -1595 + (33 * Math.floor(days / 12053));
+                days %= 12053;
+
+                jy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+
+                if (days > 365) {
+                    jy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+
+                if (days < 186) {
+                    jm = 1 + Math.floor(days / 31);
+                    jd = 1 + (days % 31);
+                } else {
+                    jm = 7 + Math.floor((days - 186) / 30);
+                    jd = 1 + ((days - 186) % 30);
+                }
+
+                return { y: jy, m: jm, d: jd };
+            }
+
+            function jalaliToGregorian(jy, jm, jd) {
+                var sal_a, gy, gm, gd, days;
+
+                jy += 1595;
+
+                days = -355668
+                    + (365 * jy)
+                    + Math.floor(jy / 33) * 8
+                    + Math.floor(((jy % 33) + 3) / 4)
+                    + jd
+                    + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+
+                gy = 400 * Math.floor(days / 146097);
+                days %= 146097;
+
+                if (days > 36524) {
+                    gy += 100 * Math.floor(--days / 36524);
+                    days %= 36524;
+
+                    if (days >= 365) {
+                        days++;
+                    }
+                }
+
+                gy += 4 * Math.floor(days / 1461);
+                days %= 1461;
+
+                if (days > 365) {
+                    gy += Math.floor((days - 1) / 365);
+                    days = (days - 1) % 365;
+                }
+
+                gd = days + 1;
+
+                sal_a = [
+                    0,
+                    31,
+                    ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28,
+                    31,
+                    30,
+                    31,
+                    30,
+                    31,
+                    31,
+                    30,
+                    31,
+                    30,
+                    31
+                ];
+
+                for (gm = 1; gm <= 12 && gd > sal_a[gm]; gm++) {
+                    gd -= sal_a[gm];
+                }
+
+                return { y: gy, m: gm, d: gd };
+            }
+        });
+    </script>
+}

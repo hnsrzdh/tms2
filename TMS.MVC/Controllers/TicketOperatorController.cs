@@ -8,13 +8,13 @@ using TMS.MVC.ViewModels;
 
 namespace TMS.MVC.Controllers
 {
-    [Authorize]
-    public class TicketsController : Controller
+    [Authorize(Roles = "SystemAdmin,OperationsManager,OperationsUser,FinanceManager,FinanceUser")]
+    public class TicketOperatorController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public TicketsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public TicketOperatorController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
@@ -25,11 +25,7 @@ namespace TMS.MVC.Controllers
             if (page < 1) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrWhiteSpace(userId)) return Challenge();
-
             var query = _context.Tickets
-                .Where(x => x.CreatedByUserId == userId)
                 .Include(x => x.CreatedByUser)
                 .Include(x => x.Messages)
                     .ThenInclude(x => x.SenderUser)
@@ -41,6 +37,9 @@ namespace TMS.MVC.Controllers
                 query = query.Where(x =>
                     x.Title.Contains(search) ||
                     (x.Category != null && x.Category.Contains(search)) ||
+                    x.CreatedByUser.FirstName.Contains(search) ||
+                    x.CreatedByUser.LastName.Contains(search) ||
+                    x.CreatedByUser.Email.Contains(search) ||
                     x.Messages.Any(m => m.Body.Contains(search)));
             }
 
@@ -72,66 +71,17 @@ namespace TMS.MVC.Controllers
             return View(model);
         }
 
-        [HttpGet]
-        public IActionResult Create()
-        {
-            return View(new TicketCreateViewModel());
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(TicketCreateViewModel model)
-        {
-            var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrWhiteSpace(userId)) return Challenge();
-
-            if (!ModelState.IsValid)
-                return View(model);
-
-            var now = DateTime.Now;
-
-            var ticket = new Ticket
-            {
-                Title = model.Title.Trim(),
-                Category = string.IsNullOrWhiteSpace(model.Category) ? null : model.Category.Trim(),
-                Priority = model.Priority,
-                Status = TicketStatus.WaitingForOperator,
-                CreatedByUserId = userId,
-                CreatedAt = now,
-                UpdatedAt = now,
-                Messages = new List<TicketMessage>
-                {
-                    new TicketMessage
-                    {
-                        SenderUserId = userId,
-                        Body = model.Body.Trim(),
-                        IsOperatorReply = false,
-                        CreatedAt = now
-                    }
-                }
-            };
-
-            _context.Tickets.Add(ticket);
-            await _context.SaveChangesAsync();
-
-            TempData["Ok"] = "تیکت با موفقیت ثبت شد.";
-            return RedirectToAction(nameof(Details), new { id = ticket.Id });
-        }
-
         public async Task<IActionResult> Details(long id)
         {
-            var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrWhiteSpace(userId)) return Challenge();
-
             var ticket = await _context.Tickets
                 .Include(x => x.CreatedByUser)
                 .Include(x => x.Messages)
                     .ThenInclude(x => x.SenderUser)
-                .FirstOrDefaultAsync(x => x.Id == id && x.CreatedByUserId == userId);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (ticket == null) return NotFound();
 
-            return View(ToDetailsModel(ticket, false));
+            return View(ToDetailsModel(ticket, true));
         }
 
         [HttpPost]
@@ -141,9 +91,7 @@ namespace TMS.MVC.Controllers
             var userId = _userManager.GetUserId(User);
             if (string.IsNullOrWhiteSpace(userId)) return Challenge();
 
-            var ticket = await _context.Tickets
-                .FirstOrDefaultAsync(x => x.Id == model.TicketId && x.CreatedByUserId == userId);
-
+            var ticket = await _context.Tickets.FirstOrDefaultAsync(x => x.Id == model.TicketId);
             if (ticket == null) return NotFound();
 
             if (ticket.Status == TicketStatus.Closed || ticket.Status == TicketStatus.Cancelled)
@@ -163,40 +111,46 @@ namespace TMS.MVC.Controllers
                 TicketId = ticket.Id,
                 SenderUserId = userId,
                 Body = model.Body.Trim(),
-                IsOperatorReply = false,
+                IsOperatorReply = true,
                 CreatedAt = DateTime.Now
             });
 
-            ticket.Status = TicketStatus.WaitingForOperator;
+            ticket.Status = TicketStatus.WaitingForUser;
             ticket.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 
-            TempData["Ok"] = "پاسخ شما ثبت شد.";
+            TempData["Ok"] = "پاسخ اپراتور ثبت شد.";
             return RedirectToAction(nameof(Details), new { id = model.TicketId });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Close(long id)
+        public async Task<IActionResult> ChangeStatus(TicketChangeStatusViewModel model)
         {
-            var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrWhiteSpace(userId)) return Challenge();
-
-            var ticket = await _context.Tickets
-                .FirstOrDefaultAsync(x => x.Id == id && x.CreatedByUserId == userId);
-
+            var ticket = await _context.Tickets.FirstOrDefaultAsync(x => x.Id == model.TicketId);
             if (ticket == null) return NotFound();
 
-            ticket.Status = TicketStatus.Closed;
-            ticket.ClosedAt = DateTime.Now;
-            ticket.ClosedBy = User.Identity?.Name;
+            ticket.Status = model.Status;
             ticket.UpdatedAt = DateTime.Now;
+
+            if (model.Status == TicketStatus.Closed || model.Status == TicketStatus.Cancelled)
+            {
+                ticket.ClosedAt = DateTime.Now;
+                ticket.ClosedBy = User.Identity?.Name;
+                ticket.CloseNote = string.IsNullOrWhiteSpace(model.Note) ? null : model.Note.Trim();
+            }
+            else
+            {
+                ticket.ClosedAt = null;
+                ticket.ClosedBy = null;
+                ticket.CloseNote = null;
+            }
 
             await _context.SaveChangesAsync();
 
-            TempData["Ok"] = "تیکت بسته شد.";
-            return RedirectToAction(nameof(Details), new { id });
+            TempData["Ok"] = "وضعیت تیکت بروزرسانی شد.";
+            return RedirectToAction(nameof(Details), new { id = model.TicketId });
         }
 
         private static TicketIndexItemViewModel ToIndexItem(Ticket ticket)
@@ -209,11 +163,11 @@ namespace TMS.MVC.Controllers
                 Title = ticket.Title,
                 Category = ticket.Category,
                 Priority = ticket.Priority,
-                PriorityDisplay = GetPriorityDisplay(ticket.Priority),
-                PriorityBadgeClass = GetPriorityBadgeClass(ticket.Priority),
+                PriorityDisplay = TicketsController.GetPriorityDisplay(ticket.Priority),
+                PriorityBadgeClass = TicketsController.GetPriorityBadgeClass(ticket.Priority),
                 Status = ticket.Status,
-                StatusDisplay = GetStatusDisplay(ticket.Status),
-                StatusBadgeClass = GetStatusBadgeClass(ticket.Status),
+                StatusDisplay = TicketsController.GetStatusDisplay(ticket.Status),
+                StatusBadgeClass = TicketsController.GetStatusBadgeClass(ticket.Status),
                 CreatedByName = GetUserDisplayName(ticket.CreatedByUser),
                 CreatedByEmail = ticket.CreatedByUser?.Email,
                 CreatedAt = ticket.CreatedAt,
@@ -231,11 +185,11 @@ namespace TMS.MVC.Controllers
                 Title = ticket.Title,
                 Category = ticket.Category,
                 Priority = ticket.Priority,
-                PriorityDisplay = GetPriorityDisplay(ticket.Priority),
-                PriorityBadgeClass = GetPriorityBadgeClass(ticket.Priority),
+                PriorityDisplay = TicketsController.GetPriorityDisplay(ticket.Priority),
+                PriorityBadgeClass = TicketsController.GetPriorityBadgeClass(ticket.Priority),
                 Status = ticket.Status,
-                StatusDisplay = GetStatusDisplay(ticket.Status),
-                StatusBadgeClass = GetStatusBadgeClass(ticket.Status),
+                StatusDisplay = TicketsController.GetStatusDisplay(ticket.Status),
+                StatusBadgeClass = TicketsController.GetStatusBadgeClass(ticket.Status),
                 CreatedByName = GetUserDisplayName(ticket.CreatedByUser),
                 CreatedByEmail = ticket.CreatedByUser?.Email,
                 CreatedAt = ticket.CreatedAt,
@@ -273,43 +227,5 @@ namespace TMS.MVC.Controllers
             if (string.IsNullOrWhiteSpace(text)) return "-";
             return text.Length <= maxLength ? text : text[..maxLength] + "...";
         }
-
-        public static string GetStatusDisplay(TicketStatus status) => status switch
-        {
-            TicketStatus.Open => "باز",
-            TicketStatus.WaitingForOperator => "در انتظار اپراتور",
-            TicketStatus.WaitingForUser => "در انتظار کاربر",
-            TicketStatus.Closed => "بسته شده",
-            TicketStatus.Cancelled => "لغو شده",
-            _ => status.ToString()
-        };
-
-        public static string GetStatusBadgeClass(TicketStatus status) => status switch
-        {
-            TicketStatus.Open => "bg-primary",
-            TicketStatus.WaitingForOperator => "bg-warning",
-            TicketStatus.WaitingForUser => "bg-info",
-            TicketStatus.Closed => "bg-success",
-            TicketStatus.Cancelled => "bg-danger",
-            _ => "bg-secondary"
-        };
-
-        public static string GetPriorityDisplay(TicketPriority priority) => priority switch
-        {
-            TicketPriority.Low => "کم",
-            TicketPriority.Normal => "معمولی",
-            TicketPriority.High => "زیاد",
-            TicketPriority.Urgent => "فوری",
-            _ => priority.ToString()
-        };
-
-        public static string GetPriorityBadgeClass(TicketPriority priority) => priority switch
-        {
-            TicketPriority.Low => "bg-secondary",
-            TicketPriority.Normal => "bg-info",
-            TicketPriority.High => "bg-warning",
-            TicketPriority.Urgent => "bg-danger",
-            _ => "bg-secondary"
-        };
     }
 }

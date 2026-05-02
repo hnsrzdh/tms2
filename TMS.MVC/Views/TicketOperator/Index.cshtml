@@ -1,0 +1,97 @@
+@using System.Globalization
+@using TMS.MVC.Models
+@model TMS.MVC.ViewModels.TicketIndexViewModel
+
+@{
+    ViewData["Title"] = "مدیریت تیکت‌ها";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+}
+
+<style>
+    .ticket-index-compact .form-label { margin-bottom: .25rem; font-size: .82rem; }
+    .ticket-index-compact .form-control,
+    .ticket-index-compact .form-select,
+    .ticket-index-compact .btn,
+    .ticket-index-compact .table,
+    .ticket-index-compact .badge { font-size: .82rem; }
+    .ticket-index-compact .table > :not(caption) > * > * { padding: .45rem .55rem; }
+    .ticket-index-compact .card-header { padding-top: .65rem; padding-bottom: .65rem; }
+    .ticket-index-compact .card-body { padding-top: .85rem; }
+    .ticket-index-compact .pagination .page-link { padding: .22rem .48rem; font-size: .78rem; }
+    .ticket-index-compact .small-muted { font-size: .78rem; }
+</style>
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item active">مدیریت تیکت‌ها</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid ticket-index-compact">
+    @if (TempData["Ok"] != null) { <div class="alert alert-success py-2 small">@TempData["Ok"]</div> }
+    @if (TempData["Err"] != null) { <div class="alert alert-danger py-2 small">@TempData["Err"]</div> }
+
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">همه تیکت‌ها</h6>
+            <small class="text-muted small-muted">مشاهده، پاسخگویی و مدیریت وضعیت تیکت‌های کاربران</small>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 mb-3">
+                <input type="hidden" name="page" value="1" />
+                <div class="col-md-5"><label class="form-label">جستجو</label><input name="search" value="@Model.Search" class="form-control form-control-sm" placeholder="عنوان، کاربر، ایمیل، دسته‌بندی یا متن پیام..." /></div>
+                <div class="col-md-3"><label class="form-label">وضعیت</label><select name="statusFilter" class="form-select form-select-sm"><option value="">همه وضعیت‌ها</option>@foreach (var status in Enum.GetValues<TicketStatus>()) { var name = status.ToString(); <option value="@name" selected="@(Model.StatusFilter == name)">@TMS.MVC.Controllers.TicketsController.GetStatusDisplay(status)</option> }</select></div>
+                <div class="col-md-2"><label class="form-label">اولویت</label><select name="priorityFilter" class="form-select form-select-sm"><option value="">همه اولویت‌ها</option>@foreach (var priority in Enum.GetValues<TicketPriority>()) { var name = priority.ToString(); <option value="@name" selected="@(Model.PriorityFilter == name)">@TMS.MVC.Controllers.TicketsController.GetPriorityDisplay(priority)</option> }</select></div>
+                <div class="col-md-1"><label class="form-label">تعداد</label><select name="pageSize" class="form-select form-select-sm">@foreach (var size in new[] { 10, 20, 50, 100 }) { <option value="@size" selected="@(Model.PageSize == size)">@size</option> }</select></div>
+                <div class="col-md-1"><label class="form-label d-block">&nbsp;</label><button type="submit" class="btn btn-info btn-sm w-100">فیلتر</button></div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead><tr><th>#</th><th>عنوان</th><th>کاربر</th><th>دسته‌بندی</th><th>اولویت</th><th>وضعیت</th><th>پیام‌ها</th><th>آخرین پیام</th><th>بروزرسانی</th><th style="width:110px;">عملیات</th></tr></thead>
+                    <tbody>
+                    @if (Model.Items.Any())
+                    {
+                        var rowNo = Model.RowNumberStart;
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@rowNo</td><td><strong>@item.Title</strong></td><td><div>@(item.CreatedByName ?? "-")</div><small class="text-muted">@(item.CreatedByEmail ?? "-")</small></td><td>@(item.Category ?? "-")</td><td><span class="badge @item.PriorityBadgeClass">@item.PriorityDisplay</span></td><td><span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span></td><td>@item.MessageCount</td><td><small class="text-muted">@(item.LastMessagePreview ?? "-")</small></td><td>@ToJalali(item.UpdatedAt)</td><td><a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a></td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else { <tr><td colspan="10" class="text-center text-muted py-4">تیکتی یافت نشد.</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2"><div class="text-muted small">صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems</div><nav><ul class="pagination pagination-primary mb-0">
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-route-page="1" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-priorityFilter="@Model.PriorityFilter">اول</a></li>
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-priorityFilter="@Model.PriorityFilter">قبلی</a></li>
+                    @{ var startPage = Math.Max(1, Model.Page - 2); var endPage = Math.Min(Model.TotalPages, Model.Page + 2); }
+                    @for (int i = startPage; i <= endPage; i++) { <li class="page-item @(i == Model.Page ? "active" : "")"><a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-priorityFilter="@Model.PriorityFilter">@i</a></li> }
+                    <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-priorityFilter="@Model.PriorityFilter">بعدی</a></li>
+                    <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-route-page="@Model.TotalPages" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-priorityFilter="@Model.PriorityFilter">آخر</a></li>
+                </ul></nav></div>
+            }
+        </div>
+    </div>
+</div>

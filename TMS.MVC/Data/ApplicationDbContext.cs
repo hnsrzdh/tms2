@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 using TMS.MVC.Models;
-using TMS.MVC.Models.Tickets;
 
 namespace TMS.MVC.Data
 {
@@ -49,11 +49,8 @@ namespace TMS.MVC.Data
         public DbSet<DriverWalletWithdrawalRequest> DriverWalletWithdrawalRequests { get; set; }
         public DbSet<TractorWalletWithdrawalRequest> TractorWalletWithdrawalRequests { get; set; }
 
-        public DbSet<Ticket> Tickets => Set<Ticket>();
-        public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>();
-        public DbSet<TicketAttachment> TicketAttachments => Set<TicketAttachment>();
-        public DbSet<TicketCategory> TicketCategories => Set<TicketCategory>();
-        public DbSet<TicketStatusHistory> TicketStatusHistories => Set<TicketStatusHistory>();
+        public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<TicketMessage> TicketMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -326,24 +323,24 @@ namespace TMS.MVC.Data
 
             builder.Entity<TractorWalletWithdrawalRequest>()
                 .HasIndex(x => new { x.Status, x.CreatedAt });
-            builder.Entity<Ticket>()
-                .HasIndex(x => x.Code)
-                .IsUnique();
 
             builder.Entity<Ticket>()
-                .HasIndex(x => new { x.Status, x.Priority, x.CreatedAt });
-
-            builder.Entity<Ticket>()
-                .HasIndex(x => x.CreatedByUserId);
+                .HasOne(x => x.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<TicketMessage>()
-                .HasIndex(x => new { x.TicketId, x.CreatedAt });
+                .HasOne(x => x.Ticket)
+                .WithMany(x => x.Messages)
+                .HasForeignKey(x => x.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<TicketAttachment>()
-                .HasIndex(x => x.TicketMessageId);
-
-            builder.Entity<TicketCategory>()
-                .HasIndex(x => new { x.IsActive, x.SortOrder });
+            builder.Entity<TicketMessage>()
+                .HasOne(x => x.SenderUser)
+                .WithMany()
+                .HasForeignKey(x => x.SenderUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -1,0 +1,654 @@
+﻿@using System.Globalization
+@using System.Text.Json
+@model TMS.MVC.ViewModels.ManagementReportVm
+
+@{
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string GregorianValue(DateTime date) => date.ToString("yyyy-MM-dd");
+
+    string Amount(decimal? amount, string? unit = null)
+    {
+        if (!amount.HasValue) return "-";
+        return string.IsNullOrWhiteSpace(unit)
+            ? amount.Value.ToString("N0")
+            : $"{amount.Value:N0} {unit}";
+    }
+
+    var trendLabelsJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.DateDisplay));
+    var havalehTrendJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.HavalehCount));
+    var subHavalehTrendJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.SubHavalehCount));
+    var assignmentTrendJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.AssignmentCount));
+    var cargoRequestTrendJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.CargoRequestCount));
+    var cargoAnnouncementTrendJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.CargoAnnouncementCount));
+    var loadedTrendJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.LoadedAmount));
+    var unloadedTrendJson = JsonSerializer.Serialize(Model.DailyTrends.Select(x => x.UnloadedAmount));
+
+    ViewData["Title"] = Model.Title;
+}
+
+<style>
+    .management-report-compact .form-label { margin-bottom: .25rem; font-size: .82rem; }
+    .management-report-compact .form-control,
+    .management-report-compact .form-select,
+    .management-report-compact .btn,
+    .management-report-compact .table,
+    .management-report-compact .badge { font-size: .82rem; }
+    .management-report-compact .table > :not(caption) > * > * { padding: .45rem .55rem; }
+    .management-report-compact .card-header { padding-top: .65rem; padding-bottom: .65rem; }
+    .management-report-compact .card-body { padding-top: .85rem; }
+    .management-report-compact .pagination .page-link { padding: .22rem .48rem; font-size: .78rem; }
+    .management-report-compact .small-muted { font-size: .78rem; }
+    .management-report-compact .summary-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .75rem;
+        padding: .7rem .8rem;
+        background: #f8f9fa;
+        height: 100%;
+    }
+    .management-report-compact .summary-box small {
+        display: block;
+        color: #6c757d;
+        font-size: .76rem;
+        margin-bottom: .2rem;
+    }
+    .management-report-compact .summary-box .value {
+        display: block;
+        font-size: .95rem;
+        font-weight: 700;
+        color: #343a40;
+    }
+    .management-report-compact .chart-wrap {
+        height: 310px;
+        position: relative;
+    }
+    .management-report-compact .report-tabs {
+        display: flex;
+        gap: .35rem;
+        flex-wrap: wrap;
+    }
+    .management-report-compact .route-mini {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        min-width: 190px;
+    }
+    .management-report-compact .route-point {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        line-height: 1.35;
+    }
+    .management-report-compact .route-point strong {
+        display: block;
+        font-size: .82rem;
+        color: #343a40;
+        font-weight: 600;
+    }
+    .management-report-compact .route-label {
+        display: inline-block;
+        font-size: .68rem;
+        color: #6c757d;
+        margin-bottom: .05rem;
+    }
+    .management-report-compact .route-dot {
+        width: .55rem;
+        height: .55rem;
+        border-radius: 50%;
+        flex: 0 0 .55rem;
+    }
+    .management-report-compact .route-origin .route-dot {
+        background: #198754;
+        box-shadow: 0 0 0 3px rgba(25,135,84,.12);
+    }
+    .management-report-compact .route-destination .route-dot {
+        background: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220,53,69,.12);
+    }
+    .management-report-compact .route-line {
+        width: 1px;
+        height: .55rem;
+        margin-right: .25rem;
+        background: repeating-linear-gradient(to bottom, #adb5bd 0, #adb5bd 3px, transparent 3px, transparent 6px);
+    }
+    .management-report-compact .amount-cell { white-space: nowrap; }
+</style>
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item active">@Model.Title</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid management-report-compact">
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">گزارش‌های مدیریتی</h6>
+                <small class="text-muted small-muted">گزارش روزانه، هفتگی، ماهیانه شمسی و سالیانه شمسی از حواله‌ها، ریزحواله‌ها، ناوگان، رانندگان و درخواست‌ها</small>
+            </div>
+            <div class="report-tabs">
+                <a asp-action="Daily" class="btn btn-sm @(Model.ReportMode == "Daily" ? "btn-primary" : "btn-outline-primary")">روزانه</a>
+                <a asp-action="Weekly" class="btn btn-sm @(Model.ReportMode == "Weekly" ? "btn-primary" : "btn-outline-primary")">هفتگی</a>
+                <a asp-action="Monthly" class="btn btn-sm @(Model.ReportMode == "Monthly" ? "btn-primary" : "btn-outline-primary")">ماهیانه</a>
+                <a asp-action="Yearly" class="btn btn-sm @(Model.ReportMode == "Yearly" ? "btn-primary" : "btn-outline-primary")">سالیانه</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                @if (Model.ReportMode == "Daily" || Model.ReportMode == "Weekly")
+                {
+                    <div class="col-md-3">
+                        <label class="form-label">تاریخ مرجع</label>
+                        <input name="date" value="@GregorianValue(Model.StartDate)" type="date" class="form-control form-control-sm" />
+                    </div>
+                }
+                else if (Model.ReportMode == "Monthly")
+                {
+                    <div class="col-md-2">
+                        <label class="form-label">سال شمسی</label>
+                        <input name="year" value="@Model.JalaliYear" type="number" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">ماه شمسی</label>
+                        <select name="month" class="form-select form-select-sm">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i" selected="@(Model.JalaliMonth == i)">
+                                    @i
+                                </option>
+                            }
+                        </select>
+                    </div>
+                }
+                else if (Model.ReportMode == "Yearly")
+                {
+                    <div class="col-md-3">
+                        <label class="form-label">سال شمسی</label>
+                        <input name="year" value="@Model.JalaliYear" type="number" class="form-control form-control-sm" />
+                    </div>
+                }
+
+                <div class="col-md-6">
+                    <label class="form-label">جستجو</label>
+                    <input name="search" value="@Model.Search" class="form-control form-control-sm" placeholder="حواله، ریزحواله، راننده، کشنده، محصول، مبدا، مقصد یا مشتری..." />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">تعداد جدول</label>
+                    <select name="pageSize" class="form-select form-select-sm">
+                        @foreach (var size in new[] { 10, 20, 50, 100 })
+                        {
+                            <option value="@size" selected="@(Model.PageSize == size)">@size رکورد</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-info btn-sm w-100">فیلتر</button>
+                </div>
+            </form>
+
+            <div class="alert alert-info py-2 small mb-0 mt-3">
+                بازه گزارش: <strong>@Model.PeriodTitle</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-2"><div class="summary-box"><small>حواله‌ها</small><span class="value text-primary">@Model.Summary.HavalehCount</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>ریزحواله‌ها</small><span class="value">@Model.Summary.SubHavalehCount</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>تخصیص‌ها</small><span class="value">@Model.Summary.AssignmentCount</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>راننده‌ها</small><span class="value">@Model.Summary.DriverCount</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>کشنده‌ها</small><span class="value">@Model.Summary.TractorCount</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>اعلام بار</small><span class="value text-success">@Model.Summary.CargoAnnouncementCount</span></div></div>
+
+        <div class="col-md-2"><div class="summary-box"><small>جمع مقدار حواله</small><span class="value">@Amount(Model.Summary.TotalHavalehAmount)</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>جمع مقدار ریزحواله</small><span class="value">@Amount(Model.Summary.TotalSubHavalehAmount)</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>جمع تخصیص</small><span class="value">@Amount(Model.Summary.TotalAssignedAmount)</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>جمع بارگیری</small><span class="value">@Amount(Model.Summary.TotalLoadedAmount)</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>جمع تخلیه</small><span class="value">@Amount(Model.Summary.TotalUnloadedAmount)</span></div></div>
+        <div class="col-md-2"><div class="summary-box"><small>درخواست حمل</small><span class="value text-warning">@Model.Summary.CargoRequestCount</span></div></div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">روند روزانه عملیات</h6>
+                    <small class="text-muted small-muted">تعداد حواله، ریزحواله، تخصیص، درخواست حمل و اعلام بار در بازه انتخاب‌شده</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrap">
+                        <canvas id="dailyTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">مقدار بارگیری و تخلیه</h6>
+                    <small class="text-muted small-muted">مجموع مقدار بارگیری و تخلیه به تفکیک روز</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrap">
+                        <canvas id="amountTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">خلاصه موجودیت‌ها</h6>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead><tr><th>عنوان</th><th>تعداد</th><th>وضعیت</th></tr></thead>
+                        <tbody>
+                            @foreach (var item in Model.HavalehStatusItems)
+                            {
+                                <tr>
+                                    <td>@item.Label</td>
+                                    <td>@item.Count</td>
+                                    <td><span class="badge @item.BadgeClass">@item.Label</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">وضعیت تخصیص‌ها</h6>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead><tr><th>وضعیت</th><th>تعداد</th></tr></thead>
+                        <tbody>
+                            @if (Model.AssignmentStatusItems.Any())
+                            {
+                                foreach (var item in Model.AssignmentStatusItems)
+                                {
+                                    <tr>
+                                        <td><span class="badge @item.BadgeClass">@item.Label</span></td>
+                                        <td>@item.Count</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="2" class="text-center text-muted py-4">موردی وجود ندارد.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Havalehs -->
+    <div class="card mb-3">
+        <div class="card-header"><h6 class="mb-0">حواله‌ها</h6><small class="text-muted small-muted">حواله‌های مرتبط با بازه گزارش</small></div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th><th>شماره حواله</th><th>صاحب کالا</th><th>محصول</th><th>مبدا</th><th>تاریخ خرید</th><th>مقدار</th><th>ریزحواله</th><th>بارگیری</th><th>تخلیه</th><th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Havalehs.Any())
+                    {
+                        var rowNo = 1;
+                        foreach (var item in Model.Havalehs.Take(Model.PageSize))
+                        {
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@(item.HavalehNumber ?? "-")</td>
+                                <td>@(item.GoodsOwnerName ?? "-")</td>
+                                <td>@(item.ProductName ?? "-")</td>
+                                <td>@(item.OriginPlaceName ?? "-")</td>
+                                <td>@ToJalali(item.PurchaseDate)</td>
+                                <td class="amount-cell">@Amount(item.ProductAmount, item.Unit)</td>
+                                <td>@item.SubHavalehCount / @Amount(item.SubHavalehAmount, item.Unit)</td>
+                                <td class="amount-cell">@Amount(item.LoadedAmount, item.Unit)</td>
+                                <td class="amount-cell">@Amount(item.UnloadedAmount, item.Unit)</td>
+                                <td><a asp-controller="Havalehs" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a></td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="11" class="text-center text-muted py-4">حواله‌ای یافت نشد.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SubHavalehs -->
+    <div class="card mb-3">
+        <div class="card-header"><h6 class="mb-0">ریزحواله‌ها</h6><small class="text-muted small-muted">ریزحواله‌های مرتبط با بازه گزارش</small></div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead><tr><th>#</th><th>حواله</th><th>عنوان</th><th>محصول</th><th>مسیر</th><th>بازه بارگیری</th><th>مقدار</th><th>تخصیص</th><th>بارگیری</th><th>تخلیه</th><th>عملیات</th></tr></thead>
+                <tbody>
+                    @if (Model.SubHavalehs.Any())
+                    {
+                        var rowNo = 1;
+                        foreach (var item in Model.SubHavalehs.Take(Model.PageSize))
+                        {
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@(item.HavalehNumber ?? "-")</td>
+                                <td>@(item.Title ?? "-")</td>
+                                <td>@(item.ProductName ?? "-")</td>
+                                <td>
+                                    <div class="route-mini">
+                                        <div class="route-point route-origin"><span class="route-dot"></span><div><span class="route-label">مبدا</span><strong>@(item.OriginPlaceName ?? "-")</strong></div></div>
+                                        <div class="route-line"></div>
+                                        <div class="route-point route-destination"><span class="route-dot"></span><div><span class="route-label">مقصد</span><strong>@(item.DestinationPlaceName ?? "-")</strong></div></div>
+                                    </div>
+                                </td>
+                                <td><div>@ToJalali(item.StartDate)</div><small class="text-muted">تا @ToJalali(item.EndDate)</small></td>
+                                <td class="amount-cell">@Amount(item.RequestedCargoAmount, item.Unit)</td>
+                                <td>@item.AssignmentCount / @Amount(item.AssignedAmount, item.Unit)</td>
+                                <td>@Amount(item.LoadedAmount, item.Unit)</td>
+                                <td>@Amount(item.UnloadedAmount, item.Unit)</td>
+                                <td><a asp-controller="Havalehs" asp-action="SubHavalehDetails" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a></td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="11" class="text-center text-muted py-4">ریزحواله‌ای یافت نشد.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Assignments -->
+    <div class="card mb-3">
+        <div class="card-header"><h6 class="mb-0">تخصیص‌ها و سفرها</h6><small class="text-muted small-muted">تخصیص‌های راننده و کشنده در بازه گزارش</small></div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead><tr><th>#</th><th>حواله</th><th>ریزحواله</th><th>کشنده</th><th>راننده</th><th>مسیر</th><th>تاریخ تخصیص</th><th>مقدارها</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+                <tbody>
+                    @if (Model.Assignments.Any())
+                    {
+                        var rowNo = 1;
+                        foreach (var item in Model.Assignments.Take(Model.PageSize))
+                        {
+                            <tr>
+                                <td>@rowNo</td>
+                                <td>@(item.HavalehNumber ?? "-")</td>
+                                <td>@(item.SubHavalehTitle ?? "-")</td>
+                                <td>@(item.TractorPlateNumber ?? "-")</td>
+                                <td>@(item.DriverName ?? "-")</td>
+                                <td>
+                                    <div class="route-mini">
+                                        <div class="route-point route-origin"><span class="route-dot"></span><div><span class="route-label">مبدا</span><strong>@(item.OriginPlaceName ?? "-")</strong></div></div>
+                                        <div class="route-line"></div>
+                                        <div class="route-point route-destination"><span class="route-dot"></span><div><span class="route-label">مقصد</span><strong>@(item.DestinationPlaceName ?? "-")</strong></div></div>
+                                    </div>
+                                </td>
+                                <td>@ToJalali(item.AssignmentDate)</td>
+                                <td class="amount-cell">
+                                    <div>تخصیص: @Amount(item.AssignedCargoAmount, item.Unit)</div>
+                                    <div>بارگیری: @Amount(item.LoadedAmount, item.Unit)</div>
+                                    <div>تخلیه: @Amount(item.UnloadedAmount, item.Unit)</div>
+                                </td>
+                                <td><span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span></td>
+                                <td><a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a></td>
+                            </tr>
+                            rowNo++;
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="10" class="text-center text-muted py-4">تخصیصی یافت نشد.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Drivers and Tractors -->
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><h6 class="mb-0">رانندگان فعال در گزارش</h6></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead><tr><th>#</th><th>راننده</th><th>موبایل</th><th>تخصیص</th><th>بارگیری</th><th>کیف پول</th><th>جزئیات</th></tr></thead>
+                        <tbody>
+                            @if (Model.Drivers.Any())
+                            {
+                                var rowNo = 1;
+                                foreach (var item in Model.Drivers.Take(Model.PageSize))
+                                {
+                                    <tr>
+                                        <td>@rowNo</td>
+                                        <td>@(item.FullName ?? "-")</td>
+                                        <td>@(item.PhoneNumber ?? "-")</td>
+                                        <td>@item.AssignmentCount</td>
+                                        <td>@Amount(item.LoadedAmount)</td>
+                                        <td>@Amount(item.WalletBalance, "ریال")</td>
+                                        <td><a asp-controller="Drivers" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a></td>
+                                    </tr>
+                                    rowNo++;
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-4">راننده‌ای یافت نشد.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><h6 class="mb-0">کشنده‌های فعال در گزارش</h6></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead><tr><th>#</th><th>پلاک</th><th>نوع</th><th>وضعیت</th><th>تخصیص</th><th>بارگیری</th><th>کیف پول</th><th>جزئیات</th></tr></thead>
+                        <tbody>
+                            @if (Model.Tractors.Any())
+                            {
+                                var rowNo = 1;
+                                foreach (var item in Model.Tractors.Take(Model.PageSize))
+                                {
+                                    <tr>
+                                        <td>@rowNo</td>
+                                        <td>@(item.PolicePlateNumber ?? "-")</td>
+                                        <td>@(item.TractorType ?? "-")</td>
+                                        <td>@(item.Status ?? "-")</td>
+                                        <td>@item.AssignmentCount</td>
+                                        <td>@Amount(item.LoadedAmount)</td>
+                                        <td>@Amount(item.WalletBalance, "ریال")</td>
+                                        <td><a asp-controller="Tractors" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a></td>
+                                    </tr>
+                                    rowNo++;
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="8" class="text-center text-muted py-4">کشنده‌ای یافت نشد.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cargo Requests and Announcements -->
+    <div class="row g-2">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><h6 class="mb-0">درخواست‌های حمل</h6></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead><tr><th>#</th><th>حواله</th><th>ریزحواله</th><th>کشنده</th><th>تاریخ مراجعه</th><th>مقدار</th><th>وضعیت</th></tr></thead>
+                        <tbody>
+                            @if (Model.CargoRequests.Any())
+                            {
+                                var rowNo = 1;
+                                foreach (var item in Model.CargoRequests.Take(Model.PageSize))
+                                {
+                                    <tr>
+                                        <td>@rowNo</td>
+                                        <td>@(item.HavalehNumber ?? "-")</td>
+                                        <td>@(item.SubHavalehTitle ?? "-")</td>
+                                        <td>@(item.TractorPlateNumber ?? "-")</td>
+                                        <td>@ToJalali(item.RequestedLoadingDate)</td>
+                                        <td>@Amount(item.RequestedCargoAmount, item.Unit)</td>
+                                        <td><span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span></td>
+                                    </tr>
+                                    rowNo++;
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-4">درخواستی یافت نشد.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><h6 class="mb-0">سامانه اعلام بار</h6></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead><tr><th>#</th><th>کد</th><th>مشتری</th><th>محصول</th><th>مسیر</th><th>مقدار</th><th>وضعیت</th></tr></thead>
+                        <tbody>
+                            @if (Model.CargoAnnouncements.Any())
+                            {
+                                var rowNo = 1;
+                                foreach (var item in Model.CargoAnnouncements.Take(Model.PageSize))
+                                {
+                                    <tr>
+                                        <td>@rowNo</td>
+                                        <td>@(item.TrackingCode ?? "-")</td>
+                                        <td>@(item.CustomerName ?? "-")<br /><small class="text-muted">@item.CustomerPhone</small></td>
+                                        <td>@(item.ProductName ?? "-")</td>
+                                        <td>@(item.OriginPlaceName ?? "-") ← @(item.DestinationPlaceName ?? "-")</td>
+                                        <td>@Amount(item.CargoAmount, item.Unit)</td>
+                                        <td><span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span></td>
+                                    </tr>
+                                    rowNo++;
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-4">اعلام باری یافت نشد.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="alert alert-info py-2 small mt-3 mb-0">
+        برای سادگی و سرعت، هر جدول در این صفحه حداکثر به تعداد انتخاب‌شده در فیلتر نمایش داده می‌شود. برای بررسی کامل هر بخش از لینک جزئیات یا صفحات اصلی همان بخش استفاده کن.
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const labels = @Html.Raw(trendLabelsJson);
+            const havalehTrend = @Html.Raw(havalehTrendJson);
+            const subHavalehTrend = @Html.Raw(subHavalehTrendJson);
+            const assignmentTrend = @Html.Raw(assignmentTrendJson);
+            const cargoRequestTrend = @Html.Raw(cargoRequestTrendJson);
+            const cargoAnnouncementTrend = @Html.Raw(cargoAnnouncementTrendJson);
+            const loadedTrend = @Html.Raw(loadedTrendJson);
+            const unloadedTrend = @Html.Raw(unloadedTrendJson);
+
+            if (typeof Chart !== "undefined") {
+                const dailyCtx = document.getElementById("dailyTrendChart");
+                if (dailyCtx) {
+                    new Chart(dailyCtx, {
+                        type: "line",
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: "حواله", data: havalehTrend, tension: .35 },
+                                { label: "ریزحواله", data: subHavalehTrend, tension: .35 },
+                                { label: "تخصیص", data: assignmentTrend, tension: .35 },
+                                { label: "درخواست حمل", data: cargoRequestTrend, tension: .35 },
+                                { label: "اعلام بار", data: cargoAnnouncementTrend, tension: .35 }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: "bottom" } },
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+                }
+
+                const amountCtx = document.getElementById("amountTrendChart");
+                if (amountCtx) {
+                    new Chart(amountCtx, {
+                        type: "bar",
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: "بارگیری", data: loadedTrend },
+                                { label: "تخلیه", data: unloadedTrend }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: "bottom" } },
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+}

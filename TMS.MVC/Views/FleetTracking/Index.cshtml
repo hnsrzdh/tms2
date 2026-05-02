@@ -1,0 +1,588 @@
+@using System.Globalization
+@using System.Text.Json
+@using TMS.MVC.Models
+@model TMS.MVC.ViewModels.FleetTrackingIndexViewModel
+
+@{
+    ViewData["Title"] = "پیگیری ناوگان";
+
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string ToJalaliDateTime(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00} {d:HH:mm}";
+    }
+
+    string Amount(decimal? amount, string? unit = null)
+    {
+        if (!amount.HasValue) return "-";
+        return string.IsNullOrWhiteSpace(unit)
+            ? amount.Value.ToString("N0")
+            : $"{amount.Value:N0} {unit}";
+    }
+
+    var mapJson = JsonSerializer.Serialize(Model.MapItems, new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    });
+}
+
+<style>
+    .fleet-tracking-compact .form-label { margin-bottom: .25rem; font-size: .82rem; }
+    .fleet-tracking-compact .form-control,
+    .fleet-tracking-compact .form-select,
+    .fleet-tracking-compact .btn,
+    .fleet-tracking-compact .table,
+    .fleet-tracking-compact .badge { font-size: .82rem; }
+    .fleet-tracking-compact .table > :not(caption) > * > * { padding: .45rem .55rem; }
+    .fleet-tracking-compact .card-header { padding-top: .65rem; padding-bottom: .65rem; }
+    .fleet-tracking-compact .card-body { padding-top: .85rem; }
+    .fleet-tracking-compact .pagination .page-link { padding: .22rem .48rem; font-size: .78rem; }
+    .fleet-tracking-compact .small-muted { font-size: .78rem; }
+    .fleet-tracking-compact .amount-cell { white-space: nowrap; }
+    .fleet-tracking-compact .summary-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .75rem;
+        padding: .7rem .8rem;
+        background: #f8f9fa;
+        height: 100%;
+    }
+    .fleet-tracking-compact .summary-box small {
+        display: block;
+        color: #6c757d;
+        font-size: .76rem;
+        margin-bottom: .2rem;
+    }
+    .fleet-tracking-compact .summary-box .value {
+        display: block;
+        font-size: .95rem;
+        font-weight: 700;
+        color: #343a40;
+    }
+    .fleet-tracking-compact .summary-box.primary {
+        border-color: rgba(13, 110, 253, .25);
+        background: rgba(13, 110, 253, .06);
+    }
+    .fleet-tracking-compact .summary-box.success {
+        border-color: rgba(25, 135, 84, .25);
+        background: rgba(25, 135, 84, .06);
+    }
+    .fleet-tracking-compact .summary-box.warning {
+        border-color: rgba(255, 193, 7, .35);
+        background: rgba(255, 193, 7, .08);
+    }
+    .fleet-tracking-compact .summary-box.danger {
+        border-color: rgba(220, 53, 69, .25);
+        background: rgba(220, 53, 69, .06);
+    }
+    .fleet-tracking-compact .route-text { max-width: 260px; white-space: normal; }
+    .fleet-tracking-compact .route-mini {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        min-width: 190px;
+    }
+    .fleet-tracking-compact .route-point {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        line-height: 1.35;
+    }
+    .fleet-tracking-compact .route-point strong {
+        display: block;
+        font-size: .82rem;
+        color: #343a40;
+        font-weight: 600;
+    }
+    .fleet-tracking-compact .route-label {
+        display: inline-block;
+        font-size: .68rem;
+        color: #6c757d;
+        margin-bottom: .05rem;
+    }
+    .fleet-tracking-compact .route-dot {
+        width: .55rem;
+        height: .55rem;
+        border-radius: 50%;
+        flex: 0 0 .55rem;
+    }
+    .fleet-tracking-compact .route-origin .route-dot {
+        background: #198754;
+        box-shadow: 0 0 0 3px rgba(25, 135, 84, .12);
+    }
+    .fleet-tracking-compact .route-destination .route-dot {
+        background: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, .12);
+    }
+    .fleet-tracking-compact .route-line {
+        width: 1px;
+        height: .55rem;
+        margin-right: .25rem;
+        background: repeating-linear-gradient(to bottom, #adb5bd 0, #adb5bd 3px, transparent 3px, transparent 6px);
+    }
+    .fleet-tracking-compact .route-summary {
+        margin-top: .15rem;
+        padding: .25rem .45rem;
+        border-radius: .5rem;
+        background: #f8f9fa;
+        color: #6c757d;
+        font-size: .74rem;
+        border: 1px dashed #dee2e6;
+    }
+    .fleet-tracking-compact .fleet-map {
+        height: 520px;
+        min-height: 420px;
+        border-radius: .8rem;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        background: #f8f9fa;
+    }
+    .fleet-tracking-compact .location-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        border-radius: 999px;
+        padding: .18rem .45rem;
+        font-size: .74rem;
+        white-space: nowrap;
+    }
+    .fleet-tracking-compact .location-pill.ok {
+        color: #198754;
+        background: rgba(25, 135, 84, .08);
+        border: 1px solid rgba(25, 135, 84, .2);
+    }
+    .fleet-tracking-compact .location-pill.warn {
+        color: #856404;
+        background: rgba(255, 193, 7, .12);
+        border: 1px solid rgba(255, 193, 7, .3);
+    }
+    .fleet-tracking-compact .location-pill.none {
+        color: #6c757d;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    .fleet-tracking-compact .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+        gap: .5rem;
+    }
+    .fleet-tracking-compact .status-chip {
+        border: 1px solid #e5e7eb;
+        border-radius: .65rem;
+        padding: .55rem .65rem;
+        background: #fff;
+    }
+    .fleet-tracking-compact .status-chip small {
+        display: block;
+        color: #6c757d;
+        font-size: .72rem;
+    }
+    .fleet-tracking-compact .status-chip strong {
+        font-size: .95rem;
+    }
+</style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item active">پیگیری ناوگان</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid fleet-tracking-compact">
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <div class="summary-box primary">
+                <small>حمل‌های فعال</small>
+                <span class="value">@Model.ActiveAssignmentsCount</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box success">
+                <small>کشنده‌های درگیر حمل</small>
+                <span class="value">@Model.ActiveTractorsCount</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box">
+                <small>رانندگان فعال در حمل</small>
+                <span class="value">@Model.ActiveDriversCount</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box @(Model.WithoutLocationCount > 0 ? "warning" : "success")">
+                <small>دارای موقعیت / بدون موقعیت</small>
+                <span class="value">@Model.WithLocationCount / @Model.WithoutLocationCount</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-4">
+            <div class="summary-box">
+                <small>جمع مقدار تخصیص داده شده</small>
+                <span class="value">@Amount(Model.TotalAssignedCargoAmount)</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="summary-box">
+                <small>جمع مقدار بارگیری شده</small>
+                <span class="value">@Amount(Model.TotalLoadedAmount)</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="summary-box">
+                <small>جمع مقدار تخلیه شده</small>
+                <span class="value">@Amount(Model.TotalUnloadedAmount)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">گزارش وضعیت فعلی ناوگان</h6>
+            <small class="text-muted small-muted">خلاصه تعداد کشنده‌ها در هر مرحله حمل، بر اساس تخصیص‌های فعال</small>
+        </div>
+        <div class="card-body">
+            <div class="status-grid">
+                <div class="status-chip"><small>تخصیص داده شده</small><strong>@Model.AssignedCount</strong></div>
+                <div class="status-chip"><small>رسیده به مبدا</small><strong>@Model.ArrivedAtOriginCount</strong></div>
+                <div class="status-chip"><small>در حال بارگیری</small><strong>@Model.LoadingCount</strong></div>
+                <div class="status-chip"><small>بارگیری شده</small><strong>@Model.LoadedCount</strong></div>
+                <div class="status-chip"><small>در راه</small><strong>@Model.InTransitCount</strong></div>
+                <div class="status-chip"><small>رسیده به مقصد</small><strong>@Model.ArrivedAtDestinationCount</strong></div>
+                <div class="status-chip"><small>در حال تخلیه</small><strong>@Model.UnloadingCount</strong></div>
+                <div class="status-chip"><small>درخواست لغو</small><strong>@Model.CancellationRequestedCount</strong></div>
+                <div class="status-chip"><small>موقعیت قدیمی</small><strong>@Model.StaleLocationCount</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">نقشه زنده ناوگان</h6>
+                <small class="text-muted small-muted">آخرین موقعیت ثبت‌شده کشنده‌های درگیر حمل روی نقشه نمایش داده می‌شود.</small>
+            </div>
+            <span class="badge bg-info">@Model.MapItems.Count کشنده روی نقشه</span>
+        </div>
+        <div class="card-body">
+            <div id="fleetMap" class="fleet-map"></div>
+            @if (!Model.MapItems.Any())
+            {
+                <div class="alert alert-warning py-2 small mb-0 mt-2">
+                    برای هیچ‌کدام از کشنده‌های فعال موقعیت ثبت نشده است. بعد از ثبت موقعیت در جدول LocationTrackings، نقشه به‌صورت خودکار پر می‌شود.
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info py-2 small mb-0 mt-2">
+                    موقعیت‌های قدیمی‌تر از ۳۰ دقیقه با هشدار مشخص می‌شوند. این صفحه داده‌ها را از آخرین رکورد ثبت‌شده برای هر تخصیص می‌خواند.
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">لیست کشنده‌های درگیر حمل</h6>
+                <small class="text-muted small-muted">تمام تخصیص‌های فعال از مرحله تخصیص تا قبل از تکمیل یا لغو</small>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 mb-3">
+                <input type="hidden" name="page" value="1" />
+                <div class="col-md-5">
+                    <label class="form-label">جستجو</label>
+                    <input name="search" value="@Model.Search" class="form-control form-control-sm" placeholder="پلاک، راننده، موبایل، حواله، محصول، مبدا یا مقصد..." />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">وضعیت حمل</label>
+                    <select name="statusFilter" class="form-select form-select-sm">
+                        <option value="">همه وضعیت‌ها</option>
+                        @foreach (var status in new[] { AssignmentStatus.Assigned, AssignmentStatus.ArrivedAtOrigin, AssignmentStatus.Loading, AssignmentStatus.Loaded, AssignmentStatus.InTransit, AssignmentStatus.ArrivedAtDestination, AssignmentStatus.Unloading, AssignmentStatus.CancellationRequested })
+                        {
+                            var name = status.ToString();
+                            var text = status switch
+                            {
+                                AssignmentStatus.Assigned => "تخصیص داده شده",
+                                AssignmentStatus.ArrivedAtOrigin => "رسیده به مبدا",
+                                AssignmentStatus.Loading => "در حال بارگیری",
+                                AssignmentStatus.Loaded => "بارگیری شده",
+                                AssignmentStatus.InTransit => "در راه",
+                                AssignmentStatus.ArrivedAtDestination => "رسیده به مقصد",
+                                AssignmentStatus.Unloading => "در حال تخلیه",
+                                AssignmentStatus.CancellationRequested => "درخواست لغو",
+                                _ => name
+                            };
+
+                            if (Model.StatusFilter == name)
+                            {
+                                <option value="@name" selected>@text</option>
+                            }
+                            else
+                            {
+                                <option value="@name">@text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">موقعیت</label>
+                    <select name="locationFilter" class="form-select form-select-sm">
+                        <option value="" selected="@(string.IsNullOrWhiteSpace(Model.LocationFilter) ? "selected" : null)">همه</option>
+                        <option value="with-location" selected="@(Model.LocationFilter == "with-location" ? "selected" : null)">دارای موقعیت</option>
+                        <option value="without-location" selected="@(Model.LocationFilter == "without-location" ? "selected" : null)">بدون موقعیت</option>
+                        <option value="stale-location" selected="@(Model.LocationFilter == "stale-location" ? "selected" : null)">موقعیت قدیمی</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">تعداد</label>
+                    <select name="pageSize" class="form-select form-select-sm">
+                        @foreach (var size in new[] { 10, 20, 50, 100 })
+                        {
+                            if (Model.PageSize == size)
+                            {
+                                <option value="@size" selected>@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-info btn-sm w-100">فیلتر</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>کشنده / راننده</th>
+                            <th>حواله / ریزحواله</th>
+                            <th>محصول</th>
+                            <th>مسیر</th>
+                            <th>مقادیر</th>
+                            <th>وضعیت</th>
+                            <th>آخرین موقعیت</th>
+                            <th>زمان‌ها</th>
+                            <th style="width:120px;">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            var rowNo = Model.RowNumberStart;
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>@rowNo</td>
+                                    <td>
+                                        <div class="fw-semibold">@(item.TractorPlateNumber ?? "-")</div>
+                                        <small class="text-muted">@(item.TractorType ?? "-")</small>
+                                        <div class="mt-1">@(item.DriverName ?? "راننده تعیین نشده")</div>
+                                        <small class="text-muted">@(item.DriverPhoneNumber ?? "-")</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@(item.HavalehNumber ?? "-")</div>
+                                        <small class="text-muted">@(item.SubHavalehTitle ?? "-")</small>
+                                    </td>
+                                    <td>
+                                        <div>@(item.ProductName ?? "-")</div>
+                                        <small class="text-muted">واحد: @(item.Unit ?? "-")</small>
+                                    </td>
+                                    <td class="route-text">
+                                        <div class="route-mini">
+                                            <div class="route-point route-origin">
+                                                <span class="route-dot"></span>
+                                                <div>
+                                                    <span class="route-label">مبدا</span>
+                                                    <strong>@(item.OriginPlaceName ?? "-")</strong>
+                                                </div>
+                                            </div>
+                                            <div class="route-line"></div>
+                                            <div class="route-point route-destination">
+                                                <span class="route-dot"></span>
+                                                <div>
+                                                    <span class="route-label">مقصد</span>
+                                                    <strong>@(item.DestinationPlaceName ?? "-")</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="amount-cell">
+                                        <div><small class="text-muted">تخصیص:</small> @Amount(item.AssignedCargoAmount, item.Unit)</div>
+                                        <div><small class="text-muted">بارگیری:</small> @Amount(item.LoadedAmount, item.Unit)</div>
+                                        <div><small class="text-muted">تخلیه:</small> @Amount(item.UnloadedAmount, item.Unit)</div>
+                                        <small class="text-muted">ظرفیت: @Amount(item.TractorCapacity, item.CapacityUnit)</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span>
+                                        <div class="mt-1">
+                                            <small class="text-muted">@(item.IsTruckCapacityFull ? "ظرفیت کامل" : "ظرفیت ناقص")</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (item.HasLocation)
+                                        {
+                                            <span class="location-pill @(item.IsLocationStale ? "warn" : "ok")">
+                                                @(item.IsLocationStale ? "موقعیت قدیمی" : "موقعیت فعال")
+                                            </span>
+                                            <div class="mt-1 small">
+                                                @item.Latitude?.ToString("0.0000000"), @item.Longitude?.ToString("0.0000000")
+                                            </div>
+                                            <small class="text-muted">@ToJalaliDateTime(item.LastLocationTime)</small>
+                                            <div><small class="text-muted">سرعت: @(item.Speed?.ToString("N0") ?? "-")</small></div>
+                                        }
+                                        else
+                                        {
+                                            <span class="location-pill none">بدون موقعیت</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div><small class="text-muted">تخصیص:</small> @ToJalali(item.AssignmentDate)</div>
+                                        <div><small class="text-muted">رسیدن مبدا:</small> @ToJalali(item.ArrivalAtOriginDate)</div>
+                                        <div><small class="text-muted">بارگیری:</small> @ToJalali(item.LoadingEndDate)</div>
+                                        <div><small class="text-muted">رسیدن مقصد:</small> @ToJalali(item.ArrivalAtDestinationDate)</div>
+                                    </td>
+                                    <td>
+                                        <a asp-controller="TractorAssignment"
+                                           asp-action="Details"
+                                           asp-route-id="@item.AssignmentId"
+                                           class="btn btn-outline-info btn-sm px-3">
+                                            جزئیات
+                                        </a>
+                                    </td>
+                                </tr>
+                                rowNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-4">در حال حاضر کشنده درگیر حمل با این فیلترها یافت نشد.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                    <div class="text-muted small">صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems</div>
+                    <nav>
+                        <ul class="pagination pagination-primary mb-0">
+                            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="1" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-locationFilter="@Model.LocationFilter">اول</a>
+                            </li>
+                            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-locationFilter="@Model.LocationFilter">قبلی</a>
+                            </li>
+                            @{ var startPage = Math.Max(1, Model.Page - 2); var endPage = Math.Min(Model.TotalPages, Model.Page + 2); }
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-locationFilter="@Model.LocationFilter">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-locationFilter="@Model.LocationFilter">بعدی</a>
+                            </li>
+                            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@Model.TotalPages" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search" asp-route-statusFilter="@Model.StatusFilter" asp-route-locationFilter="@Model.LocationFilter">آخر</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const mapItems = @Html.Raw(mapJson);
+        const mapElement = document.getElementById("fleetMap");
+        if (!mapElement || typeof L === "undefined") return;
+
+        const defaultCenter = [35.6892, 51.3890];
+        const map = L.map("fleetMap").setView(defaultCenter, 6);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap"
+        }).addTo(map);
+
+        if (!mapItems || mapItems.length === 0) {
+            return;
+        }
+
+        const bounds = [];
+
+        mapItems.forEach(item => {
+            const lat = Number(item.latitude);
+            const lng = Number(item.longitude);
+            if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+            const marker = L.circleMarker([lat, lng], {
+                radius: 8,
+                weight: 2,
+                color: item.isLocationStale ? "#ffc107" : "#0d6efd",
+                fillColor: item.isLocationStale ? "#ffc107" : "#0d6efd",
+                fillOpacity: 0.85
+            }).addTo(map);
+
+            const lastTime = item.lastLocationTime ? new Date(item.lastLocationTime).toLocaleString("fa-IR") : "-";
+            const speed = item.speed == null ? "-" : item.speed;
+            const heading = item.heading == null ? "-" : item.heading;
+
+            marker.bindPopup(`
+                <div style="min-width:220px;font-size:12px;line-height:1.7;text-align:right;direction:rtl;">
+                    <strong>${item.tractorPlateNumber || "-"}</strong><br/>
+                    راننده: ${item.driverName || "-"}<br/>
+                    حواله: ${item.havalehNumber || "-"}<br/>
+                    مسیر: ${item.originPlaceName || "-"} ← ${item.destinationPlaceName || "-"}<br/>
+                    وضعیت: ${item.statusDisplay || "-"}<br/>
+                    آخرین موقعیت: ${lastTime}<br/>
+                    سرعت: ${speed} | جهت: ${heading}<br/>
+                    <a href="/TractorAssignment/Details/${item.assignmentId}">جزئیات تخصیص</a>
+                </div>
+            `);
+
+            bounds.push([lat, lng]);
+        });
+
+        if (bounds.length === 1) {
+            map.setView(bounds[0], 12);
+        } else if (bounds.length > 1) {
+            map.fitBounds(bounds, { padding: [30, 30] });
+        }
+    });
+</script>

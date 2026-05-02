@@ -47,19 +47,6 @@ public static class IdentitySeeder
         try
         {
             var db = sp.GetRequiredService<TMS.MVC.Data.ApplicationDbContext>();
-            if (!await db.TicketCategories.AnyAsync(c => true))
-            {
-                var defaults = new[] {
-                    new TMS.MVC.Models.Tickets.TicketCategory { Title = "پشتیبانی فنی", IsActive = true, SortOrder = 10 },
-                    new TMS.MVC.Models.Tickets.TicketCategory { Title = "درخواست ویژگی", IsActive = true, SortOrder = 20 },
-                    new TMS.MVC.Models.Tickets.TicketCategory { Title = "گزارش باگ", IsActive = true, SortOrder = 30 },
-                    new TMS.MVC.Models.Tickets.TicketCategory { Title = "پیشنهادات", IsActive = true, SortOrder = 40 },
-                    new TMS.MVC.Models.Tickets.TicketCategory { Title = "مسائل مالی", IsActive = true, SortOrder = 50 },
-                    new TMS.MVC.Models.Tickets.TicketCategory { Title = "سایر", IsActive = true, SortOrder = 999 }
-                };
-                db.TicketCategories.AddRange(defaults);
-                await db.SaveChangesAsync();
-            }
         }
         catch
         {

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿﻿using System.ComponentModel.DataAnnotations;
 
 namespace TMS.MVC.Models
 {
@@ -45,6 +45,7 @@ namespace TMS.MVC.Models
         [Display(Name = "کدپستی")]
         public string? PostalCode { get; set; }
     }
+
     public class LegalEntityBankAccount
     {
         public long Id { get; set; }
@@ -66,6 +67,7 @@ namespace TMS.MVC.Models
         [Display(Name = "نام استعلام شده")]
         public string? VerifiedName { get; set; }
     }
+
     public class LegalEntityContact
     {
         public long Id { get; set; }
@@ -79,6 +81,7 @@ namespace TMS.MVC.Models
         [Display(Name = "عنوان")]
         public string Title { get; set; } = string.Empty;
 
+        // فیلدهای قدیمی برای سازگاری با کدهای قبلی نگه داشته شده‌اند.
         [StringLength(500)]
         [Display(Name = "راه ارتباطی")]
         public string? ContactValue { get; set; }
@@ -97,6 +100,26 @@ namespace TMS.MVC.Models
 
         [Display(Name = "ایمیل")]
         public bool IsEmail { get; set; }
-    }
 
+        [StringLength(200)]
+        [Display(Name = "پیامک")]
+        public string? SmsNumber { get; set; }
+
+        [StringLength(200)]
+        [Display(Name = "واتساپ")]
+        public string? WhatsAppNumber { get; set; }
+
+        [StringLength(200)]
+        [Display(Name = "فکس")]
+        public string? FaxNumber { get; set; }
+
+        [StringLength(200)]
+        [Display(Name = "تلفن")]
+        public string? PhoneNumber { get; set; }
+
+        [StringLength(300)]
+        [EmailAddress(ErrorMessage = "فرمت ایمیل صحیح نیست.")]
+        [Display(Name = "ایمیل")]
+        public string? EmailAddress { get; set; }
+    }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Models;
@@ -20,14 +20,11 @@ namespace TMS.MVC.Controllers
             if (page < 1) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var query = _context.DriverProfiles
-                .Include(x => x.ApplicationUser)
-                .AsQueryable();
+            var query = _context.DriverProfiles.Include(x => x.ApplicationUser).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim();
-
                 query = query.Where(x =>
                     (x.ApplicationUser.FirstName ?? "").Contains(search) ||
                     (x.ApplicationUser.LastName ?? "").Contains(search) ||
@@ -69,10 +66,7 @@ namespace TMS.MVC.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create()
-        {
-            return View(new DriverUpsertViewModel());
-        }
+        public IActionResult Create() => View(new DriverUpsertViewModel());
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -80,8 +74,7 @@ namespace TMS.MVC.Controllers
         {
             NormalizeDriverVm(vm);
 
-            if (!ModelState.IsValid)
-                return View(vm);
+            if (!ModelState.IsValid) return View(vm);
 
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == vm.ApplicationUserId);
             if (user == null)
@@ -89,6 +82,7 @@ namespace TMS.MVC.Controllers
                 ModelState.AddModelError(nameof(vm.ApplicationUserId), "کاربر انتخاب‌شده یافت نشد.");
                 return View(vm);
             }
+
             user.NationalId = vm.NationalId;
 
             var alreadyExists = await _context.DriverProfiles.AnyAsync(x => x.ApplicationUserId == vm.ApplicationUserId);
@@ -117,28 +111,20 @@ namespace TMS.MVC.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var entity = await _context.DriverProfiles
-                .Include(x => x.ApplicationUser)
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var entity = await _context.DriverProfiles.Include(x => x.ApplicationUser).FirstOrDefaultAsync(x => x.Id == id);
+            if (entity == null) return NotFound();
 
-            if (entity == null)
-                return NotFound();
-
-            var vm = new DriverUpsertViewModel
+            return View(new DriverUpsertViewModel
             {
                 Id = entity.Id,
                 ApplicationUserId = entity.ApplicationUserId,
-                UserDisplayName = entity.ApplicationUser == null
-                    ? null
-                    : $"{entity.ApplicationUser.FirstName} {entity.ApplicationUser.LastName} - {entity.ApplicationUser.Email}".Trim(),
+                UserDisplayName = entity.ApplicationUser == null ? null : $"{entity.ApplicationUser.FirstName} {entity.ApplicationUser.LastName} - {entity.ApplicationUser.Email}".Trim(),
                 NationalId = entity.ApplicationUser?.NationalId,
                 SmartCardNumber = entity.SmartCardNumber,
                 DrivingLicenseNumber = entity.DrivingLicenseNumber,
                 IsBlocked = entity.IsBlocked,
                 BlockDescription = entity.BlockDescription
-            };
-
-            return View(vm);
+            });
         }
 
         [HttpPost]
@@ -147,20 +133,12 @@ namespace TMS.MVC.Controllers
         {
             NormalizeDriverVm(vm);
 
-            if (!ModelState.IsValid)
-                return View(vm);
+            if (!ModelState.IsValid) return View(vm);
 
-            var entity = await _context.DriverProfiles
-                .Include(x => x.ApplicationUser)
-                .FirstOrDefaultAsync(x => x.Id == vm.Id);
+            var entity = await _context.DriverProfiles.Include(x => x.ApplicationUser).FirstOrDefaultAsync(x => x.Id == vm.Id);
+            if (entity == null) return NotFound();
 
-            if (entity == null)
-                return NotFound();
-
-            if (entity.ApplicationUser != null)
-            {
-                entity.ApplicationUser.NationalId = vm.NationalId;
-            }
+            if (entity.ApplicationUser != null) entity.ApplicationUser.NationalId = vm.NationalId;
 
             entity.SmartCardNumber = vm.SmartCardNumber;
             entity.DrivingLicenseNumber = vm.DrivingLicenseNumber;
@@ -183,8 +161,7 @@ namespace TMS.MVC.Controllers
                 .Include(x => x.Addresses)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null)
-                return NotFound();
+            if (entity == null) return NotFound();
 
             _context.DriverProfiles.Remove(entity);
             await _context.SaveChangesAsync();
@@ -202,52 +179,27 @@ namespace TMS.MVC.Controllers
                 .Include(x => x.Addresses)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null)
-                return NotFound();
+            if (entity == null) return NotFound();
 
             var assignments = await _context.TractorAssignments
                 .Include(x => x.Tractor)
-                .Include(x => x.SubHavaleh)
-                    .ThenInclude(x => x.Havaleh)
-                        .ThenInclude(x => x.OriginPlace)
-                .Include(x => x.SubHavaleh)
-                    .ThenInclude(x => x.DestinationPlace)
+                .Include(x => x.SubHavaleh).ThenInclude(x => x.Havaleh).ThenInclude(x => x.OriginPlace)
+                .Include(x => x.SubHavaleh).ThenInclude(x => x.DestinationPlace)
                 .Where(x => x.DriverProfileId == id)
                 .OrderByDescending(x => x.AssignmentDate)
                 .ToListAsync();
 
-            var totalAssignments = assignments.Count;
+            ViewBag.Assignments = assignments;
+            ViewBag.TotalAssignments = assignments.Count;
+            ViewBag.ActiveAssignments = assignments.Count(x => x.Status != AssignmentStatus.Completed && x.Status != AssignmentStatus.Cancelled && x.Status != AssignmentStatus.Unloaded);
+            ViewBag.CompletedAssignments = assignments.Count(x => x.Status == AssignmentStatus.Completed || x.Status == AssignmentStatus.Unloaded);
+            ViewBag.CancelledAssignments = assignments.Count(x => x.Status == AssignmentStatus.Cancelled);
+            ViewBag.TotalAssignedAmount = assignments.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.AssignedCargoAmount ?? 0);
+            ViewBag.TotalLoadedAmount = assignments.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.LoadedAmount ?? 0);
+            ViewBag.TotalUnloadedAmount = assignments.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.UnloadedAmount ?? 0);
+            ViewBag.TotalPaidAmount = assignments.Where(x => x.IsSettled && x.SettledTo == "Driver").Sum(x => x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0);
 
-            var activeAssignments = assignments.Count(x =>
-                x.Status != AssignmentStatus.Completed &&
-                x.Status != AssignmentStatus.Cancelled &&
-                x.Status != AssignmentStatus.Unloaded);
-
-            var completedAssignments = assignments.Count(x =>
-                x.Status == AssignmentStatus.Completed ||
-                x.Status == AssignmentStatus.Unloaded);
-
-            var cancelledAssignments = assignments.Count(x =>
-                x.Status == AssignmentStatus.Cancelled);
-
-            var totalAssignedAmount = assignments
-                .Where(x => x.Status != AssignmentStatus.Cancelled)
-                .Sum(x => x.AssignedCargoAmount ?? 0);
-
-            var totalLoadedAmount = assignments
-                .Where(x => x.Status != AssignmentStatus.Cancelled)
-                .Sum(x => x.LoadedAmount ?? 0);
-
-            var totalUnloadedAmount = assignments
-                .Where(x => x.Status != AssignmentStatus.Cancelled)
-                .Sum(x => x.UnloadedAmount ?? 0);
-
-            var totalPaidAmount = assignments
-                .Where(x => x.IsSettled && x.SettledTo == "Driver")
-                .Sum(x => x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0);
-
-            var depositTransactions = assignments
-                .Where(x => x.IsSettled && x.SettledTo == "Driver")
+            var depositTransactions = assignments.Where(x => x.IsSettled && x.SettledTo == "Driver")
                 .Select(x => new DriverWalletTransactionVm
                 {
                     Date = x.SettledDate ?? x.AssignmentDate,
@@ -256,48 +208,27 @@ namespace TMS.MVC.Controllers
                     Description = $"تسویه حمل حواله {x.SubHavaleh.Havaleh.HavalehNumber}",
                     ReferenceId = x.Id,
                     IsWithdraw = false
-                })
-                .ToList();
+                }).ToList();
 
             var withdrawalTransactions = await _context.DriverWalletWithdrawalRequests
-                .Where(x => x.DriverProfileId == id &&
-                            x.Status == DriverWalletWithdrawalRequestStatus.Paid)
+                .Where(x => x.DriverProfileId == id && x.Status == DriverWalletWithdrawalRequestStatus.Paid)
                 .Select(x => new DriverWalletTransactionVm
                 {
                     Date = x.PaidAt ?? x.RejectedAt ?? x.CreatedAt,
                     Type = "برداشت از کیف پول",
                     Amount = -x.Amount,
-                    Description = string.IsNullOrWhiteSpace(x.PaymentReceiptNote)
-                        ? "برداشت پرداخت‌شده از کیف پول"
-                        : x.PaymentReceiptNote,
+                    Description = string.IsNullOrWhiteSpace(x.PaymentReceiptNote) ? "برداشت پرداخت‌شده از کیف پول" : x.PaymentReceiptNote,
                     ReferenceId = x.Id,
                     IsWithdraw = true
-                })
-                .ToListAsync();
+                }).ToListAsync();
 
-            var walletTransactions = depositTransactions
-                .Concat(withdrawalTransactions)
-                .OrderByDescending(x => x.Date)
-                .ToList();
-
-            ViewBag.Assignments = assignments;
-            ViewBag.WalletTransactions = walletTransactions;
-
-            ViewBag.TotalAssignments = totalAssignments;
-            ViewBag.ActiveAssignments = activeAssignments;
-            ViewBag.CompletedAssignments = completedAssignments;
-            ViewBag.CancelledAssignments = cancelledAssignments;
-            ViewBag.TotalAssignedAmount = totalAssignedAmount;
-            ViewBag.TotalLoadedAmount = totalLoadedAmount;
-            ViewBag.TotalUnloadedAmount = totalUnloadedAmount;
-            ViewBag.TotalPaidAmount = totalPaidAmount;
+            ViewBag.WalletTransactions = depositTransactions.Concat(withdrawalTransactions).OrderByDescending(x => x.Date).ToList();
 
             return View(entity);
         }
 
         [HttpGet]
-        public IActionResult AddBankAccount(int driverProfileId)
-            => View(new DriverBankAccountUpsertViewModel { DriverProfileId = driverProfileId });
+        public IActionResult AddBankAccount(int driverProfileId) => View(new DriverBankAccountUpsertViewModel { DriverProfileId = driverProfileId });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -307,12 +238,8 @@ namespace TMS.MVC.Controllers
 
             if (vm.IsDefault)
             {
-                var currentDefaults = await _context.DriverBankAccounts
-                    .Where(x => x.DriverProfileId == vm.DriverProfileId && x.IsDefault)
-                    .ToListAsync();
-
-                foreach (var item in currentDefaults)
-                    item.IsDefault = false;
+                var currentDefaults = await _context.DriverBankAccounts.Where(x => x.DriverProfileId == vm.DriverProfileId && x.IsDefault).ToListAsync();
+                foreach (var item in currentDefaults) item.IsDefault = false;
             }
 
             _context.DriverBankAccounts.Add(new DriverBankAccount
@@ -363,12 +290,8 @@ namespace TMS.MVC.Controllers
 
             if (vm.IsDefault)
             {
-                var currentDefaults = await _context.DriverBankAccounts
-                    .Where(x => x.DriverProfileId == vm.DriverProfileId && x.Id != vm.Id && x.IsDefault)
-                    .ToListAsync();
-
-                foreach (var item in currentDefaults)
-                    item.IsDefault = false;
+                var currentDefaults = await _context.DriverBankAccounts.Where(x => x.DriverProfileId == vm.DriverProfileId && x.Id != vm.Id && x.IsDefault).ToListAsync();
+                foreach (var item in currentDefaults) item.IsDefault = false;
             }
 
             entity.AccountOwnerName = vm.AccountOwnerName;
@@ -401,27 +324,31 @@ namespace TMS.MVC.Controllers
 
         [HttpGet]
         public IActionResult AddContact(int driverProfileId)
-            => View(new DriverContactUpsertViewModel { DriverProfileId = driverProfileId });
+            => View(new DriverContactChannelVm { DriverProfileId = driverProfileId });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddContact(DriverContactUpsertViewModel vm)
+        public async Task<IActionResult> AddContact(DriverContactChannelVm vm)
         {
-            if (!ModelState.IsValid) return View(vm);
+            NormalizeDriverContactVm(vm);
 
-            _context.DriverContacts.Add(new DriverContact
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var entity = new DriverContact
             {
                 DriverProfileId = vm.DriverProfileId,
                 Title = vm.Title,
-                ContactValue = vm.ContactValue,
-                HasSms = vm.HasSms,
-                HasWhatsApp = vm.HasWhatsApp,
-                IsFax = vm.IsFax,
-                IsPhone = vm.IsPhone,
-                IsEmail = vm.IsEmail
-            });
+                SmsNumber = vm.SmsNumber,
+                WhatsAppNumber = vm.WhatsAppNumber,
+                FaxNumber = vm.FaxNumber,
+                PhoneNumber = vm.PhoneNumber,
+                EmailAddress = vm.EmailAddress
+            };
 
+            _context.DriverContacts.Add(entity);
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "راه ارتباطی اضافه شد.";
             return RedirectToAction(nameof(Details), new { id = vm.DriverProfileId });
         }
@@ -432,38 +359,40 @@ namespace TMS.MVC.Controllers
             var entity = await _context.DriverContacts.FindAsync(id);
             if (entity == null) return NotFound();
 
-            return View(new DriverContactUpsertViewModel
+            return View(new DriverContactChannelVm
             {
                 Id = entity.Id,
                 DriverProfileId = entity.DriverProfileId,
                 Title = entity.Title,
-                ContactValue = entity.ContactValue,
-                HasSms = entity.HasSms,
-                HasWhatsApp = entity.HasWhatsApp,
-                IsFax = entity.IsFax,
-                IsPhone = entity.IsPhone,
-                IsEmail = entity.IsEmail
+                SmsNumber = entity.SmsNumber,
+                WhatsAppNumber = entity.WhatsAppNumber,
+                FaxNumber = entity.FaxNumber,
+                PhoneNumber = entity.PhoneNumber,
+                EmailAddress = entity.EmailAddress
             });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditContact(DriverContactUpsertViewModel vm)
+        public async Task<IActionResult> EditContact(DriverContactChannelVm vm)
         {
-            if (!ModelState.IsValid) return View(vm);
+            NormalizeDriverContactVm(vm);
+
+            if (!ModelState.IsValid)
+                return View(vm);
 
             var entity = await _context.DriverContacts.FindAsync(vm.Id);
             if (entity == null) return NotFound();
 
             entity.Title = vm.Title;
-            entity.ContactValue = vm.ContactValue;
-            entity.HasSms = vm.HasSms;
-            entity.HasWhatsApp = vm.HasWhatsApp;
-            entity.IsFax = vm.IsFax;
-            entity.IsPhone = vm.IsPhone;
-            entity.IsEmail = vm.IsEmail;
+            entity.SmsNumber = vm.SmsNumber;
+            entity.WhatsAppNumber = vm.WhatsAppNumber;
+            entity.FaxNumber = vm.FaxNumber;
+            entity.PhoneNumber = vm.PhoneNumber;
+            entity.EmailAddress = vm.EmailAddress;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "راه ارتباطی ویرایش شد.";
             return RedirectToAction(nameof(Details), new { id = vm.DriverProfileId });
         }
@@ -484,8 +413,7 @@ namespace TMS.MVC.Controllers
         }
 
         [HttpGet]
-        public IActionResult AddAddress(int driverProfileId)
-            => View(new DriverAddressUpsertViewModel { DriverProfileId = driverProfileId });
+        public IActionResult AddAddress(int driverProfileId) => View(new DriverAddressUpsertViewModel { DriverProfileId = driverProfileId });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -493,14 +421,9 @@ namespace TMS.MVC.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            _context.DriverAddresses.Add(new DriverAddress
-            {
-                DriverProfileId = vm.DriverProfileId,
-                Title = vm.Title,
-                AddressText = vm.AddressText
-            });
-
+            _context.DriverAddresses.Add(new DriverAddress { DriverProfileId = vm.DriverProfileId, Title = vm.Title, AddressText = vm.AddressText });
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "آدرس اضافه شد.";
             return RedirectToAction(nameof(Details), new { id = vm.DriverProfileId });
         }
@@ -511,13 +434,7 @@ namespace TMS.MVC.Controllers
             var entity = await _context.DriverAddresses.FindAsync(id);
             if (entity == null) return NotFound();
 
-            return View(new DriverAddressUpsertViewModel
-            {
-                Id = entity.Id,
-                DriverProfileId = entity.DriverProfileId,
-                Title = entity.Title,
-                AddressText = entity.AddressText
-            });
+            return View(new DriverAddressUpsertViewModel { Id = entity.Id, DriverProfileId = entity.DriverProfileId, Title = entity.Title, AddressText = entity.AddressText });
         }
 
         [HttpPost]
@@ -556,15 +473,10 @@ namespace TMS.MVC.Controllers
         public async Task<IActionResult> SearchUsers(string? term)
         {
             term = (term ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(term))
-                return Json(new List<object>());
+            if (string.IsNullOrWhiteSpace(term)) return Json(new List<object>());
 
             var items = await _context.Users
-                .Where(x =>
-                    (x.FirstName ?? "").Contains(term) ||
-                    (x.LastName ?? "").Contains(term) ||
-                    (x.Email ?? "").Contains(term) ||
-                    (x.NationalId ?? "").Contains(term))
+                .Where(x => (x.FirstName ?? "").Contains(term) || (x.LastName ?? "").Contains(term) || (x.Email ?? "").Contains(term) || (x.NationalId ?? "").Contains(term))
                 .OrderBy(x => x.FirstName)
                 .ThenBy(x => x.LastName)
                 .Take(30)
@@ -588,6 +500,22 @@ namespace TMS.MVC.Controllers
             vm.SmartCardNumber = string.IsNullOrWhiteSpace(vm.SmartCardNumber) ? null : vm.SmartCardNumber.Trim();
             vm.DrivingLicenseNumber = string.IsNullOrWhiteSpace(vm.DrivingLicenseNumber) ? null : vm.DrivingLicenseNumber.Trim();
             vm.BlockDescription = string.IsNullOrWhiteSpace(vm.BlockDescription) ? null : vm.BlockDescription.Trim();
+        }
+
+        private static void NormalizeDriverContactVm(DriverContactChannelVm vm)
+        {
+            vm.Title = NormalizeText(vm.Title);
+            vm.SmsNumber = NormalizeText(vm.SmsNumber);
+            vm.WhatsAppNumber = NormalizeText(vm.WhatsAppNumber);
+            vm.FaxNumber = NormalizeText(vm.FaxNumber);
+            vm.PhoneNumber = NormalizeText(vm.PhoneNumber);
+            vm.EmailAddress = NormalizeText(vm.EmailAddress);
+        }
+
+        private static string? NormalizeText(string? value)
+        {
+            var result = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(result) ? null : result;
         }
     }
 }

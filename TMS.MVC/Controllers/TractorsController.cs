@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Models;
@@ -20,14 +20,11 @@ namespace TMS.MVC.Controllers
             if (page < 1) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var query = _context.Tractors
-                .Include(x => x.OwnerApplicationUser)
-                .AsQueryable();
+            var query = _context.Tractors.Include(x => x.OwnerApplicationUser).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim();
-
                 query = query.Where(x =>
                     x.PolicePlateNumber.Contains(search) ||
                     (x.TractorSmartCardNumber ?? "").Contains(search) ||
@@ -77,12 +74,7 @@ namespace TMS.MVC.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            var vm = new TractorUpsertViewModel
-            {
-                Status = "فعال"
-            };
-
-            return View(vm);
+            return View(new TractorUpsertViewModel { Status = "فعال" });
         }
 
         [HttpPost]
@@ -91,14 +83,11 @@ namespace TMS.MVC.Controllers
         {
             NormalizeTractorVm(vm);
 
-            if (!ModelState.IsValid)
-                return View(vm);
-
-            var policePlateNumber = BuildPolicePlateNumber(vm);
+            if (!ModelState.IsValid) return View(vm);
 
             var entity = new Tractor
             {
-                PolicePlateNumber = policePlateNumber,
+                PolicePlateNumber = BuildPolicePlateNumber(vm),
                 OwnerApplicationUserId = string.IsNullOrWhiteSpace(vm.OwnerApplicationUserId) ? null : vm.OwnerApplicationUserId,
                 NationalId = vm.NationalId,
                 TractorSmartCardNumber = vm.TractorSmartCardNumber,
@@ -126,12 +115,8 @@ namespace TMS.MVC.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var entity = await _context.Tractors
-                .Include(x => x.OwnerApplicationUser)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entity == null)
-                return NotFound();
+            var entity = await _context.Tractors.Include(x => x.OwnerApplicationUser).FirstOrDefaultAsync(x => x.Id == id);
+            if (entity == null) return NotFound();
 
             var vm = new TractorUpsertViewModel
             {
@@ -151,33 +136,11 @@ namespace TMS.MVC.Controllers
                 CapacityUnit = entity.CapacityUnit,
                 TransitPlateNumber = entity.TransitPlateNumber,
                 OwnerApplicationUserId = entity.OwnerApplicationUserId,
-                OwnerUserDisplayName = entity.OwnerApplicationUser == null
-                    ? null
-                    : $"{entity.OwnerApplicationUser.FirstName} {entity.OwnerApplicationUser.LastName} - {entity.OwnerApplicationUser.Email}".Trim()
+                OwnerUserDisplayName = entity.OwnerApplicationUser == null ? null : $"{entity.OwnerApplicationUser.FirstName} {entity.OwnerApplicationUser.LastName} - {entity.OwnerApplicationUser.Email}".Trim()
             };
 
             SplitPolicePlate(entity.PolicePlateNumber, vm);
-
             return View(vm);
-        }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var entity = await _context.Tractors
-                .Include(x => x.BankAccounts)
-                .Include(x => x.Contacts)
-                .Include(x => x.Addresses)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entity == null)
-                return NotFound();
-
-            _context.Tractors.Remove(entity);
-            await _context.SaveChangesAsync();
-
-            TempData["Ok"] = "کشنده با موفقیت حذف شد.";
-            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -186,14 +149,10 @@ namespace TMS.MVC.Controllers
         {
             NormalizeTractorVm(vm);
 
-            if (!ModelState.IsValid)
-                return View(vm);
+            if (!ModelState.IsValid) return View(vm);
 
-            var entity = await _context.Tractors
-                .FirstOrDefaultAsync(x => x.Id == vm.Id);
-
-            if (entity == null)
-                return NotFound();
+            var entity = await _context.Tractors.FirstOrDefaultAsync(x => x.Id == vm.Id);
+            if (entity == null) return NotFound();
 
             entity.PolicePlateNumber = BuildPolicePlateNumber(vm);
             entity.OwnerApplicationUserId = string.IsNullOrWhiteSpace(vm.OwnerApplicationUserId) ? null : vm.OwnerApplicationUserId;
@@ -218,6 +177,20 @@ namespace TMS.MVC.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var entity = await _context.Tractors.Include(x => x.BankAccounts).Include(x => x.Contacts).Include(x => x.Addresses).FirstOrDefaultAsync(x => x.Id == id);
+            if (entity == null) return NotFound();
+
+            _context.Tractors.Remove(entity);
+            await _context.SaveChangesAsync();
+
+            TempData["Ok"] = "کشنده با موفقیت حذف شد.";
+            return RedirectToAction(nameof(Index));
+        }
+
         public async Task<IActionResult> Details(int id)
         {
             var entity = await _context.Tractors
@@ -227,53 +200,27 @@ namespace TMS.MVC.Controllers
                 .Include(x => x.Addresses)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null)
-                return NotFound();
+            if (entity == null) return NotFound();
 
             var assignments = await _context.TractorAssignments
-                .Include(x => x.DriverProfile)
-                    .ThenInclude(x => x.ApplicationUser)
-                .Include(x => x.SubHavaleh)
-                    .ThenInclude(x => x.Havaleh)
-                        .ThenInclude(x => x.OriginPlace)
-                .Include(x => x.SubHavaleh)
-                    .ThenInclude(x => x.DestinationPlace)
+                .Include(x => x.DriverProfile).ThenInclude(x => x.ApplicationUser)
+                .Include(x => x.SubHavaleh).ThenInclude(x => x.Havaleh).ThenInclude(x => x.OriginPlace)
+                .Include(x => x.SubHavaleh).ThenInclude(x => x.DestinationPlace)
                 .Where(x => x.TractorId == id)
                 .OrderByDescending(x => x.AssignmentDate)
                 .ToListAsync();
 
-            var totalAssignments = assignments.Count;
+            ViewBag.Assignments = assignments;
+            ViewBag.TotalAssignments = assignments.Count;
+            ViewBag.ActiveAssignments = assignments.Count(x => x.Status != AssignmentStatus.Completed && x.Status != AssignmentStatus.Cancelled && x.Status != AssignmentStatus.Unloaded);
+            ViewBag.CompletedAssignments = assignments.Count(x => x.Status == AssignmentStatus.Completed || x.Status == AssignmentStatus.Unloaded);
+            ViewBag.CancelledAssignments = assignments.Count(x => x.Status == AssignmentStatus.Cancelled);
+            ViewBag.TotalAssignedAmount = assignments.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.AssignedCargoAmount ?? 0);
+            ViewBag.TotalLoadedAmount = assignments.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.LoadedAmount ?? 0);
+            ViewBag.TotalUnloadedAmount = assignments.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.UnloadedAmount ?? 0);
+            ViewBag.TotalPaidAmount = assignments.Where(x => x.IsSettled && x.SettledTo == "Tractor").Sum(x => x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0);
 
-            var activeAssignments = assignments.Count(x =>
-                x.Status != AssignmentStatus.Completed &&
-                x.Status != AssignmentStatus.Cancelled &&
-                x.Status != AssignmentStatus.Unloaded);
-
-            var completedAssignments = assignments.Count(x =>
-                x.Status == AssignmentStatus.Completed ||
-                x.Status == AssignmentStatus.Unloaded);
-
-            var cancelledAssignments = assignments.Count(x =>
-                x.Status == AssignmentStatus.Cancelled);
-
-            var totalAssignedAmount = assignments
-                .Where(x => x.Status != AssignmentStatus.Cancelled)
-                .Sum(x => x.AssignedCargoAmount ?? 0);
-
-            var totalLoadedAmount = assignments
-                .Where(x => x.Status != AssignmentStatus.Cancelled)
-                .Sum(x => x.LoadedAmount ?? 0);
-
-            var totalUnloadedAmount = assignments
-                .Where(x => x.Status != AssignmentStatus.Cancelled)
-                .Sum(x => x.UnloadedAmount ?? 0);
-
-            var totalPaidAmount = assignments
-                .Where(x => x.IsSettled && x.SettledTo == "Tractor")
-                .Sum(x => x.PayableAmount ?? x.FinalFare ?? x.FinancialApprovedAmount ?? 0);
-
-            var depositTransactions = assignments
-                .Where(x => x.IsSettled && x.SettledTo == "Tractor")
+            var depositTransactions = assignments.Where(x => x.IsSettled && x.SettledTo == "Tractor")
                 .Select(x => new TractorWalletTransactionVm
                 {
                     Date = x.SettledDate ?? x.AssignmentDate,
@@ -282,48 +229,27 @@ namespace TMS.MVC.Controllers
                     Description = $"تسویه حمل حواله {x.SubHavaleh.Havaleh.HavalehNumber}",
                     ReferenceId = x.Id,
                     IsWithdraw = false
-                })
-                .ToList();
+                }).ToList();
 
             var withdrawalTransactions = await _context.TractorWalletWithdrawalRequests
-                .Where(x => x.TractorId == id &&
-                            x.Status == TractorWalletWithdrawalRequestStatus.Paid)
+                .Where(x => x.TractorId == id && x.Status == TractorWalletWithdrawalRequestStatus.Paid)
                 .Select(x => new TractorWalletTransactionVm
                 {
                     Date = x.PaidAt ?? x.RejectedAt ?? x.CreatedAt,
                     Type = "برداشت از کیف پول",
                     Amount = -x.Amount,
-                    Description = string.IsNullOrWhiteSpace(x.PaymentReceiptNote)
-                        ? "برداشت پرداخت‌شده از کیف پول"
-                        : x.PaymentReceiptNote,
+                    Description = string.IsNullOrWhiteSpace(x.PaymentReceiptNote) ? "برداشت پرداخت‌شده از کیف پول" : x.PaymentReceiptNote,
                     ReferenceId = x.Id,
                     IsWithdraw = true
-                })
-                .ToListAsync();
+                }).ToListAsync();
 
-            var walletTransactions = depositTransactions
-                .Concat(withdrawalTransactions)
-                .OrderByDescending(x => x.Date)
-                .ToList();
-
-            ViewBag.Assignments = assignments;
-            ViewBag.WalletTransactions = walletTransactions;
-
-            ViewBag.TotalAssignments = totalAssignments;
-            ViewBag.ActiveAssignments = activeAssignments;
-            ViewBag.CompletedAssignments = completedAssignments;
-            ViewBag.CancelledAssignments = cancelledAssignments;
-            ViewBag.TotalAssignedAmount = totalAssignedAmount;
-            ViewBag.TotalLoadedAmount = totalLoadedAmount;
-            ViewBag.TotalUnloadedAmount = totalUnloadedAmount;
-            ViewBag.TotalPaidAmount = totalPaidAmount;
+            ViewBag.WalletTransactions = depositTransactions.Concat(withdrawalTransactions).OrderByDescending(x => x.Date).ToList();
 
             return View(entity);
         }
 
         [HttpGet]
-        public IActionResult AddBankAccount(int tractorId)
-            => View(new TractorBankAccountUpsertViewModel { TractorId = tractorId });
+        public IActionResult AddBankAccount(int tractorId) => View(new TractorBankAccountUpsertViewModel { TractorId = tractorId });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -333,12 +259,8 @@ namespace TMS.MVC.Controllers
 
             if (vm.IsDefault)
             {
-                var currentDefaults = await _context.TractorBankAccounts
-                    .Where(x => x.TractorId == vm.TractorId && x.IsDefault)
-                    .ToListAsync();
-
-                foreach (var item in currentDefaults)
-                    item.IsDefault = false;
+                var currentDefaults = await _context.TractorBankAccounts.Where(x => x.TractorId == vm.TractorId && x.IsDefault).ToListAsync();
+                foreach (var item in currentDefaults) item.IsDefault = false;
             }
 
             _context.TractorBankAccounts.Add(new TractorBankAccount
@@ -389,12 +311,8 @@ namespace TMS.MVC.Controllers
 
             if (vm.IsDefault)
             {
-                var currentDefaults = await _context.TractorBankAccounts
-                    .Where(x => x.TractorId == vm.TractorId && x.Id != vm.Id && x.IsDefault)
-                    .ToListAsync();
-
-                foreach (var item in currentDefaults)
-                    item.IsDefault = false;
+                var currentDefaults = await _context.TractorBankAccounts.Where(x => x.TractorId == vm.TractorId && x.Id != vm.Id && x.IsDefault).ToListAsync();
+                foreach (var item in currentDefaults) item.IsDefault = false;
             }
 
             entity.AccountOwnerName = vm.AccountOwnerName;
@@ -427,27 +345,31 @@ namespace TMS.MVC.Controllers
 
         [HttpGet]
         public IActionResult AddContact(int tractorId)
-            => View(new TractorContactUpsertViewModel { TractorId = tractorId });
+            => View(new TractorContactChannelVm { TractorId = tractorId });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddContact(TractorContactUpsertViewModel vm)
+        public async Task<IActionResult> AddContact(TractorContactChannelVm vm)
         {
-            if (!ModelState.IsValid) return View(vm);
+            NormalizeTractorContactVm(vm);
 
-            _context.TractorContacts.Add(new TractorContact
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var entity = new TractorContact
             {
                 TractorId = vm.TractorId,
                 Title = vm.Title,
-                ContactValue = vm.ContactValue,
-                HasSms = vm.HasSms,
-                HasWhatsApp = vm.HasWhatsApp,
-                IsFax = vm.IsFax,
-                IsPhone = vm.IsPhone,
-                IsEmail = vm.IsEmail
-            });
+                SmsNumber = vm.SmsNumber,
+                WhatsAppNumber = vm.WhatsAppNumber,
+                FaxNumber = vm.FaxNumber,
+                PhoneNumber = vm.PhoneNumber,
+                EmailAddress = vm.EmailAddress
+            };
 
+            _context.TractorContacts.Add(entity);
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "راه ارتباطی اضافه شد.";
             return RedirectToAction(nameof(Details), new { id = vm.TractorId });
         }
@@ -458,38 +380,40 @@ namespace TMS.MVC.Controllers
             var entity = await _context.TractorContacts.FindAsync(id);
             if (entity == null) return NotFound();
 
-            return View(new TractorContactUpsertViewModel
+            return View(new TractorContactChannelVm
             {
                 Id = entity.Id,
                 TractorId = entity.TractorId,
                 Title = entity.Title,
-                ContactValue = entity.ContactValue,
-                HasSms = entity.HasSms,
-                HasWhatsApp = entity.HasWhatsApp,
-                IsFax = entity.IsFax,
-                IsPhone = entity.IsPhone,
-                IsEmail = entity.IsEmail
+                SmsNumber = entity.SmsNumber,
+                WhatsAppNumber = entity.WhatsAppNumber,
+                FaxNumber = entity.FaxNumber,
+                PhoneNumber = entity.PhoneNumber,
+                EmailAddress = entity.EmailAddress
             });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditContact(TractorContactUpsertViewModel vm)
+        public async Task<IActionResult> EditContact(TractorContactChannelVm vm)
         {
-            if (!ModelState.IsValid) return View(vm);
+            NormalizeTractorContactVm(vm);
+
+            if (!ModelState.IsValid)
+                return View(vm);
 
             var entity = await _context.TractorContacts.FindAsync(vm.Id);
             if (entity == null) return NotFound();
 
             entity.Title = vm.Title;
-            entity.ContactValue = vm.ContactValue;
-            entity.HasSms = vm.HasSms;
-            entity.HasWhatsApp = vm.HasWhatsApp;
-            entity.IsFax = vm.IsFax;
-            entity.IsPhone = vm.IsPhone;
-            entity.IsEmail = vm.IsEmail;
+            entity.SmsNumber = vm.SmsNumber;
+            entity.WhatsAppNumber = vm.WhatsAppNumber;
+            entity.FaxNumber = vm.FaxNumber;
+            entity.PhoneNumber = vm.PhoneNumber;
+            entity.EmailAddress = vm.EmailAddress;
 
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "راه ارتباطی ویرایش شد.";
             return RedirectToAction(nameof(Details), new { id = vm.TractorId });
         }
@@ -510,8 +434,7 @@ namespace TMS.MVC.Controllers
         }
 
         [HttpGet]
-        public IActionResult AddAddress(int tractorId)
-            => View(new TractorAddressUpsertViewModel { TractorId = tractorId });
+        public IActionResult AddAddress(int tractorId) => View(new TractorAddressUpsertViewModel { TractorId = tractorId });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -519,14 +442,9 @@ namespace TMS.MVC.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            _context.TractorAddresses.Add(new TractorAddress
-            {
-                TractorId = vm.TractorId,
-                Title = vm.Title,
-                AddressText = vm.AddressText
-            });
-
+            _context.TractorAddresses.Add(new TractorAddress { TractorId = vm.TractorId, Title = vm.Title, AddressText = vm.AddressText });
             await _context.SaveChangesAsync();
+
             TempData["Ok"] = "آدرس اضافه شد.";
             return RedirectToAction(nameof(Details), new { id = vm.TractorId });
         }
@@ -537,13 +455,7 @@ namespace TMS.MVC.Controllers
             var entity = await _context.TractorAddresses.FindAsync(id);
             if (entity == null) return NotFound();
 
-            return View(new TractorAddressUpsertViewModel
-            {
-                Id = entity.Id,
-                TractorId = entity.TractorId,
-                Title = entity.Title,
-                AddressText = entity.AddressText
-            });
+            return View(new TractorAddressUpsertViewModel { Id = entity.Id, TractorId = entity.TractorId, Title = entity.Title, AddressText = entity.AddressText });
         }
 
         [HttpPost]
@@ -582,15 +494,10 @@ namespace TMS.MVC.Controllers
         public async Task<IActionResult> SearchOwners(string? term)
         {
             term = (term ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(term))
-                return Json(new List<object>());
+            if (string.IsNullOrWhiteSpace(term)) return Json(new List<object>());
 
             var items = await _context.Users
-                .Where(x =>
-                    (x.FirstName ?? "").Contains(term) ||
-                    (x.LastName ?? "").Contains(term) ||
-                    (x.Email ?? "").Contains(term) ||
-                    (x.NationalId ?? "").Contains(term))
+                .Where(x => (x.FirstName ?? "").Contains(term) || (x.LastName ?? "").Contains(term) || (x.Email ?? "").Contains(term) || (x.NationalId ?? "").Contains(term))
                 .OrderBy(x => x.FirstName)
                 .ThenBy(x => x.LastName)
                 .Take(30)
@@ -625,6 +532,22 @@ namespace TMS.MVC.Controllers
             vm.TransitPlateNumber = string.IsNullOrWhiteSpace(vm.TransitPlateNumber) ? null : vm.TransitPlateNumber.Trim();
         }
 
+        private static void NormalizeTractorContactVm(TractorContactChannelVm vm)
+        {
+            vm.Title = NormalizeText(vm.Title);
+            vm.SmsNumber = NormalizeText(vm.SmsNumber);
+            vm.WhatsAppNumber = NormalizeText(vm.WhatsAppNumber);
+            vm.FaxNumber = NormalizeText(vm.FaxNumber);
+            vm.PhoneNumber = NormalizeText(vm.PhoneNumber);
+            vm.EmailAddress = NormalizeText(vm.EmailAddress);
+        }
+
+        private static string? NormalizeText(string? value)
+        {
+            var result = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(result) ? null : result;
+        }
+
         private static string BuildPolicePlateNumber(TractorUpsertViewModel vm)
         {
             var left2 = (vm.PlatePartLeft2 ?? "").Trim();
@@ -637,8 +560,7 @@ namespace TMS.MVC.Controllers
 
         private static void SplitPolicePlate(string? plate, TractorUpsertViewModel vm)
         {
-            if (string.IsNullOrWhiteSpace(plate))
-                return;
+            if (string.IsNullOrWhiteSpace(plate)) return;
 
             var parts = plate.Split('-', StringSplitOptions.TrimEntries);
             if (parts.Length == 2)

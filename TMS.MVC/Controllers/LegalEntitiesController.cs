@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Models;
@@ -17,9 +17,7 @@ namespace TMS.MVC.Controllers
             if (page < 1) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var q = _db.LegalEntities
-                .Include(x => x.Addresses)
-                .AsQueryable();
+            var q = _db.LegalEntities.Include(x => x.Addresses).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -46,10 +44,7 @@ namespace TMS.MVC.Controllers
                     CompanyName = x.CompanyName,
                     CompanyType = x.CompanyType,
                     City = x.City,
-                    FirstAddress = x.Addresses
-                        .OrderBy(a => a.Id)
-                        .Select(a => a.AddressText)
-                        .FirstOrDefault()
+                    FirstAddress = x.Addresses.OrderBy(a => a.Id).Select(a => a.AddressText).FirstOrDefault()
                 })
                 .ToListAsync();
 
@@ -62,10 +57,8 @@ namespace TMS.MVC.Controllers
                 TotalItems = totalItems
             });
         }
-        public IActionResult Create()
-        {
-            return View(new LegalEntityFormVm());
-        }
+
+        public IActionResult Create() => View(new LegalEntityFormVm());
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -131,10 +124,7 @@ namespace TMS.MVC.Controllers
 
             if (entity == null) return NotFound();
 
-            return View(new LegalEntityDetailsVm
-            {
-                Entity = entity
-            });
+            return View(new LegalEntityDetailsVm { Entity = entity });
         }
 
         [HttpPost]
@@ -150,49 +140,80 @@ namespace TMS.MVC.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
         public IActionResult AddContact(long legalEntityId)
         {
-            return View(new LegalEntityContact { LegalEntityId = legalEntityId });
+            return View(new LegalEntityContactChannelVm { LegalEntityId = legalEntityId });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddContact(LegalEntityContact model)
+        public async Task<IActionResult> AddContact(LegalEntityContactChannelVm vm)
         {
-            if (!ModelState.IsValid) return View(model);
+            NormalizeLegalEntityContactVm(vm);
 
-            _db.LegalEntityContacts.Add(model);
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var entity = new LegalEntityContact
+            {
+                LegalEntityId = vm.LegalEntityId,
+                Title = vm.Title,
+                SmsNumber = vm.SmsNumber,
+                WhatsAppNumber = vm.WhatsAppNumber,
+                FaxNumber = vm.FaxNumber,
+                PhoneNumber = vm.PhoneNumber,
+                EmailAddress = vm.EmailAddress
+            };
+
+            _db.LegalEntityContacts.Add(entity);
             await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Details), new { id = model.LegalEntityId });
+
+            return RedirectToAction(nameof(Details), new { id = vm.LegalEntityId });
         }
 
         public async Task<IActionResult> EditContact(long id)
         {
             var item = await _db.LegalEntityContacts.FindAsync(id);
             if (item == null) return NotFound();
-            return View(item);
+
+            return View(new LegalEntityContactChannelVm
+            {
+                Id = item.Id,
+                LegalEntityId = item.LegalEntityId,
+                Title = item.Title,
+                SmsNumber = item.SmsNumber,
+                WhatsAppNumber = item.WhatsAppNumber,
+                FaxNumber = item.FaxNumber,
+                PhoneNumber = item.PhoneNumber,
+                EmailAddress = item.EmailAddress
+            });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditContact(long id, LegalEntityContact model)
+        public async Task<IActionResult> EditContact(long id, LegalEntityContactChannelVm vm)
         {
-            if (id != model.Id) return NotFound();
-            if (!ModelState.IsValid) return View(model);
+            NormalizeLegalEntityContactVm(vm);
+
+            if (id != vm.Id) return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(vm);
 
             var item = await _db.LegalEntityContacts.FindAsync(id);
             if (item == null) return NotFound();
 
-            item.Title = model.Title;
-            item.ContactValue = model.ContactValue;
-            item.HasSms = model.HasSms;
-            item.HasWhatsApp = model.HasWhatsApp;
-            item.IsFax = model.IsFax;
-            item.IsPhone = model.IsPhone;
-            item.IsEmail = model.IsEmail;
+            item.Title = vm.Title;
+            item.SmsNumber = vm.SmsNumber;
+            item.WhatsAppNumber = vm.WhatsAppNumber;
+            item.FaxNumber = vm.FaxNumber;
+            item.PhoneNumber = vm.PhoneNumber;
+            item.EmailAddress = vm.EmailAddress;
 
             await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Details), new { id = item.LegalEntityId });
+
+            return RedirectToAction(nameof(Details), new { id = vm.LegalEntityId });
         }
 
         [HttpPost]
@@ -318,6 +339,22 @@ namespace TMS.MVC.Controllers
                 return RedirectToAction(nameof(Details), new { id = legalEntityId });
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private static void NormalizeLegalEntityContactVm(LegalEntityContactChannelVm vm)
+        {
+            vm.Title = (vm.Title ?? string.Empty).Trim();
+            vm.SmsNumber = NormalizeText(vm.SmsNumber);
+            vm.WhatsAppNumber = NormalizeText(vm.WhatsAppNumber);
+            vm.FaxNumber = NormalizeText(vm.FaxNumber);
+            vm.PhoneNumber = NormalizeText(vm.PhoneNumber);
+            vm.EmailAddress = NormalizeText(vm.EmailAddress);
+        }
+
+        private static string? NormalizeText(string? value)
+        {
+            var result = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(result) ? null : result;
         }
     }
 }

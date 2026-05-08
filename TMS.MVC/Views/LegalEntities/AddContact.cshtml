@@ -1,33 +1,46 @@
-@model TMS.MVC.Models.LegalEntityContact
+﻿@model TMS.MVC.ViewModels.LegalEntityContactChannelVm
 
 @{
-    ViewData["Title"] = "افزودن راه ارتباطی";
+    ViewData["Title"] = "افزودن راه ارتباطی شخص حقوقی";
 }
 
 <style>
-    .legal-entity-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
-    .legal-entity-compact .form-control,
-    .legal-entity-compact .btn,
-    .legal-entity-compact .form-check-label { font-size: 0.82rem; }
-    .legal-entity-compact .field-validation-valid,
-    .legal-entity-compact .field-validation-error { font-size: 0.75rem; }
-    .legal-entity-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
-    .legal-entity-compact .card-body { padding-top: 0.85rem; }
-    .legal-entity-compact .small-muted { font-size: 0.78rem; }
-    .legal-entity-compact .contact-options {
+    .contact-form-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .contact-form-compact .form-control,
+    .contact-form-compact .btn {
+        font-size: 0.82rem;
+    }
+
+    .contact-form-compact .field-validation-valid,
+    .contact-form-compact .field-validation-error {
+        font-size: 0.75rem;
+    }
+
+    .contact-form-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .contact-form-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .contact-form-compact .small-muted {
+        font-size: 0.78rem;
+    }
+
+    .contact-form-compact .contact-card {
         border: 1px solid #e5e7eb;
-        border-radius: 0.45rem;
-        padding: 0.65rem;
+        border-radius: 0.75rem;
         background: #fff;
+        padding: 0.75rem;
+        height: 100%;
     }
-    .legal-entity-compact .form-check {
-        min-height: 31px;
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        margin-bottom: 0;
-    }
-    .legal-entity-compact .form-check-input { margin-top: 0; }
 </style>
 
 <div class="container-fluid">
@@ -40,21 +53,22 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
                     <li class="breadcrumb-item"><a asp-action="Index">اشخاص حقوقی</a></li>
-                    <li class="breadcrumb-item active">افزودن راه ارتباطی</li>
+                    <li class="breadcrumb-item active">راه ارتباطی</li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid legal-entity-compact">
+<div class="container-fluid contact-form-compact">
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h6 class="mb-0">افزودن راه ارتباطی</h6>
-                <small class="text-muted small-muted">ثبت تلفن، ایمیل، فکس یا مسیرهای ارتباطی دیگر</small>
+                <h6 class="mb-0">افزودن راه ارتباطی شخص حقوقی</h6>
+                <small class="text-muted small-muted">
+                    مقدار هر مسیر ارتباطی را مستقیم در فیلد خودش وارد کنید.
+                </small>
             </div>
-
         </div>
 
         <div class="card-body">
@@ -66,56 +80,50 @@
 
                 <div class="row g-2">
                     <div class="col-md-6">
-                        <label asp-for="Title" class="form-label"></label>
-                        <input asp-for="Title" class="form-control form-control-sm" />
-                        <span asp-validation-for="Title" class="text-danger"></span>
+                        <div class="contact-card">
+                            <label asp-for="Title" class="form-label"></label>
+                            <input asp-for="Title" class="form-control form-control-sm" placeholder="مثلاً دفتر مرکزی، حسابداری، مدیر ناوگان..." />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="ContactValue" class="form-label"></label>
-                        <input asp-for="ContactValue" class="form-control form-control-sm" />
-                        <span asp-validation-for="ContactValue" class="text-danger"></span>
+                        <div class="contact-card">
+                            <label asp-for="SmsNumber" class="form-label"></label>
+                            <input asp-for="SmsNumber" class="form-control form-control-sm" placeholder="شماره موبایل برای پیامک" />
+                            <span asp-validation-for="SmsNumber" class="text-danger"></span>
+                        </div>
                     </div>
 
-                    <div class="col-12 mt-2">
-                        <label class="form-label">نوع راه ارتباطی</label>
-                        <div class="contact-options">
-                            <div class="row g-2">
-                                <div class="col-md-2">
-                                    <div class="form-check">
-                                        <input asp-for="HasSms" class="form-check-input" />
-                                        <label asp-for="HasSms" class="form-check-label"></label>
-                                    </div>
-                                </div>
+                    <div class="col-md-6">
+                        <div class="contact-card">
+                            <label asp-for="WhatsAppNumber" class="form-label"></label>
+                            <input asp-for="WhatsAppNumber" class="form-control form-control-sm" placeholder="شماره واتساپ" />
+                            <span asp-validation-for="WhatsAppNumber" class="text-danger"></span>
+                        </div>
+                    </div>
 
-                                <div class="col-md-2">
-                                    <div class="form-check">
-                                        <input asp-for="HasWhatsApp" class="form-check-input" />
-                                        <label asp-for="HasWhatsApp" class="form-check-label"></label>
-                                    </div>
-                                </div>
+                    <div class="col-md-6">
+                        <div class="contact-card">
+                            <label asp-for="FaxNumber" class="form-label"></label>
+                            <input asp-for="FaxNumber" class="form-control form-control-sm" placeholder="شماره فکس" />
+                            <span asp-validation-for="FaxNumber" class="text-danger"></span>
+                        </div>
+                    </div>
 
-                                <div class="col-md-2">
-                                    <div class="form-check">
-                                        <input asp-for="IsFax" class="form-check-input" />
-                                        <label asp-for="IsFax" class="form-check-label"></label>
-                                    </div>
-                                </div>
+                    <div class="col-md-6">
+                        <div class="contact-card">
+                            <label asp-for="PhoneNumber" class="form-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control form-control-sm" placeholder="شماره تلفن ثابت" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+                    </div>
 
-                                <div class="col-md-2">
-                                    <div class="form-check">
-                                        <input asp-for="IsPhone" class="form-check-input" />
-                                        <label asp-for="IsPhone" class="form-check-label"></label>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-2">
-                                    <div class="form-check">
-                                        <input asp-for="IsEmail" class="form-check-input" />
-                                        <label asp-for="IsEmail" class="form-check-label"></label>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="col-md-6">
+                        <div class="contact-card">
+                            <label asp-for="EmailAddress" class="form-label"></label>
+                            <input asp-for="EmailAddress" class="form-control form-control-sm" placeholder="آدرس ایمیل" />
+                            <span asp-validation-for="EmailAddress" class="text-danger"></span>
                         </div>
                     </div>
                 </div>

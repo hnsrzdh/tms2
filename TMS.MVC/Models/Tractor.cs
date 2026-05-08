@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -31,7 +31,7 @@ namespace TMS.MVC.Models
         public string? CapacityUnit { get; set; }
         public DateTime? TechnicalInspectionExpireDate { get; set; }
         public DateTime? ThirdPartyInsuranceExpireDate { get; set; }
-       
+
         public decimal? WalletBalance { get; set; }
 
         public int? ProductionYear { get; set; }
@@ -46,7 +46,6 @@ namespace TMS.MVC.Models
         [MaxLength(50)]
         public string? TransitPlateNumber { get; set; }
 
-        // مالک مستقیم
         public string? OwnerApplicationUserId { get; set; }
         public ApplicationUser? OwnerApplicationUser { get; set; }
 
@@ -91,9 +90,12 @@ namespace TMS.MVC.Models
         public Tractor Tractor { get; set; } = null!;
 
         [MaxLength(100)]
+        [Display(Name = "عنوان")]
         public string? Title { get; set; }
 
+        // فیلدهای قدیمی برای سازگاری با کدهای قبلی نگه داشته شده‌اند.
         [MaxLength(200)]
+        [Display(Name = "راه ارتباطی")]
         public string? ContactValue { get; set; }
 
         public bool HasSms { get; set; }
@@ -101,6 +103,27 @@ namespace TMS.MVC.Models
         public bool IsFax { get; set; }
         public bool IsPhone { get; set; }
         public bool IsEmail { get; set; }
+
+        [MaxLength(200)]
+        [Display(Name = "پیامک")]
+        public string? SmsNumber { get; set; }
+
+        [MaxLength(200)]
+        [Display(Name = "واتساپ")]
+        public string? WhatsAppNumber { get; set; }
+
+        [MaxLength(200)]
+        [Display(Name = "فکس")]
+        public string? FaxNumber { get; set; }
+
+        [MaxLength(200)]
+        [Display(Name = "تلفن")]
+        public string? PhoneNumber { get; set; }
+
+        [MaxLength(300)]
+        [EmailAddress(ErrorMessage = "فرمت ایمیل صحیح نیست.")]
+        [Display(Name = "ایمیل")]
+        public string? EmailAddress { get; set; }
     }
 
     public class TractorAddress

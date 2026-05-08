@@ -1,0 +1,9 @@
+در فایل Views/TractorAssignment/Details.cshtml، بلوک مودال با id="loadingModal" را پیدا کنید و کل همان بلوک را با محتوای فایل زیر جایگزین کنید:
+
+TMS.MVC/Views/TractorAssignment/Details.LoadingModalReplacement.cshtml
+
+همچنین اگر نمی‌خواهید دستی جایگزین کنید، فایل script.js داخل همین ZIP فرم فعلی را در زمان اجرا اصلاح می‌کند:
+- action فرم را به ConfirmLoadingWithDocuments تغییر می‌دهد
+- enctype را multipart/form-data می‌کند
+- فیلد وزن خالص بارگیری را required می‌کند
+- فیلد حجم خالص بارگیری، شماره بارنامه و آپلود اجباری مدارک را به مودال اضافه می‌کند

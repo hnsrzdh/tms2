@@ -10,10 +10,12 @@ namespace TMS.MVC.Controllers
     public class TransportAgreementsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public TransportAgreementsController(ApplicationDbContext context)
+        public TransportAgreementsController(ApplicationDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         public async Task<IActionResult> Index(string? search, int page = 1, int pageSize = 10)
@@ -56,7 +58,8 @@ namespace TMS.MVC.Controllers
                     ProductName = x.ProductName,
                     Amount = x.Amount,
                     Unit = x.Unit,
-                    Status = x.Status
+                    Status = x.Status,
+                    DocumentCount = x.Documents.Count()
                 })
                 .ToListAsync();
 
@@ -158,13 +161,127 @@ namespace TMS.MVC.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Documents(int id)
+        {
+            var entity = await _context.TransportAgreements
+                .Include(x => x.Documents)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null)
+                return NotFound();
+
+            var vm = new TransportAgreementDocumentsViewModel
+            {
+                TransportAgreementId = entity.Id,
+                TransportAgreementTitle = entity.Title,
+                CargoOwnerName = entity.CargoOwnerName,
+                RouteText = $"{entity.Origin} به {entity.Destination}",
+                Documents = entity.Documents
+                    .OrderByDescending(x => x.UploadedAt)
+                    .Select(x => new TransportAgreementDocumentItemViewModel
+                    {
+                        Id = x.Id,
+                        DocumentName = x.DocumentName,
+                        OriginalFileName = x.OriginalFileName,
+                        FilePath = x.FilePath,
+                        ContentType = x.ContentType,
+                        FileSize = x.FileSize,
+                        UploadedAt = x.UploadedAt
+                    })
+                    .ToList()
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadDocument(int transportAgreementId, string? documentName, IFormFile? file)
+        {
+            var entity = await _context.TransportAgreements.FindAsync(transportAgreementId);
+            if (entity == null)
+                return NotFound();
+
+            documentName = (documentName ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(documentName))
+            {
+                TempData["Err"] = "نام مدرک الزامی است.";
+                return RedirectToAction(nameof(Documents), new { id = transportAgreementId });
+            }
+
+            if (file == null || file.Length <= 0)
+            {
+                TempData["Err"] = "لطفاً فایل مدرک را انتخاب کنید.";
+                return RedirectToAction(nameof(Documents), new { id = transportAgreementId });
+            }
+
+            var originalFileName = Path.GetFileName(file.FileName);
+            var safeFileName = MakeSafeFileName(originalFileName);
+            var storedFileName = $"{Guid.NewGuid():N}_{safeFileName}";
+
+            var relativeDirectory = Path.Combine("uploads", "transport-agreements", transportAgreementId.ToString());
+            var physicalDirectory = Path.Combine(_environment.WebRootPath, relativeDirectory);
+
+            Directory.CreateDirectory(physicalDirectory);
+
+            var physicalPath = Path.Combine(physicalDirectory, storedFileName);
+            await using (var stream = new FileStream(physicalPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var document = new TransportAgreementDocument
+            {
+                TransportAgreementId = transportAgreementId,
+                DocumentName = documentName,
+                OriginalFileName = originalFileName,
+                FilePath = "/" + Path.Combine(relativeDirectory, storedFileName).Replace("\\", "/"),
+                ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? null : file.ContentType,
+                FileSize = file.Length,
+                UploadedAt = DateTime.UtcNow
+            };
+
+            _context.TransportAgreementDocuments.Add(document);
+            await _context.SaveChangesAsync();
+
+            TempData["Ok"] = "مدرک با موفقیت آپلود شد.";
+            return RedirectToAction(nameof(Documents), new { id = transportAgreementId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteDocument(int id, int transportAgreementId)
+        {
+            var document = await _context.TransportAgreementDocuments
+                .FirstOrDefaultAsync(x => x.Id == id && x.TransportAgreementId == transportAgreementId);
+
+            if (document == null)
+                return NotFound();
+
+            DeletePhysicalFile(document.FilePath);
+
+            _context.TransportAgreementDocuments.Remove(document);
+            await _context.SaveChangesAsync();
+
+            TempData["Ok"] = "مدرک با موفقیت حذف شد.";
+            return RedirectToAction(nameof(Documents), new { id = transportAgreementId });
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id, int page = 1, int pageSize = 10, string? search = null)
         {
-            var entity = await _context.TransportAgreements.FindAsync(id);
+            var entity = await _context.TransportAgreements
+                .Include(x => x.Documents)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
             if (entity == null)
                 return NotFound();
+
+            foreach (var document in entity.Documents)
+                DeletePhysicalFile(document.FilePath);
 
             _context.TransportAgreements.Remove(entity);
             await _context.SaveChangesAsync();
@@ -220,6 +337,28 @@ namespace TMS.MVC.Controllers
                 .ToListAsync();
 
             return Json(items);
+        }
+
+        private void DeletePhysicalFile(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return;
+
+            var relativePath = filePath.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString());
+            var physicalPath = Path.Combine(_environment.WebRootPath, relativePath);
+
+            if (System.IO.File.Exists(physicalPath))
+                System.IO.File.Delete(physicalPath);
+        }
+
+        private static string MakeSafeFileName(string fileName)
+        {
+            fileName = string.IsNullOrWhiteSpace(fileName) ? "document" : fileName.Trim();
+
+            foreach (var invalidChar in Path.GetInvalidFileNameChars())
+                fileName = fileName.Replace(invalidChar, '_');
+
+            return fileName.Length > 180 ? fileName[..180] : fileName;
         }
 
         private static void NormalizeUpsertViewModel(TransportAgreementUpsertViewModel vm)

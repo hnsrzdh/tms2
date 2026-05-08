@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMS.MVC.Data;
 
@@ -11,9 +12,11 @@ using TMS.MVC.Data;
 namespace TMS.MVC.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508124803_mig14")]
+    partial class mig14
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1687,10 +1690,6 @@ namespace TMS.MVC.Migrations
                     b.Property<decimal?>("LoadedAmount")
                         .HasColumnType("decimal(18,3)");
 
-                    b.Property<string>("LoadingBillOfLadingNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("LoadingConfirmedBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -1699,9 +1698,6 @@ namespace TMS.MVC.Migrations
 
                     b.Property<DateTime?>("LoadingEndDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("LoadingNetVolume")
-                        .HasColumnType("decimal(18,3)");
 
                     b.Property<DateTime?>("LoadingStartDate")
                         .HasColumnType("datetime2");

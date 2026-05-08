@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 using TMS.MVC.Models;
 
 namespace TMS.MVC.Data
@@ -24,6 +23,7 @@ namespace TMS.MVC.Data
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
         public DbSet<TransportAgreement> TransportAgreements => Set<TransportAgreement>();
+        public DbSet<TransportAgreementDocument> TransportAgreementDocuments => Set<TransportAgreementDocument>();
 
         public DbSet<Tractor> Tractors => Set<Tractor>();
         public DbSet<TractorBankAccount> TractorBankAccounts => Set<TractorBankAccount>();
@@ -99,6 +99,15 @@ namespace TMS.MVC.Data
 
             builder.Entity<TransportAgreement>()
                 .HasIndex(x => x.Title);
+
+            builder.Entity<TransportAgreementDocument>()
+                .HasOne(x => x.TransportAgreement)
+                .WithMany(x => x.Documents)
+                .HasForeignKey(x => x.TransportAgreementId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<TransportAgreementDocument>()
+                .HasIndex(x => new { x.TransportAgreementId, x.UploadedAt });
 
             builder.Entity<Tractor>()
                 .HasIndex(x => x.PolicePlateNumber)
@@ -291,6 +300,7 @@ namespace TMS.MVC.Data
 
             builder.Entity<ChatMessage>()
                 .HasIndex(c => new { c.TractorAssignmentId, c.IsRead });
+
             builder.Entity<CargoAnnouncement>()
                 .HasIndex(x => new { x.Status, x.CreatedAt });
 

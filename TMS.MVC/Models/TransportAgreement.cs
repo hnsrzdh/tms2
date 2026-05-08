@@ -34,4 +34,6 @@ public class TransportAgreement
     [Required]
     [MaxLength(100)]
     public string Status { get; set; } = "";
+
+    public ICollection<TransportAgreementDocument> Documents { get; set; } = new List<TransportAgreementDocument>();
 }

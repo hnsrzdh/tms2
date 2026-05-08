@@ -18,4 +18,12 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\chat\" />
+    <Folder Include="wwwroot\uploads\LoadingDocuments\" />
+    <Folder Include="wwwroot\uploads\tracker\1\loading\" />
+    <Folder Include="wwwroot\uploads\tracker\2\loading\" />
+    <Folder Include="wwwroot\uploads\tracker\4\loading\" />
+  </ItemGroup>
+
 </Project>

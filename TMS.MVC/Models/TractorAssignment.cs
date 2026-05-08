@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMS.MVC.Models
@@ -53,8 +53,16 @@ namespace TMS.MVC.Models
         public DateTime? LoadingEndDate { get; set; }
 
         [Column(TypeName = "decimal(18,3)")]
-        [Display(Name = "مقدار بارگیری شده")]
+        [Display(Name = "وزن خالص بارگیری")]
         public decimal? LoadedAmount { get; set; }
+
+        [Column(TypeName = "decimal(18,3)")]
+        [Display(Name = "حجم خالص بارگیری")]
+        public decimal? LoadingNetVolume { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "شماره بارنامه")]
+        public string? LoadingBillOfLadingNumber { get; set; }
 
         [Display(Name = "تأیید بارگیری")]
         public bool IsLoadingConfirmed { get; set; }

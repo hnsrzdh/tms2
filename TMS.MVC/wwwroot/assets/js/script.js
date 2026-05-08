@@ -1,4 +1,4 @@
-/*-----------------------------------------------------------------------------------
+﻿/*-----------------------------------------------------------------------------------
  Template Name: Admiro
  Description: This is Admin Template
  ----------------------------------------------------------------------------------- */
@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
   $(document).ready(function () {
     $(".full-screen").click(function (event) {
       var elem = document.documentElement;
-  
+
       if (
         (document.fullScreenElement && document.fullScreenElement !== null) ||
         (!document.mozFullScreen && !document.webkitIsFullScreen)
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
-  
+
   /*=====================
        05. Header search js
      ==========================*/
@@ -235,4 +235,95 @@ document.addEventListener("DOMContentLoaded", function () {
       fr: "طرح صفحه",
     },
   ];
+
+  /*=====================
+    Tractor Assignment Loading Modal
+    ==========================*/
+  (function enhanceTractorAssignmentLoadingModal() {
+    const loadingModal = document.getElementById("loadingModal");
+    if (!loadingModal) return;
+
+    const form = loadingModal.querySelector("form");
+    if (!form) return;
+
+    if (form.dataset.loadingEnhanced === "true") return;
+    form.dataset.loadingEnhanced = "true";
+
+    form.setAttribute("enctype", "multipart/form-data");
+
+    const currentAction = form.getAttribute("action") || "";
+    if (currentAction) {
+      form.setAttribute("action", currentAction.replace("ConfirmLoading", "ConfirmLoadingWithDocuments"));
+    } else {
+      form.setAttribute("action", "/TractorAssignment/ConfirmLoadingWithDocuments");
+    }
+
+    const amountInput = form.querySelector('input[name="loadedAmount"], input[name="LoadedAmount"]');
+    if (amountInput) {
+      amountInput.setAttribute("required", "required");
+      amountInput.setAttribute("min", "0.001");
+      amountInput.setAttribute("step", "0.001");
+      amountInput.setAttribute("placeholder", "وزن خالص بارگیری");
+      const amountLabel = amountInput.closest(".mb-3, .col-md-6, .col-md-12, div")?.querySelector("label");
+      if (amountLabel) amountLabel.textContent = "وزن خالص بارگیری (ضروری)";
+    }
+
+    const insertAfter = amountInput?.closest(".mb-3, .col-md-6, .col-md-12, div") || amountInput?.parentElement || form.querySelector(".modal-body") || form;
+
+    const extraFieldsWrapper = document.createElement("div");
+    extraFieldsWrapper.className = "loading-extra-fields";
+    extraFieldsWrapper.innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">حجم خالص بارگیری (اختیاری)</label>
+        <input type="number"
+               name="loadingNetVolume"
+               class="form-control form-control-sm"
+               step="0.001"
+               min="0"
+               placeholder="مثلاً 32000" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">شماره بارنامه (اختیاری)</label>
+        <input type="text"
+               name="loadingBillOfLadingNumber"
+               class="form-control form-control-sm"
+               maxlength="100"
+               placeholder="شماره بارنامه" />
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">مدارک بارگیری (ضروری)</label>
+        <input type="file"
+               name="loadingDocuments"
+               class="form-control form-control-sm"
+               multiple
+               required />
+        <div class="form-text small">
+          حداقل یک فایل مدرک بارگیری باید انتخاب شود. برای چند مدرک، چند فایل را همزمان انتخاب کنید.
+        </div>
+      </div>
+    `;
+
+    insertAfter.insertAdjacentElement("afterend", extraFieldsWrapper);
+
+    form.addEventListener("submit", function (event) {
+      const weightInput = form.querySelector('input[name="loadedAmount"], input[name="LoadedAmount"]');
+      const docsInput = form.querySelector('input[name="loadingDocuments"]');
+
+      const weight = weightInput ? parseFloat(weightInput.value || "0") : 0;
+      if (!weight || weight <= 0) {
+        event.preventDefault();
+        alert("وزن خالص بارگیری ضروری است و باید بزرگتر از صفر باشد.");
+        weightInput?.focus();
+        return;
+      }
+
+      if (!docsInput || !docsInput.files || docsInput.files.length === 0) {
+        event.preventDefault();
+        alert("آپلود حداقل یک مدرک بارگیری الزامی است.");
+        docsInput?.focus();
+      }
+    });
+  })();
 });

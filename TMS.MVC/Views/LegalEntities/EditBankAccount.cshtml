@@ -87,68 +87,48 @@
         <div class="card-body">
             <form asp-action="EditBankAccount" method="post">
                 @Html.AntiForgeryToken()
-                <input asp-for="Id" type="hidden" />
-                <input asp-for="LegalEntityId" type="hidden" />
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="LegalEntityId" />
 
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
-                    <div class="col-md-6">
-                        <div class="bank-section-card">
-                            <label asp-for="AccountOwnerName" class="form-label"></label>
-                            <input asp-for="AccountOwnerName" class="form-control form-control-sm" placeholder="نام صاحب حساب" />
-                            <span asp-validation-for="AccountOwnerName" class="text-danger"></span>
-                        </div>
+                    <div class="col-md-4">
+                        <label asp-for="AccountOwnerName" class="form-label"></label>
+                        <input asp-for="AccountOwnerName" class="form-control form-control-sm" />
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="bank-section-card">
-                            <label asp-for="BankName" class="form-label"></label>
-                            <input asp-for="BankName" class="form-control form-control-sm" placeholder="نام بانک" />
-                            <span asp-validation-for="BankName" class="text-danger"></span>
+                    <div class="col-md-4">
+                        <label asp-for="BankName" class="form-label"></label>
+                        <input asp-for="BankName" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label d-block">&nbsp;</label>
+                        <div class="form-check">
+                            <input asp-for="IsDefault" class="form-check-input" />
+                            <label asp-for="IsDefault" class="form-check-label"></label>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="bank-section-card">
-                            <label asp-for="AccountNumber" class="form-label"></label>
-                            <input asp-for="AccountNumber" class="form-control form-control-sm" dir="ltr" placeholder="شماره حساب" />
-                            <span asp-validation-for="AccountNumber" class="text-danger"></span>
-                        </div>
+                        <label asp-for="AccountNumber" class="form-label"></label>
+                        <input asp-for="AccountNumber" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
-                        <div class="bank-section-card">
-                            <label asp-for="CardNumber" class="form-label"></label>
-                            <input asp-for="CardNumber" class="form-control form-control-sm" dir="ltr" placeholder="شماره کارت" />
-                            <span asp-validation-for="CardNumber" class="text-danger"></span>
-                        </div>
+                        <label asp-for="CardNumber" class="form-label"></label>
+                        <input asp-for="CardNumber" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
-                        <div class="bank-section-card">
-                            <label asp-for="ShebaNumber" class="form-label"></label>
-                            <input asp-for="ShebaNumber" class="form-control form-control-sm" dir="ltr" placeholder="شماره شبا" />
-                            <span asp-validation-for="ShebaNumber" class="text-danger"></span>
-                        </div>
+                        <label asp-for="ShebaNumber" class="form-label"></label>
+                        <input asp-for="ShebaNumber" class="form-control form-control-sm" />
                     </div>
 
-                    <div class="col-md-4">
-                        <div class="bank-section-card">
-                            <div class="form-check">
-                                <input asp-for="IsDefault" class="form-check-input" />
-                                <label asp-for="IsDefault" class="form-check-label"></label>
-                            </div>
-                            <small class="text-muted small-muted">در هر شخص حقوقی فقط یک حساب می‌تواند پیش‌فرض باشد.</small>
-                        </div>
-                    </div>
-
-                    <div class="col-md-8">
-                        <div class="bank-section-card">
-                            <label asp-for="Description" class="form-label"></label>
-                            <input asp-for="Description" class="form-control form-control-sm" placeholder="توضیحات اختیاری" />
-                            <span asp-validation-for="Description" class="text-danger"></span>
-                        </div>
+                    <div class="col-md-12">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control form-control-sm" rows="3"></textarea>
                     </div>
                 </div>
 

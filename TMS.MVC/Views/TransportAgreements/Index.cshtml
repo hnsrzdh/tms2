@@ -75,7 +75,7 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h6 class="mb-0">تفاهم‌نامه‌های حمل</h6>
-                <small class="text-muted small-muted">مدیریت تفاهم‌نامه‌ها، مبدا، مقصد، محصول، مقدار و وضعیت</small>
+                <small class="text-muted small-muted">مدیریت تفاهم‌نامه‌ها، مبدا، مقصد، محصول، مقدار، وضعیت و مدارک</small>
             </div>
 
             <div class="d-flex gap-2">
@@ -124,8 +124,9 @@
                             <th>مقصد</th>
                             <th>محصول</th>
                             <th>مقدار</th>
+                            <th>مدارک</th>
                             <th>وضعیت</th>
-                            <th style="width:145px;">عملیات</th>
+                            <th style="width:205px;">عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -143,10 +144,19 @@
                                     <td>@item.ProductName</td>
                                     <td>@string.Format("{0:N0}", item.Amount) @item.Unit</td>
                                     <td>
+                                        <span >@item.DocumentCount مدرک</span>
+                                    </td>
+                                    <td>
                                         <span class="badge bg-info text-dark">@item.Status</span>
                                     </td>
                                     <td>
-                                        <div>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <a asp-action="Documents"
+                                               asp-route-id="@item.Id"
+                                               class="btn btn-outline-info btn-sm">
+                                                مدارک
+                                            </a>
+
                                             <a asp-action="Edit"
                                                asp-route-id="@item.Id"
                                                class="btn btn-outline-primary btn-sm">
@@ -169,7 +179,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">
+                                <td colspan="10" class="text-center text-muted py-4">
                                     موردی یافت نشد.
                                 </td>
                             </tr>
@@ -270,6 +280,7 @@
                     <input type="hidden" name="search" value="@Model.Search" />
 
                     <p id="deleteText" class="mb-0"></p>
+                    <div class="text-muted mt-2">با حذف تفاهم‌نامه، مدارک آپلود شده آن هم حذف می‌شوند.</div>
                 </div>
 
                 <div class="modal-footer py-2 gap-2">

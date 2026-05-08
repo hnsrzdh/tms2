@@ -1,0 +1,259 @@
+@using TMS.MVC.ViewModels
+@model TransportAgreementDocumentsViewModel
+
+@{
+    ViewData["Title"] = "مدارک تفاهم‌نامه حمل";
+}
+
+<style>
+    .transport-agreement-documents-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .transport-agreement-documents-compact .form-control,
+    .transport-agreement-documents-compact .form-select,
+    .transport-agreement-documents-compact .btn,
+    .transport-agreement-documents-compact .table,
+    .transport-agreement-documents-compact .badge {
+        font-size: 0.82rem;
+    }
+
+    .transport-agreement-documents-compact .table > :not(caption) > * > * {
+        padding: 0.45rem 0.55rem;
+    }
+
+    .transport-agreement-documents-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .transport-agreement-documents-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .transport-agreement-documents-compact .small-muted {
+        font-size: 0.78rem;
+    }
+
+    .transport-agreement-documents-compact .document-meta {
+        font-size: 0.78rem;
+        color: #6c757d;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-sm-6 col-12">
+                <h4>@ViewData["Title"]</h4>
+            </div>
+            <div class="col-sm-6 col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">داشبورد</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-action="Index">تفاهم‌نامه‌های حمل</a>
+                    </li>
+                    <li class="breadcrumb-item active">مدارک</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid transport-agreement-documents-compact">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
+    }
+
+    @if (TempData["Err"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">@Model.TransportAgreementTitle</h6>
+                <small class="text-muted small-muted">
+                    صاحب کالا: @Model.CargoOwnerName
+                    <span class="mx-1">|</span>
+                    مسیر: @Model.RouteText
+                </small>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.TransportAgreementId" class="btn btn-outline-primary btn-sm px-3">
+                    ویرایش تفاهم‌نامه
+                </a>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-3">
+                    بازگشت
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="post" asp-action="UploadDocument" enctype="multipart/form-data" class="row g-2 align-items-end">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="transportAgreementId" value="@Model.TransportAgreementId" />
+
+                <div class="col-md-4">
+                    <label class="form-label">نام مدرک</label>
+                    <input type="text"
+                           name="documentName"
+                           class="form-control form-control-sm"
+                           maxlength="300"
+                           placeholder="مثلاً قرارداد، پیوست نرخ، نامه صاحب کالا" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">فایل</label>
+                    <input type="file" name="file" class="form-control form-control-sm" />
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        آپلود مدرک
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">لیست مدارک</h6>
+                <small class="text-muted small-muted">برای هر مدرک می‌توانید نام دلخواه ثبت کنید و فایل را مشاهده یا حذف کنید.</small>
+            </div>
+
+            <span class="badge bg-info text-dark">@Model.Documents.Count مدرک</span>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width:55px;">#</th>
+                            <th>نام مدرک</th>
+                            <th>نام فایل</th>
+                            <th>حجم</th>
+                            <th>تاریخ آپلود</th>
+                            <th style="width:170px;">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Documents.Any())
+                        {
+                            var rowNo = 1;
+                            foreach (var item in Model.Documents)
+                            {
+                                <tr>
+                                    <td>@rowNo</td>
+                                    <td>@item.DocumentName</td>
+                                    <td>
+                                        <div>@item.OriginalFileName</div>
+                                        @if (!string.IsNullOrWhiteSpace(item.ContentType))
+                                        {
+                                            <div class="document-meta">@item.ContentType</div>
+                                        }
+                                    </td>
+                                    <td>@FormatFileSize(item.FileSize)</td>
+                                    <td>@item.UploadedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                                    <td>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <a href="@Url.Content(item.FilePath)" target="_blank" class="btn btn-outline-info btn-sm">
+                                                مشاهده
+                                            </a>
+
+                                            <button type="button"
+                                                    class="btn btn-outline-danger btn-sm js-delete-document-btn"
+                                                    data-id="@item.Id"
+                                                    data-title="@item.DocumentName">
+                                                حذف
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                rowNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    هنوز مدرکی برای این تفاهم‌نامه ثبت نشده است.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteDocumentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="DeleteDocument">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="transportAgreementId" value="@Model.TransportAgreementId" />
+                <input type="hidden" id="deleteDocumentId" name="id" />
+
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">حذف مدرک</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                </div>
+
+                <div class="modal-body small">
+                    <p id="deleteDocumentText" class="mb-0"></p>
+                </div>
+
+                <div class="modal-footer py-2 gap-2">
+                    <button type="submit" class="btn btn-danger btn-sm px-3">حذف</button>
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modalEl = document.getElementById("deleteDocumentModal");
+            const modal = new bootstrap.Modal(modalEl);
+            const idInput = document.getElementById("deleteDocumentId");
+            const textEl = document.getElementById("deleteDocumentText");
+
+            document.querySelectorAll(".js-delete-document-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    idInput.value = this.dataset.id;
+                    textEl.textContent = `آیا از حذف مدرک "${this.dataset.title}" مطمئن هستید؟`;
+                    modal.show();
+                });
+            });
+        });
+    </script>
+}
+
+@functions {
+    private static string FormatFileSize(long size)
+    {
+        if (size < 1024)
+            return $"{size:N0} بایت";
+
+        var kb = size / 1024m;
+        if (kb < 1024)
+            return $"{kb:N1} KB";
+
+        var mb = kb / 1024m;
+        return $"{mb:N2} MB";
+    }
+}

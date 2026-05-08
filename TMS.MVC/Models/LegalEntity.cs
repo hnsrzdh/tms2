@@ -1,4 +1,4 @@
-﻿﻿using System.ComponentModel.DataAnnotations;
+﻿﻿﻿using System.ComponentModel.DataAnnotations;
 
 namespace TMS.MVC.Models
 {
@@ -54,18 +54,47 @@ namespace TMS.MVC.Models
         public long LegalEntityId { get; set; }
         public LegalEntity? LegalEntity { get; set; }
 
-        [Required]
+        // فیلد قدیمی برای سازگاری با کدهای قبلی نگه داشته شده است.
         [StringLength(100)]
         [Display(Name = "شماره شبا")]
         public string Iban { get; set; } = string.Empty;
 
+        // فیلد قدیمی برای سازگاری با کدهای قبلی نگه داشته شده است.
         [StringLength(300)]
         [Display(Name = "نام صاحب حساب")]
         public string? AccountHolderName { get; set; }
 
+        // فیلد قدیمی برای سازگاری با کدهای قبلی نگه داشته شده است.
         [StringLength(300)]
         [Display(Name = "نام استعلام شده")]
         public string? VerifiedName { get; set; }
+
+        [StringLength(200)]
+        [Display(Name = "نام صاحب حساب")]
+        public string? AccountOwnerName { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "نام بانک")]
+        public string? BankName { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "شماره حساب")]
+        public string? AccountNumber { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "شماره کارت")]
+        public string? CardNumber { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "شماره شبا")]
+        public string? ShebaNumber { get; set; }
+
+        [Display(Name = "پیش فرض")]
+        public bool IsDefault { get; set; }
+
+        [StringLength(1000)]
+        [Display(Name = "توضیحات")]
+        public string? Description { get; set; }
     }
 
     public class LegalEntityContact

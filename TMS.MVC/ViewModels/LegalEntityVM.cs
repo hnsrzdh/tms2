@@ -3,6 +3,73 @@ using TMS.MVC.Models;
 
 namespace TMS.MVC.ViewModels
 {
+    public class LegalEntityContactChannelVm
+    {
+        public long Id { get; set; }
+
+        [Required]
+        public long LegalEntityId { get; set; }
+
+        [Required(ErrorMessage = "عنوان الزامی است.")]
+        [Display(Name = "عنوان")]
+        [MaxLength(200)]
+        public string Title { get; set; } = string.Empty;
+
+        [Display(Name = "پیامک")]
+        [MaxLength(200)]
+        public string? SmsNumber { get; set; }
+
+        [Display(Name = "واتساپ")]
+        [MaxLength(200)]
+        public string? WhatsAppNumber { get; set; }
+
+        [Display(Name = "فکس")]
+        [MaxLength(200)]
+        public string? FaxNumber { get; set; }
+
+        [Display(Name = "تلفن")]
+        [MaxLength(200)]
+        public string? PhoneNumber { get; set; }
+
+        [Display(Name = "ایمیل")]
+        [MaxLength(300)]
+        [EmailAddress(ErrorMessage = "فرمت ایمیل صحیح نیست.")]
+        public string? EmailAddress { get; set; }
+    }
+    public class LegalEntityBankAccountVm
+    {
+        public long Id { get; set; }
+
+        [Required]
+        public long LegalEntityId { get; set; }
+
+        [Display(Name = "نام صاحب حساب")]
+        [MaxLength(200)]
+        public string? AccountOwnerName { get; set; }
+
+        [Display(Name = "نام بانک")]
+        [MaxLength(100)]
+        public string? BankName { get; set; }
+
+        [Display(Name = "شماره حساب")]
+        [MaxLength(50)]
+        public string? AccountNumber { get; set; }
+
+        [Display(Name = "شماره کارت")]
+        [MaxLength(50)]
+        public string? CardNumber { get; set; }
+
+        [Display(Name = "شماره شبا")]
+        [MaxLength(50)]
+        public string? ShebaNumber { get; set; }
+
+        [Display(Name = "پیش فرض")]
+        public bool IsDefault { get; set; }
+
+        [Display(Name = "توضیحات")]
+        [MaxLength(1000)]
+        public string? Description { get; set; }
+    }
     public class LegalEntityIndexRowVm
     {
         public long Id { get; set; }

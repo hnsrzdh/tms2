@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TMS.MVC.Data;
 using TMS.MVC.Models;
@@ -288,42 +288,104 @@ namespace TMS.MVC.Controllers
 
         public IActionResult AddBankAccount(long legalEntityId)
         {
-            return View(new LegalEntityBankAccount { LegalEntityId = legalEntityId });
+            return View(new LegalEntityBankAccountVm { LegalEntityId = legalEntityId });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddBankAccount(LegalEntityBankAccount model)
+        public async Task<IActionResult> AddBankAccount(LegalEntityBankAccountVm vm)
         {
-            if (!ModelState.IsValid) return View(model);
-            _db.LegalEntityBankAccounts.Add(model);
+            NormalizeLegalEntityBankAccountVm(vm);
+
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            if (vm.IsDefault)
+            {
+                var currentDefaults = await _db.LegalEntityBankAccounts
+                    .Where(x => x.LegalEntityId == vm.LegalEntityId && x.IsDefault)
+                    .ToListAsync();
+
+                foreach (var account in currentDefaults)
+                    account.IsDefault = false;
+            }
+
+            var entity = new LegalEntityBankAccount
+            {
+                LegalEntityId = vm.LegalEntityId,
+                AccountOwnerName = vm.AccountOwnerName,
+                AccountHolderName = vm.AccountOwnerName,
+                BankName = vm.BankName,
+                AccountNumber = vm.AccountNumber,
+                CardNumber = vm.CardNumber,
+                ShebaNumber = vm.ShebaNumber,
+                Iban = vm.ShebaNumber ?? string.Empty,
+                IsDefault = vm.IsDefault,
+                Description = vm.Description
+            };
+
+            _db.LegalEntityBankAccounts.Add(entity);
             await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Details), new { id = model.LegalEntityId });
+
+            return RedirectToAction(nameof(Details), new { id = vm.LegalEntityId });
         }
 
         public async Task<IActionResult> EditBankAccount(long id)
         {
             var item = await _db.LegalEntityBankAccounts.FindAsync(id);
             if (item == null) return NotFound();
-            return View(item);
+
+            return View(new LegalEntityBankAccountVm
+            {
+                Id = item.Id,
+                LegalEntityId = item.LegalEntityId,
+                AccountOwnerName = item.AccountOwnerName ?? item.AccountHolderName,
+                BankName = item.BankName,
+                AccountNumber = item.AccountNumber,
+                CardNumber = item.CardNumber,
+                ShebaNumber = item.ShebaNumber ?? item.Iban,
+                IsDefault = item.IsDefault,
+                Description = item.Description
+            });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditBankAccount(long id, LegalEntityBankAccount model)
+        public async Task<IActionResult> EditBankAccount(long id, LegalEntityBankAccountVm vm)
         {
-            if (id != model.Id) return NotFound();
-            if (!ModelState.IsValid) return View(model);
+            NormalizeLegalEntityBankAccountVm(vm);
+
+            if (id != vm.Id) return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(vm);
 
             var item = await _db.LegalEntityBankAccounts.FindAsync(id);
             if (item == null) return NotFound();
 
-            item.Iban = model.Iban;
-            item.AccountHolderName = model.AccountHolderName;
-            item.VerifiedName = model.VerifiedName;
+            if (vm.IsDefault)
+            {
+                var currentDefaults = await _db.LegalEntityBankAccounts
+                    .Where(x => x.LegalEntityId == vm.LegalEntityId && x.Id != vm.Id && x.IsDefault)
+                    .ToListAsync();
+
+                foreach (var account in currentDefaults)
+                    account.IsDefault = false;
+            }
+
+            item.AccountOwnerName = vm.AccountOwnerName;
+            item.AccountHolderName = vm.AccountOwnerName;
+            item.BankName = vm.BankName;
+            item.AccountNumber = vm.AccountNumber;
+            item.CardNumber = vm.CardNumber;
+            item.ShebaNumber = vm.ShebaNumber;
+            item.Iban = vm.ShebaNumber ?? string.Empty;
+            item.IsDefault = vm.IsDefault;
+            item.Description = vm.Description;
 
             await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Details), new { id = item.LegalEntityId });
+
+            return RedirectToAction(nameof(Details), new { id = vm.LegalEntityId });
         }
 
         [HttpPost]
@@ -349,6 +411,16 @@ namespace TMS.MVC.Controllers
             vm.FaxNumber = NormalizeText(vm.FaxNumber);
             vm.PhoneNumber = NormalizeText(vm.PhoneNumber);
             vm.EmailAddress = NormalizeText(vm.EmailAddress);
+        }
+
+        private static void NormalizeLegalEntityBankAccountVm(LegalEntityBankAccountVm vm)
+        {
+            vm.AccountOwnerName = NormalizeText(vm.AccountOwnerName);
+            vm.BankName = NormalizeText(vm.BankName);
+            vm.AccountNumber = NormalizeText(vm.AccountNumber);
+            vm.CardNumber = NormalizeText(vm.CardNumber);
+            vm.ShebaNumber = NormalizeText(vm.ShebaNumber);
+            vm.Description = NormalizeText(vm.Description);
         }
 
         private static string? NormalizeText(string? value)

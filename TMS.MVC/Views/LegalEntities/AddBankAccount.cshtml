@@ -1,19 +1,62 @@
-@model TMS.MVC.Models.LegalEntityBankAccount
+﻿@model TMS.MVC.ViewModels.LegalEntityBankAccountVm
 
 @{
     ViewData["Title"] = "افزودن حساب بانکی";
 }
 
+
 <style>
-    .legal-entity-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
-    .legal-entity-compact .form-control,
-    .legal-entity-compact .btn { font-size: 0.82rem; }
-    .legal-entity-compact .field-validation-valid,
-    .legal-entity-compact .field-validation-error { font-size: 0.75rem; }
-    .legal-entity-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
-    .legal-entity-compact .card-body { padding-top: 0.85rem; }
-    .legal-entity-compact .small-muted { font-size: 0.78rem; }
+    .legal-bank-form-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .legal-bank-form-compact .form-control,
+    .legal-bank-form-compact .btn,
+    .legal-bank-form-compact .form-check-label {
+        font-size: 0.82rem;
+    }
+
+    .legal-bank-form-compact .field-validation-valid,
+    .legal-bank-form-compact .field-validation-error {
+        font-size: 0.75rem;
+    }
+
+    .legal-bank-form-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .legal-bank-form-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .legal-bank-form-compact .small-muted {
+        font-size: 0.78rem;
+    }
+
+    .legal-bank-form-compact .bank-section-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.85rem;
+        background: #fff;
+        height: 100%;
+    }
+
+    .legal-bank-form-compact .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0;
+        min-height: 31px;
+    }
+
+    .legal-bank-form-compact .form-check-input {
+        margin-top: 0;
+    }
 </style>
+
 
 <div class="container-fluid">
     <div class="page-title">
@@ -32,40 +75,59 @@
     </div>
 </div>
 
-<div class="container-fluid legal-entity-compact">
+<div class="container-fluid legal-bank-form-compact">
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h6 class="mb-0">افزودن حساب بانکی</h6>
-                <small class="text-muted small-muted">ثبت اطلاعات حساب بانکی برای شخص حقوقی</small>
+                <small class="text-muted small-muted">ثبت حساب بانکی جدید برای شخص حقوقی.</small>
             </div>
-
         </div>
 
         <div class="card-body">
             <form asp-action="AddBankAccount" method="post">
                 @Html.AntiForgeryToken()
-                <input asp-for="LegalEntityId" type="hidden" />
+                <input type="hidden" asp-for="LegalEntityId" />
 
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <label asp-for="Iban" class="form-label"></label>
-                        <input asp-for="Iban" class="form-control form-control-sm" dir="ltr" />
-                        <span asp-validation-for="Iban" class="text-danger"></span>
+                        <label asp-for="AccountOwnerName" class="form-label"></label>
+                        <input asp-for="AccountOwnerName" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="AccountHolderName" class="form-label"></label>
-                        <input asp-for="AccountHolderName" class="form-control form-control-sm" />
-                        <span asp-validation-for="AccountHolderName" class="text-danger"></span>
+                        <label asp-for="BankName" class="form-label"></label>
+                        <input asp-for="BankName" class="form-control form-control-sm" />
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="VerifiedName" class="form-label"></label>
-                        <input asp-for="VerifiedName" class="form-control form-control-sm" />
-                        <span asp-validation-for="VerifiedName" class="text-danger"></span>
+                        <label class="form-label d-block">&nbsp;</label>
+                        <div class="form-check">
+                            <input asp-for="IsDefault" class="form-check-input" />
+                            <label asp-for="IsDefault" class="form-check-label"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="AccountNumber" class="form-label"></label>
+                        <input asp-for="AccountNumber" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CardNumber" class="form-label"></label>
+                        <input asp-for="CardNumber" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ShebaNumber" class="form-label"></label>
+                        <input asp-for="ShebaNumber" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control form-control-sm" rows="3"></textarea>
                     </div>
                 </div>
 

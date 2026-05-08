@@ -4,6 +4,7 @@
     ViewData["Title"] = "ایجاد محصول";
 }
 
+
 <style>
     .product-form-compact .form-label {
         margin-bottom: 0.25rem;
@@ -11,8 +12,10 @@
     }
 
     .product-form-compact .form-control,
+    .product-form-compact .form-select,
     .product-form-compact .btn,
-    .product-form-compact .form-text {
+    .product-form-compact .form-text,
+    .product-form-compact .table {
         font-size: 0.82rem;
     }
 
@@ -33,7 +36,16 @@
     .product-form-compact .small-muted {
         font-size: 0.78rem;
     }
+
+    .product-form-compact .properties-table > :not(caption) > * > * {
+        padding: 0.4rem 0.45rem;
+    }
+
+    .product-form-compact .readonly-property-name {
+        background-color: #f8f9fa;
+    }
 </style>
+
 
 <div class="container-fluid">
     <div class="page-title">
@@ -62,14 +74,15 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h6 class="mb-0">ایجاد محصول</h6>
-                <small class="text-muted small-muted">ثبت نام و نوع محصول قابل حمل</small>
+                <small class="text-muted small-muted">ثبت نام محصول و خصوصیات آن</small>
             </div>
-
         </div>
 
         <div class="card-body">
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
+
+                
 
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
@@ -79,11 +92,152 @@
                         <input asp-for="Name" class="form-control form-control-sm" />
                         <span asp-validation-for="Name" class="text-danger"></span>
                     </div>
+                </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="Type" class="form-label"></label>
-                        <input asp-for="Type" class="form-control form-control-sm" />
-                        <span asp-validation-for="Type" class="text-danger"></span>
+                <div class="card mt-3 mb-0">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h6 class="mb-0">خصوصیات</h6>
+                            <small class="text-muted small-muted">برای هر محصول می‌توانید هر تعداد خصوصیت با نام و مقدار تعریف کنید.</small>
+                        </div>
+
+                        <button type="button" class="btn btn-outline-primary btn-sm px-3" id="addPropertyRow">
+                            افزودن خصوصیت
+                        </button>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle properties-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:38%;">نام خصوصیت</th>
+                                        <th>مقدار</th>
+                                        <th style="width:85px;">عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="propertiesBody">
+                                    @for (var i = 0; i < Model.Properties.Count; i++)
+                                    {
+                                        var propertyName = Model.Properties[i].Name ?? "";
+                                        var isDefault =
+                                        propertyName == "چگالی / دانسیته" ||
+                                        propertyName == "نوع بار" ||
+                                        propertyName == "ماهیت بار" ||
+                                        propertyName == "واحد اندازه‌گیری";
+
+                                        <tr>
+                                            <td>
+                                                <input type="hidden" name="Properties[@i].Id" value="@Model.Properties[i].Id" />
+                                                <input type="hidden" name="Properties[@i].DisplayOrder" value="@Model.Properties[i].DisplayOrder" />
+
+                                                @if (isDefault)
+                                                {
+                                                    <input name="Properties[@i].Name"
+                                                           value="@Model.Properties[i].Name"
+                                                           class="form-control form-control-sm readonly-property-name"
+                                                           readonly />
+                                                }
+                                                else
+                                                {
+                                                    <input name="Properties[@i].Name"
+                                                           value="@Model.Properties[i].Name"
+                                                           class="form-control form-control-sm"
+                                                           placeholder="مثلاً رنگ، گرید، درصد خلوص..." />
+                                                }
+                                            </td>
+
+                                            <td>
+                                                @if (propertyName == "چگالی / دانسیته")
+                                                {
+                                                    <div class="input-group input-group-sm">
+                                                        <input name="Properties[@i].Value"
+                                                               value="@Model.Properties[i].Value"
+                                                               class="form-control form-control-sm"
+                                                               placeholder="مقدار چگالی..." />
+                                                        <span class="input-group-text">کیلوگرم بر متر مکعب</span>
+                                                    </div>
+                                                }
+                                                else if (propertyName == "نوع بار")
+                                                {
+                                                    <select name="Properties[@i].Value" class="form-select form-select-sm">
+                                                        @if (Model.Properties[i].Value == "تمیز")
+                                                        {
+                                                            <option value="تمیز" selected>تمیز</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="تمیز">تمیز</option>
+                                                        }
+
+                                                        @if (Model.Properties[i].Value == "کثیف")
+                                                        {
+                                                            <option value="کثیف" selected>کثیف</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="کثیف">کثیف</option>
+                                                        }
+                                                    </select>
+                                                }
+                                                else if (propertyName == "ماهیت بار")
+                                                {
+                                                    <select name="Properties[@i].Value" class="form-select form-select-sm">
+                                                        @foreach (var option in new[] { "جامد", "مایع", "گاز" })
+                                                        {
+                                                            if (Model.Properties[i].Value == option)
+                                                            {
+                                                                <option value="@option" selected>@option</option>
+                                                            }
+                                                            else
+                                                            {
+                                                                <option value="@option">@option</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                }
+                                                else if (propertyName == "واحد اندازه‌گیری")
+                                                {
+                                                    <select name="Properties[@i].Value" class="form-select form-select-sm">
+                                                        @foreach (var option in new[] { "کیلوگرم", "لیتر" })
+                                                        {
+                                                            if (Model.Properties[i].Value == option)
+                                                            {
+                                                                <option value="@option" selected>@option</option>
+                                                            }
+                                                            else
+                                                            {
+                                                                <option value="@option">@option</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                }
+                                                else
+                                                {
+                                                    <input name="Properties[@i].Value"
+                                                           value="@Model.Properties[i].Value"
+                                                           class="form-control form-control-sm"
+                                                           placeholder="مقدار خصوصیت..." />
+                                                }
+                                            </td>
+
+                                            <td>
+                                                @if (isDefault)
+                                                {
+                                                    <span class="badge badge-light-primary">پیش‌فرض</span>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-property-row">
+                                                        حذف
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -97,3 +251,64 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const body = document.getElementById('propertiesBody');
+            const addButton = document.getElementById('addPropertyRow');
+
+            function reindexRows() {
+                const rows = body.querySelectorAll('tr');
+
+                rows.forEach(function (row, index) {
+                    row.querySelectorAll('input, select').forEach(function (input) {
+                        const name = input.getAttribute('name');
+                        if (!name) return;
+
+                        input.setAttribute('name', name.replace(/Properties\[\d+\]/, 'Properties[' + index + ']'));
+                    });
+
+                    const orderInput = row.querySelector('input[name="Properties[' + index + '].DisplayOrder"]');
+                    if (orderInput) {
+                        orderInput.value = index + 1;
+                    }
+                });
+            }
+
+            addButton.addEventListener('click', function () {
+                const index = body.querySelectorAll('tr').length;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <input type="hidden" name="Properties[${index}].Id" value="0" />
+                        <input type="hidden" name="Properties[${index}].DisplayOrder" value="${index + 1}" />
+                        <input name="Properties[${index}].Name"
+                               class="form-control form-control-sm"
+                               placeholder="مثلاً رنگ، گرید، درصد خلوص..." />
+                    </td>
+                    <td>
+                        <input name="Properties[${index}].Value"
+                               class="form-control form-control-sm"
+                               placeholder="مقدار خصوصیت..." />
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-property-row">
+                            حذف
+                        </button>
+                    </td>`;
+
+                body.appendChild(tr);
+            });
+
+            body.addEventListener('click', function (e) {
+                const btn = e.target.closest('.remove-property-row');
+                if (!btn) return;
+
+                btn.closest('tr').remove();
+                reindexRows();
+            });
+        })();
+    </script>
+}

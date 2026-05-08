@@ -45,6 +45,17 @@
         flex-wrap: wrap;
         gap: 0.35rem;
     }
+
+    .products-index-compact .properties-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .products-index-compact .property-badge {
+        font-weight: 400;
+        line-height: 1.6;
+    }
 </style>
 
 <div class="container-fluid">
@@ -81,7 +92,7 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h6 class="mb-0">محصولات</h6>
-                <small class="text-muted small-muted">مدیریت نام و نوع محصولات قابل حمل</small>
+                <small class="text-muted small-muted">مدیریت نام محصول و خصوصیات قابل تعریف برای هر محصول</small>
             </div>
 
             <div class="d-flex gap-2">
@@ -107,7 +118,7 @@
                     <input name="search"
                            value="@Model.Search"
                            class="form-control form-control-sm"
-                           placeholder="جستجو بر اساس نام یا نوع محصول..." />
+                           placeholder="جستجو بر اساس نام محصول، نام خصوصیت یا مقدار خصوصیت..." />
                 </div>
 
                 <div class="col-md-2">
@@ -139,8 +150,8 @@
                 <table class="table table-hover table-sm align-middle">
                     <thead>
                         <tr>
-                            <th>نام محصول</th>
-                            <th>نوع محصول</th>
+                            <th style="width:230px;">نام محصول</th>
+                            <th>خصوصیات</th>
                             <th style="width:145px;">عملیات</th>
                         </tr>
                     </thead>
@@ -152,7 +163,24 @@
                             {
                                 <tr>
                                     <td>@item.Name</td>
-                                    <td>@item.Type</td>
+                                    <td>
+                                        @if (item.Properties.Any())
+                                        {
+                                            <div class="properties-list">
+                                                @foreach (var property in item.Properties.OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id))
+                                                {
+                                                    <span class="badge badge-light-primary property-badge">
+                                                        @property.Name:
+                                                        <span class="text-dark">@(!string.IsNullOrWhiteSpace(property.Value) ? property.Value : "-")</span>
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
                                     <td>
                                         <div class="product-actions">
                                             <a asp-action="Edit"
@@ -186,7 +214,7 @@
 
                                                             <div class="alert alert-warning py-2 mb-0">
                                                                 <div><strong>نام محصول:</strong> @item.Name</div>
-                                                                <div><strong>نوع محصول:</strong> @item.Type</div>
+                                                                <div><strong>تعداد خصوصیات:</strong> @item.Properties.Count</div>
                                                             </div>
                                                         </div>
 
@@ -312,7 +340,10 @@
 
                     <div class="alert alert-info py-2 mb-0">
                         <div>ستون 1: نام محصول</div>
-                        <div>ستون 2: نوع محصول</div>
+                        <div>ستون 2: چگالی / دانسیته</div>
+                        <div>ستون 3: نوع بار؛ تمیز یا کثیف</div>
+                        <div>ستون 4: ماهیت بار؛ جامد یا مایع یا گاز</div>
+                        <div>ستون 5: واحد اندازه‌گیری؛ کیلوگرم یا لیتر</div>
                     </div>
                 </div>
 

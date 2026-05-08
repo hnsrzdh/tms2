@@ -11,6 +11,11 @@ namespace TMS.MVC.Controllers
     {
         private readonly ApplicationDbContext _db;
 
+        private const string DensityPropertyName = "چگالی / دانسیته";
+        private const string LoadTypePropertyName = "نوع بار";
+        private const string CargoNaturePropertyName = "ماهیت بار";
+        private const string UnitPropertyName = "واحد اندازه‌گیری";
+
         public ProductsController(ApplicationDbContext db)
         {
             _db = db;
@@ -21,14 +26,20 @@ namespace TMS.MVC.Controllers
             if (page < 1) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var q = _db.Products.AsQueryable();
+            var q = _db.Products
+                .Include(x => x.Properties)
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim();
+
                 q = q.Where(x =>
                     x.Name.Contains(search) ||
-                    (x.Type != null && x.Type.Contains(search)));
+                    (x.Type != null && x.Type.Contains(search)) ||
+                    x.Properties.Any(p =>
+                        p.Name.Contains(search) ||
+                        (p.Value != null && p.Value.Contains(search))));
             }
 
             var totalItems = await q.CountAsync();
@@ -42,6 +53,14 @@ namespace TMS.MVC.Controllers
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            foreach (var item in items)
+            {
+                item.Properties = item.Properties
+                    .OrderBy(x => x.DisplayOrder)
+                    .ThenBy(x => x.Id)
+                    .ToList();
+            }
 
             var vm = new ProductIndexVm
             {
@@ -57,18 +76,23 @@ namespace TMS.MVC.Controllers
 
         public IActionResult Create()
         {
-            return View(new ProductFormVm());
+            return View(new ProductFormVm
+            {
+                Properties = BuildDefaultProperties()
+            });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProductFormVm model)
         {
+            NormalizeProductVm(model);
+            ValidateProperties(model);
+
             if (!ModelState.IsValid)
                 return View(model);
 
             var name = NormalizeText(model.Name);
-            var title = NormalizeNullableText(model.Type);
 
             var existing = await _db.Products.FirstOrDefaultAsync(x => x.Name == name);
             if (existing != null)
@@ -77,11 +101,16 @@ namespace TMS.MVC.Controllers
                 return View(model);
             }
 
-            _db.Products.Add(new Product
+            var properties = BuildCleanProperties(model.Properties);
+
+            var entity = new Product
             {
                 Name = name,
-                Type = title
-            });
+                Type = GetPropertyValue(properties, LoadTypePropertyName),
+                Properties = properties
+            };
+
+            _db.Products.Add(entity);
 
             await _db.SaveChangesAsync();
             TempData["Ok"] = "محصول با موفقیت ثبت شد.";
@@ -90,14 +119,32 @@ namespace TMS.MVC.Controllers
 
         public async Task<IActionResult> Edit(long id)
         {
-            var entity = await _db.Products.FindAsync(id);
+            var entity = await _db.Products
+                .Include(x => x.Properties)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
             if (entity == null) return NotFound();
+
+            var properties = entity.Properties
+                .OrderBy(x => x.DisplayOrder)
+                .ThenBy(x => x.Id)
+                .Select(x => new ProductPropertyFormVm
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Value = x.Value,
+                    DisplayOrder = x.DisplayOrder
+                })
+                .ToList();
+
+            EnsureDefaultPropertyRows(properties, entity.Type);
 
             return View(new ProductFormVm
             {
                 Id = entity.Id,
                 Name = entity.Name,
-                Type = entity.Type
+                Type = entity.Type,
+                Properties = properties
             });
         }
 
@@ -107,14 +154,19 @@ namespace TMS.MVC.Controllers
         {
             if (id != model.Id) return NotFound();
 
-            var entity = await _db.Products.FindAsync(id);
+            NormalizeProductVm(model);
+            ValidateProperties(model);
+
+            var entity = await _db.Products
+                .Include(x => x.Properties)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
             if (entity == null) return NotFound();
 
             if (!ModelState.IsValid)
                 return View(model);
 
             var name = NormalizeText(model.Name);
-            var title = NormalizeNullableText(model.Type);
 
             var duplicate = await _db.Products.FirstOrDefaultAsync(x => x.Id != id && x.Name == name);
             if (duplicate != null)
@@ -123,8 +175,18 @@ namespace TMS.MVC.Controllers
                 return View(model);
             }
 
+            var properties = BuildCleanProperties(model.Properties);
+
             entity.Name = name;
-            entity.Type = title;
+            entity.Type = GetPropertyValue(properties, LoadTypePropertyName);
+
+            var existingProperties = entity.Properties.ToList();
+            _db.Set<ProductProperty>().RemoveRange(existingProperties);
+
+            foreach (var property in properties)
+            {
+                entity.Properties.Add(property);
+            }
 
             await _db.SaveChangesAsync();
             TempData["Ok"] = "ویرایش محصول با موفقیت انجام شد.";
@@ -135,7 +197,10 @@ namespace TMS.MVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(long id)
         {
-            var entity = await _db.Products.FindAsync(id);
+            var entity = await _db.Products
+                .Include(x => x.Properties)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
             if (entity != null)
             {
                 _db.Products.Remove(entity);
@@ -169,7 +234,6 @@ namespace TMS.MVC.Controllers
             for (int row = 2; row <= lastRow; row++)
             {
                 var name = NormalizeText(ws.Cell(row, 1).GetString());
-                var title = NormalizeNullableText(ws.Cell(row, 2).GetString());
 
                 if (string.IsNullOrWhiteSpace(name))
                 {
@@ -177,20 +241,44 @@ namespace TMS.MVC.Controllers
                     continue;
                 }
 
-                var existing = await _db.Products.FirstOrDefaultAsync(x => x.Name == name);
+                var density = NormalizeNullableText(ws.Cell(row, 2).GetString());
+                var loadType = NormalizeNullableText(ws.Cell(row, 3).GetString()) ?? "تمیز";
+                var cargoNature = NormalizeNullableText(ws.Cell(row, 4).GetString()) ?? "مایع";
+                var unit = NormalizeNullableText(ws.Cell(row, 5).GetString()) ?? "لیتر";
+
+                var existing = await _db.Products
+                    .Include(x => x.Properties)
+                    .FirstOrDefaultAsync(x => x.Name == name);
+
+                var properties = new List<ProductProperty>
+                {
+                    new() { Name = DensityPropertyName, Value = density, DisplayOrder = 1 },
+                    new() { Name = LoadTypePropertyName, Value = loadType, DisplayOrder = 2 },
+                    new() { Name = CargoNaturePropertyName, Value = cargoNature, DisplayOrder = 3 },
+                    new() { Name = UnitPropertyName, Value = unit, DisplayOrder = 4 }
+                };
 
                 if (existing == null)
                 {
                     _db.Products.Add(new Product
                     {
                         Name = name,
-                        Type = title
+                        Type = loadType,
+                        Properties = properties
                     });
+
                     created++;
                 }
                 else
                 {
-                    existing.Type = title;
+                    existing.Type = loadType;
+
+                    _db.Set<ProductProperty>().RemoveRange(existing.Properties);
+                    foreach (var property in properties)
+                    {
+                        existing.Properties.Add(property);
+                    }
+
                     updated++;
                 }
             }
@@ -199,6 +287,126 @@ namespace TMS.MVC.Controllers
 
             TempData["Ok"] = $"ایمپورت انجام شد. جدید: {created} ، به‌روزرسانی: {updated} ، ردشده: {skipped}";
             return RedirectToAction(nameof(Index));
+        }
+
+        private static void NormalizeProductVm(ProductFormVm model)
+        {
+            model.Name = NormalizeText(model.Name);
+
+            for (var i = 0; i < model.Properties.Count; i++)
+            {
+                model.Properties[i].Name = NormalizeNullableText(model.Properties[i].Name);
+                model.Properties[i].Value = NormalizeNullableText(model.Properties[i].Value);
+                model.Properties[i].DisplayOrder = i + 1;
+            }
+        }
+
+        private void ValidateProperties(ProductFormVm model)
+        {
+            var rows = model.Properties
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name) || !string.IsNullOrWhiteSpace(x.Value))
+                .ToList();
+
+            foreach (var row in rows.Where(x => string.IsNullOrWhiteSpace(x.Name)))
+            {
+                ModelState.AddModelError(nameof(model.Properties), "برای هر مقدار خصوصیت، نام خصوصیت هم باید وارد شود.");
+            }
+
+            var duplicateNames = rows
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+                .GroupBy(x => x.Name!.Trim())
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            if (duplicateNames.Any())
+            {
+                ModelState.AddModelError(nameof(model.Properties), "نام خصوصیت‌ها نباید تکراری باشد: " + string.Join("، ", duplicateNames));
+            }
+        }
+
+        private static List<ProductProperty> BuildCleanProperties(List<ProductPropertyFormVm> properties)
+        {
+            return properties
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name) || !string.IsNullOrWhiteSpace(x.Value))
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+                .Select((x, index) => new ProductProperty
+                {
+                    Name = NormalizeText(x.Name),
+                    Value = NormalizeNullableText(x.Value),
+                    DisplayOrder = index + 1
+                })
+                .ToList();
+        }
+
+        private List<ProductPropertyFormVm> BuildDefaultProperties()
+        {
+            return new List<ProductPropertyFormVm>
+            {
+                new() { Name = DensityPropertyName, Value = null, DisplayOrder = 1 },
+                new() { Name = LoadTypePropertyName, Value = "تمیز", DisplayOrder = 2 },
+                new() { Name = CargoNaturePropertyName, Value = "مایع", DisplayOrder = 3 },
+                new() { Name = UnitPropertyName, Value = "لیتر", DisplayOrder = 4 }
+            };
+        }
+
+        private void EnsureDefaultPropertyRows(List<ProductPropertyFormVm> properties, string? oldType)
+        {
+            EnsurePropertyRow(properties, DensityPropertyName, null, 1);
+            EnsurePropertyRow(properties, LoadTypePropertyName, oldType ?? "تمیز", 2);
+            EnsurePropertyRow(properties, CargoNaturePropertyName, "مایع", 3);
+            EnsurePropertyRow(properties, UnitPropertyName, "لیتر", 4);
+
+            var ordered = properties
+                .OrderBy(x => IsDefaultPropertyName(x.Name) ? GetDefaultOrder(x.Name) : 1000 + x.DisplayOrder)
+                .ThenBy(x => x.DisplayOrder)
+                .ToList();
+
+            properties.Clear();
+            properties.AddRange(ordered);
+
+            for (var i = 0; i < properties.Count; i++)
+                properties[i].DisplayOrder = i + 1;
+        }
+
+        private static void EnsurePropertyRow(List<ProductPropertyFormVm> properties, string name, string? defaultValue, int order)
+        {
+            if (properties.Any(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            properties.Add(new ProductPropertyFormVm
+            {
+                Name = name,
+                Value = defaultValue,
+                DisplayOrder = order
+            });
+        }
+
+        private static bool IsDefaultPropertyName(string? name)
+        {
+            return name == DensityPropertyName ||
+                   name == LoadTypePropertyName ||
+                   name == CargoNaturePropertyName ||
+                   name == UnitPropertyName;
+        }
+
+        private static int GetDefaultOrder(string? name)
+        {
+            return name switch
+            {
+                DensityPropertyName => 1,
+                LoadTypePropertyName => 2,
+                CargoNaturePropertyName => 3,
+                UnitPropertyName => 4,
+                _ => 1000
+            };
+        }
+
+        private static string? GetPropertyValue(List<ProductProperty> properties, string propertyName)
+        {
+            return properties
+                .FirstOrDefault(x => string.Equals(x.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                ?.Value;
         }
 
         private static string NormalizeText(string? value)

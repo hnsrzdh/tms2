@@ -121,7 +121,9 @@ namespace TMS.MVC.Controllers
             var subAmount = request.SubHavaleh.RequestedCargoAmount ?? 0;
             var currentAssigned = await _context.TractorAssignments
                 .Where(x => x.SubHavalehId == request.SubHavalehId && x.Status != AssignmentStatus.Cancelled)
-                .SumAsync(x => (decimal?)x.AssignedCargoAmount) ?? 0;
+                .SumAsync(x => (decimal?)(((x.LoadedAmount ?? x.AssignedCargoAmount ?? 0) > (x.UnloadedAmount ?? 0))
+                    ? (x.LoadedAmount ?? x.AssignedCargoAmount ?? 0)
+                    : (x.UnloadedAmount ?? 0))) ?? 0;
 
             if (currentAssigned + request.RequestedCargoAmount > subAmount)
             {

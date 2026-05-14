@@ -6,7 +6,7 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن نام شرکت الزامی است.")]
         [StringLength(300)]
         [Display(Name = "نام شرکت")]
         public string CompanyName { get; set; } = string.Empty;
@@ -28,15 +28,16 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب LegalEntityId الزامی است.")]
         public long LegalEntityId { get; set; }
         public LegalEntity? LegalEntity { get; set; }
 
+        [Required(ErrorMessage = "وارد کردن عنوان الزامی است.")]
         [StringLength(200)]
         [Display(Name = "عنوان")]
-        public string? Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن آدرس الزامی است.")]
         [StringLength(1000)]
         [Display(Name = "آدرس")]
         public string AddressText { get; set; } = string.Empty;
@@ -50,7 +51,7 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب LegalEntityId الزامی است.")]
         public long LegalEntityId { get; set; }
         public LegalEntity? LegalEntity { get; set; }
 
@@ -69,6 +70,7 @@ namespace TMS.MVC.Models
         [Display(Name = "نام استعلام شده")]
         public string? VerifiedName { get; set; }
 
+        [Required(ErrorMessage = "نام صاحب حساب الزامی است.")]
         [StringLength(200)]
         [Display(Name = "نام صاحب حساب")]
         public string? AccountOwnerName { get; set; }
@@ -85,6 +87,7 @@ namespace TMS.MVC.Models
         [Display(Name = "شماره کارت")]
         public string? CardNumber { get; set; }
 
+        [Required(ErrorMessage = "شماره شبا الزامی است.")]
         [StringLength(50)]
         [Display(Name = "شماره شبا")]
         public string? ShebaNumber { get; set; }
@@ -101,11 +104,11 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب LegalEntityId الزامی است.")]
         public long LegalEntityId { get; set; }
         public LegalEntity? LegalEntity { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن عنوان الزامی است.")]
         [StringLength(200)]
         [Display(Name = "عنوان")]
         public string Title { get; set; } = string.Empty;

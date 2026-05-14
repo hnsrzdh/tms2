@@ -1,4 +1,4 @@
-@model TMS.MVC.ViewModels.TractorAssignmentUpsertViewModel
+﻿@model TMS.MVC.ViewModels.TractorAssignmentUpsertViewModel
 
 @{
     ViewData["Title"] = "تخصیص کشنده جدید";
@@ -61,7 +61,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="SubHavalehId" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
 
                 <div class="alert alert-info py-2 small mb-3">
                     کشنده‌ای که ظرفیتش کامل پر نشده باشد، می‌تواند همزمان برای حمل‌های دیگر هم انتخاب شود. مقدار تخصیص نباید از باقیمانده زیرحواله و ظرفیت آزاد کشنده بیشتر باشد.
@@ -75,11 +75,11 @@
                             <input asp-for="TractorPlateNumber" class="form-control form-control-sm" readonly placeholder="انتخاب کنید..." />
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="openTractorModal">انتخاب</button>
                         </div>
-                        <span asp-validation-for="TractorId" class="text-danger"></span>
+                        <span asp-validation-for="TractorId" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label">راننده</label>
+                        <label class="form-label">راننده <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <input asp-for="DriverProfileId" type="hidden" />
                             <input asp-for="DriverFullName" class="form-control form-control-sm" readonly placeholder="انتخاب کنید..." />
@@ -90,7 +90,7 @@
                     <div class="col-md-6">
                         <label asp-for="AssignedCargoAmount" class="form-label"></label>
                         <input asp-for="AssignedCargoAmount" class="form-control form-control-sm" type="number" step="0.001" min="0.001" placeholder="مثلاً 10" />
-                        <span asp-validation-for="AssignedCargoAmount" class="text-danger"></span>
+                        <span asp-validation-for="AssignedCargoAmount" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">

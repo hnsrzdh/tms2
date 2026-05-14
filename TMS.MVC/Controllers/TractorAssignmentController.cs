@@ -18,91 +18,6 @@ namespace TMS.MVC.Controllers
             _context = context;
             _environment = environment;
         }
-
-        public async Task<IActionResult> Index(long subHavalehId, string? search, string? statusFilter, int page = 1, int pageSize = 10)
-        {
-            if (page < 1) page = 1;
-            if (pageSize <= 0) pageSize = 10;
-
-            var subHavaleh = await _context.SubHavalehs
-                .Include(s => s.Havaleh)
-                .FirstOrDefaultAsync(s => s.Id == subHavalehId);
-
-            if (subHavaleh == null)
-                return NotFound();
-
-            var query = _context.TractorAssignments
-                .Where(a => a.SubHavalehId == subHavalehId)
-                .Include(a => a.Tractor)
-                .Include(a => a.DriverProfile)
-                    .ThenInclude(d => d.ApplicationUser)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(statusFilter) &&
-                Enum.TryParse<AssignmentStatus>(statusFilter, out var status))
-            {
-                query = query.Where(a => a.Status == status);
-            }
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                search = search.Trim();
-
-                query = query.Where(a =>
-                    a.Tractor.PolicePlateNumber.Contains(search) ||
-                    (
-                        a.DriverProfile != null &&
-                        (
-                            a.DriverProfile.ApplicationUser.FirstName.Contains(search) ||
-                            a.DriverProfile.ApplicationUser.LastName.Contains(search) ||
-                            (a.DriverProfile.ApplicationUser.FirstName + " " + a.DriverProfile.ApplicationUser.LastName).Contains(search)
-                        )
-                    )
-                );
-            }
-
-            var totalItems = await query.CountAsync();
-
-            var assignments = await query
-                .OrderByDescending(a => a.AssignmentDate)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var items = assignments.Select(a => new TractorAssignmentItemViewModel
-            {
-                Id = a.Id,
-                PolicePlateNumber = a.Tractor.PolicePlateNumber,
-                DriverName = a.DriverProfile != null
-                    ? $"{a.DriverProfile.ApplicationUser.FirstName} {a.DriverProfile.ApplicationUser.LastName}"
-                    : "-",
-                Status = a.Status,
-                StatusDisplay = GetStatusDisplay(a.Status),
-                StatusBadgeClass = GetStatusBadgeClass(a.Status),
-                AssignmentDate = a.AssignmentDate,
-                AssignedCargoAmount = a.AssignedCargoAmount,
-                IsTruckCapacityFull = a.IsTruckCapacityFull,
-                LoadedAmount = a.LoadedAmount,
-                UnloadedAmount = a.UnloadedAmount,
-                IsCompleted = a.Status == AssignmentStatus.Completed || a.Status == AssignmentStatus.Unloaded
-            }).ToList();
-
-            var model = new TractorAssignmentIndexViewModel
-            {
-                SubHavalehId = subHavalehId,
-                SubHavalehTitle = subHavaleh.Title,
-                HavalehNumber = subHavaleh.Havaleh.HavalehNumber,
-                Items = items,
-                Search = search,
-                StatusFilter = statusFilter,
-                Page = page,
-                PageSize = pageSize,
-                TotalItems = totalItems
-            };
-
-            return View(model);
-        }
-
         [HttpGet]
         public async Task<IActionResult> Assign(long subHavalehId)
         {
@@ -156,7 +71,9 @@ namespace TMS.MVC.Controllers
             var currentSubAssigned = await _context.TractorAssignments
                 .Where(x => x.SubHavalehId == model.SubHavalehId &&
                             x.Status != AssignmentStatus.Cancelled)
-                .SumAsync(x => (decimal?)x.AssignedCargoAmount) ?? 0;
+                .SumAsync(x => (decimal?)(((x.LoadedAmount ?? x.AssignedCargoAmount ?? 0) > (x.UnloadedAmount ?? 0))
+                    ? (x.LoadedAmount ?? x.AssignedCargoAmount ?? 0)
+                    : (x.UnloadedAmount ?? 0))) ?? 0;
 
             if (currentSubAssigned + assignedCargoAmount > subAmount)
             {
@@ -1027,37 +944,137 @@ namespace TMS.MVC.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAssignmentsList(long subHavalehId, string? search, string? statusFilter, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> GetAssignmentsList(
+            long subHavalehId,
+            string? search,
+            string? statusFilter,
+            string? sortBy = "date",
+            string? sortDir = "desc",
+            int page = 1,
+            int pageSize = 10)
         {
-            if (page < 1) page = 1;
+            var model = await BuildTractorAssignmentIndexModelAsync(subHavalehId, search, statusFilter, sortBy, sortDir, page, pageSize);
+            if (model == null)
+                return NotFound();
+
+            return PartialView("_TractorAssignmentsList", model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAssignmentsSplitList(
+            long subHavalehId,
+            string? search,
+            string? statusFilter,
+            string? sortBy = null,
+            string? sortDir = null,
+            string? pendingSortBy = null,
+            string? pendingSortDir = null,
+            string? completedSortBy = null,
+            string? completedSortDir = null,
+            int pendingPage = 1,
+            int completedPage = 1,
+            int pageSize = 10)
+        {
+            // sortBy/sortDir are kept only for backward compatibility with older AJAX calls.
+            pendingSortBy = string.IsNullOrWhiteSpace(pendingSortBy) ? sortBy : pendingSortBy;
+            pendingSortDir = string.IsNullOrWhiteSpace(pendingSortDir) ? sortDir : pendingSortDir;
+            completedSortBy = string.IsNullOrWhiteSpace(completedSortBy) ? sortBy : completedSortBy;
+            completedSortDir = string.IsNullOrWhiteSpace(completedSortDir) ? sortDir : completedSortDir;
+
+            var model = await BuildTractorAssignmentSplitModelAsync(
+                subHavalehId,
+                search,
+                statusFilter,
+                pendingSortBy,
+                pendingSortDir,
+                completedSortBy,
+                completedSortDir,
+                pendingPage,
+                completedPage,
+                pageSize);
+
+            if (model == null)
+                return NotFound();
+
+            return PartialView("_TractorAssignmentsSplitList", model);
+        }
+
+        private async Task<TractorAssignmentIndexViewModel?> BuildTractorAssignmentSplitModelAsync(
+            long subHavalehId,
+            string? search,
+            string? statusFilter,
+            string? pendingSortBy,
+            string? pendingSortDir,
+            string? completedSortBy,
+            string? completedSortDir,
+            int pendingPage,
+            int completedPage,
+            int pageSize)
+        {
+            if (pendingPage < 1) pendingPage = 1;
+            if (completedPage < 1) completedPage = 1;
             if (pageSize <= 0) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+            statusFilter = string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter.Trim();
+            pendingSortBy = NormalizeAssignmentSortBy(pendingSortBy);
+            completedSortBy = NormalizeAssignmentSortBy(completedSortBy);
+            pendingSortDir = NormalizeAssignmentSortDir(pendingSortDir);
+            completedSortDir = NormalizeAssignmentSortDir(completedSortDir);
+            var pendingSortAsc = pendingSortDir == "asc";
+            var completedSortAsc = completedSortDir == "asc";
 
             var subHavaleh = await _context.SubHavalehs
                 .Include(s => s.Havaleh)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == subHavalehId);
 
             if (subHavaleh == null)
-                return NotFound();
+                return null;
 
-            var query = _context.TractorAssignments
+            var baseQuery = _context.TractorAssignments
                 .Where(a => a.SubHavalehId == subHavalehId)
                 .Include(a => a.Tractor)
                 .Include(a => a.DriverProfile)
                     .ThenInclude(d => d.ApplicationUser)
+                .Include(a => a.LoadingDocuments)
+                .Include(a => a.UnloadingDocuments)
+                .AsNoTracking()
                 .AsQueryable();
+
+            var activeAssignmentsCount = await baseQuery.CountAsync(a => a.Status != AssignmentStatus.Cancelled);
+            var cancelledAssignmentsCount = await baseQuery.CountAsync(a => a.Status == AssignmentStatus.Cancelled);
+            var totalAssignedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => a.AssignedCargoAmount ?? 0);
+            var totalLoadedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => a.LoadedAmount ?? 0);
+            var totalUnloadedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => a.UnloadedAmount ?? 0);
+            var totalEffectiveUsedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => ((a.LoadedAmount ?? a.AssignedCargoAmount ?? 0) > (a.UnloadedAmount ?? 0))
+                    ? (a.LoadedAmount ?? a.AssignedCargoAmount ?? 0)
+                    : (a.UnloadedAmount ?? 0));
+
+            var query = baseQuery;
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                search = search.Trim();
-
                 query = query.Where(a =>
                     a.Tractor.PolicePlateNumber.Contains(search) ||
+                    (a.Tractor.TractorType ?? "").Contains(search) ||
+                    (a.LoadingBillOfLadingNumber ?? "").Contains(search) ||
+                    (a.Notes ?? "").Contains(search) ||
                     (
                         a.DriverProfile != null &&
                         (
-                            a.DriverProfile.ApplicationUser.FirstName.Contains(search) ||
-                            a.DriverProfile.ApplicationUser.LastName.Contains(search) ||
-                            (a.DriverProfile.ApplicationUser.FirstName + " " + a.DriverProfile.ApplicationUser.LastName).Contains(search)
+                            (a.DriverProfile.ApplicationUser.FirstName ?? "").Contains(search) ||
+                            (a.DriverProfile.ApplicationUser.LastName ?? "").Contains(search) ||
+                            ((a.DriverProfile.ApplicationUser.FirstName ?? "") + " " + (a.DriverProfile.ApplicationUser.LastName ?? "")).Contains(search)
                         )
                     )
                 );
@@ -1069,10 +1086,312 @@ namespace TMS.MVC.Controllers
                 query = query.Where(a => a.Status == status);
             }
 
+            static bool IsDocumentsApproved(TractorAssignment a) =>
+                a.LoadingDocuments.Any() &&
+                a.LoadingDocuments.All(d => d.IsApproved) &&
+                a.UnloadingDocuments.Any() &&
+                a.UnloadingDocuments.All(d => d.IsApproved);
+
+            static bool IsUnloadedStatus(TractorAssignment a) =>
+                a.Status == AssignmentStatus.Unloaded ||
+                a.Status == AssignmentStatus.Completed ||
+                a.IsUnloadingConfirmed ||
+                a.UnloadingEndDate.HasValue;
+
+            static bool IsClosedAssignment(TractorAssignment a) =>
+                a.Status == AssignmentStatus.Cancelled ||
+                (IsUnloadedStatus(a) && IsDocumentsApproved(a) && a.IsSettled);
+
+            var pendingQuery = query.Where(a =>
+                a.Status != AssignmentStatus.Cancelled &&
+                !(
+                    (a.Status == AssignmentStatus.Unloaded ||
+                     a.Status == AssignmentStatus.Completed ||
+                     a.IsUnloadingConfirmed ||
+                     a.UnloadingEndDate.HasValue) &&
+                    a.LoadingDocuments.Any() &&
+                    a.LoadingDocuments.All(d => d.IsApproved) &&
+                    a.UnloadingDocuments.Any() &&
+                    a.UnloadingDocuments.All(d => d.IsApproved) &&
+                    a.IsSettled
+                ));
+
+            var completedQuery = query.Where(a =>
+                a.Status == AssignmentStatus.Cancelled ||
+                (
+                    (a.Status == AssignmentStatus.Unloaded ||
+                     a.Status == AssignmentStatus.Completed ||
+                     a.IsUnloadingConfirmed ||
+                     a.UnloadingEndDate.HasValue) &&
+                    a.LoadingDocuments.Any() &&
+                    a.LoadingDocuments.All(d => d.IsApproved) &&
+                    a.UnloadingDocuments.Any() &&
+                    a.UnloadingDocuments.All(d => d.IsApproved) &&
+                    a.IsSettled
+                ));
+
+            var pendingTotalItems = await pendingQuery.CountAsync();
+            var completedTotalItems = await completedQuery.CountAsync();
+            var pendingTotalPages = (int)Math.Ceiling((double)pendingTotalItems / pageSize);
+            var completedTotalPages = (int)Math.Ceiling((double)completedTotalItems / pageSize);
+            if (pendingTotalPages > 0 && pendingPage > pendingTotalPages) pendingPage = pendingTotalPages;
+            if (completedTotalPages > 0 && completedPage > completedTotalPages) completedPage = completedTotalPages;
+
+            TractorAssignmentItemViewModel ToItem(TractorAssignment a) => new()
+            {
+                Id = a.Id,
+                PolicePlateNumber = a.Tractor.PolicePlateNumber,
+                TractorType = a.Tractor.TractorType,
+                DriverName = a.DriverProfile != null
+                    ? $"{a.DriverProfile.ApplicationUser.FirstName} {a.DriverProfile.ApplicationUser.LastName}".Trim()
+                    : "-",
+                Status = a.Status,
+                StatusDisplay = GetStatusDisplay(a.Status),
+                StatusBadgeClass = GetStatusBadgeClass(a.Status),
+                AssignmentDate = a.AssignmentDate,
+                AssignedCargoAmount = a.AssignedCargoAmount,
+                IsTruckCapacityFull = a.IsTruckCapacityFull,
+                LoadedAmount = a.LoadedAmount,
+                UnloadedAmount = a.UnloadedAmount,
+                IsCompleted = IsClosedAssignment(a),
+                IsClosedGroup = IsClosedAssignment(a),
+                LoadingDocumentsApproved = a.LoadingDocuments.Any() && a.LoadingDocuments.All(d => d.IsApproved),
+                UnloadingDocumentsApproved = a.UnloadingDocuments.Any() && a.UnloadingDocuments.All(d => d.IsApproved),
+                LoadingBillOfLadingNumber = a.LoadingBillOfLadingNumber,
+                Notes = a.Notes,
+                ArrivalAtOriginDate = a.ArrivalAtOriginDate,
+                LoadingStartDate = a.LoadingStartDate,
+                LoadingEndDate = a.LoadingEndDate,
+                ArrivalAtDestinationDate = a.ArrivalAtDestinationDate,
+                UnloadingStartDate = a.UnloadingStartDate,
+                UnloadingEndDate = a.UnloadingEndDate,
+                ShortageAmount = a.ShortageAmount,
+                FinalFare = a.FinalFare,
+                IsFinancialApproved = a.IsFinancialApproved,
+                IsSettled = a.IsSettled
+            };
+
+            var pendingItems = (await ApplyAssignmentSort(pendingQuery, pendingSortBy, pendingSortAsc)
+                    .Skip((pendingPage - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync())
+                .Select(ToItem)
+                .ToList();
+
+            var completedItems = (await ApplyAssignmentSort(completedQuery, completedSortBy, completedSortAsc)
+                    .Skip((completedPage - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync())
+                .Select(ToItem)
+                .ToList();
+
+            var filteredActive = await query
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .Select(a => new
+                {
+                    Assigned = a.AssignedCargoAmount ?? 0,
+                    Loaded = a.LoadedAmount ?? 0,
+                    Unloaded = a.UnloadedAmount ?? 0,
+                    Effective = ((a.LoadedAmount ?? a.AssignedCargoAmount ?? 0) > (a.UnloadedAmount ?? 0))
+                        ? (a.LoadedAmount ?? a.AssignedCargoAmount ?? 0)
+                        : (a.UnloadedAmount ?? 0)
+                })
+                .ToListAsync();
+
+            return new TractorAssignmentIndexViewModel
+            {
+                SubHavalehId = subHavalehId,
+                SubHavalehTitle = subHavaleh.Title,
+                HavalehNumber = subHavaleh.Havaleh.HavalehNumber,
+                CargoUnit = subHavaleh.Havaleh.Unit,
+                RequestedCargoAmount = subHavaleh.RequestedCargoAmount,
+                ActiveAssignmentsCount = activeAssignmentsCount,
+                CancelledAssignmentsCount = cancelledAssignmentsCount,
+                TotalAssignedAmount = totalAssignedAmount,
+                TotalLoadedAmount = totalLoadedAmount,
+                TotalUnloadedAmount = totalUnloadedAmount,
+                TotalEffectiveUsedAmount = filteredActive.Sum(a => a.Effective),
+                Search = search,
+                StatusFilter = statusFilter,
+                SortBy = pendingSortBy,
+                SortDir = pendingSortDir,
+                PendingSortBy = pendingSortBy,
+                PendingSortDir = pendingSortDir,
+                CompletedSortBy = completedSortBy,
+                CompletedSortDir = completedSortDir,
+                PageSize = pageSize,
+                PendingPage = pendingPage,
+                CompletedPage = completedPage,
+                PendingTotalItems = pendingTotalItems,
+                CompletedTotalItems = completedTotalItems,
+                PendingItems = pendingItems,
+                CompletedItems = completedItems,
+                FilteredAssignedAmount = filteredActive.Sum(a => a.Assigned),
+                FilteredLoadedAmount = filteredActive.Sum(a => a.Loaded),
+                FilteredUnloadedAmount = filteredActive.Sum(a => a.Unloaded),
+                TotalItems = pendingTotalItems + completedTotalItems,
+                Page = pendingPage
+            };
+        }
+
+        private static string NormalizeAssignmentSortBy(string? sortBy)
+        {
+            sortBy = string.IsNullOrWhiteSpace(sortBy) ? "date" : sortBy.Trim().ToLowerInvariant();
+            return sortBy switch
+            {
+                "plate" => "plate",
+                "driver" => "driver",
+                "status" => "status",
+                "assigned" => "assigned",
+                "loaded" => "loaded",
+                "unloaded" => "unloaded",
+                "date" => "date",
+                _ => "date"
+            };
+        }
+
+        private static string NormalizeAssignmentSortDir(string? sortDir) =>
+            string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase) ? "asc" : "desc";
+
+        private static IQueryable<TractorAssignment> ApplyAssignmentSort(
+            IQueryable<TractorAssignment> query,
+            string? sortBy,
+            bool sortAsc)
+        {
+            sortBy = NormalizeAssignmentSortBy(sortBy);
+
+            return (sortBy, sortAsc) switch
+            {
+                ("plate", true) => query.OrderBy(a => a.Tractor.PolicePlateNumber).ThenByDescending(a => a.Id),
+                ("plate", false) => query.OrderByDescending(a => a.Tractor.PolicePlateNumber).ThenByDescending(a => a.Id),
+
+                ("driver", true) => query.OrderBy(a => a.DriverProfile == null ? "" : ((a.DriverProfile.ApplicationUser.LastName ?? "") + " " + (a.DriverProfile.ApplicationUser.FirstName ?? ""))).ThenByDescending(a => a.Id),
+                ("driver", false) => query.OrderByDescending(a => a.DriverProfile == null ? "" : ((a.DriverProfile.ApplicationUser.LastName ?? "") + " " + (a.DriverProfile.ApplicationUser.FirstName ?? ""))).ThenByDescending(a => a.Id),
+
+                ("status", true) => query.OrderBy(a => a.Status).ThenByDescending(a => a.Id),
+                ("status", false) => query.OrderByDescending(a => a.Status).ThenByDescending(a => a.Id),
+
+                ("assigned", true) => query.OrderBy(a => a.AssignedCargoAmount ?? 0).ThenByDescending(a => a.Id),
+                ("assigned", false) => query.OrderByDescending(a => a.AssignedCargoAmount ?? 0).ThenByDescending(a => a.Id),
+
+                ("loaded", true) => query.OrderBy(a => a.LoadedAmount ?? 0).ThenByDescending(a => a.Id),
+                ("loaded", false) => query.OrderByDescending(a => a.LoadedAmount ?? 0).ThenByDescending(a => a.Id),
+
+                ("unloaded", true) => query.OrderBy(a => a.UnloadedAmount ?? 0).ThenByDescending(a => a.Id),
+                ("unloaded", false) => query.OrderByDescending(a => a.UnloadedAmount ?? 0).ThenByDescending(a => a.Id),
+
+                ("date", true) => query.OrderBy(a => a.AssignmentDate).ThenBy(a => a.Id),
+                _ => query.OrderByDescending(a => a.AssignmentDate).ThenByDescending(a => a.Id)
+            };
+        }
+
+        private async Task<TractorAssignmentIndexViewModel?> BuildTractorAssignmentIndexModelAsync(
+            long subHavalehId,
+            string? search,
+            string? statusFilter,
+            string? sortBy,
+            string? sortDir,
+            int page,
+            int pageSize)
+        {
+            if (page < 1) page = 1;
+            if (pageSize <= 0) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+            statusFilter = string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter.Trim();
+            sortBy = string.IsNullOrWhiteSpace(sortBy) ? "date" : sortBy.Trim().ToLowerInvariant();
+            sortDir = string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase) ? "asc" : "desc";
+            var sortAsc = sortDir == "asc";
+
+            var subHavaleh = await _context.SubHavalehs
+                .Include(s => s.Havaleh)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == subHavalehId);
+
+            if (subHavaleh == null)
+                return null;
+
+            var baseQuery = _context.TractorAssignments
+                .Where(a => a.SubHavalehId == subHavalehId)
+                .Include(a => a.Tractor)
+                .Include(a => a.DriverProfile)
+                    .ThenInclude(d => d.ApplicationUser)
+                .AsNoTracking()
+                .AsQueryable();
+
+            var activeAssignmentsCount = await baseQuery.CountAsync(a => a.Status != AssignmentStatus.Cancelled);
+            var cancelledAssignmentsCount = await baseQuery.CountAsync(a => a.Status == AssignmentStatus.Cancelled);
+            var totalAssignedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => a.AssignedCargoAmount ?? 0);
+            var totalLoadedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => a.LoadedAmount ?? 0);
+            var totalUnloadedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => a.UnloadedAmount ?? 0);
+            var totalEffectiveUsedAmount = await baseQuery
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .SumAsync(a => ((a.LoadedAmount ?? a.AssignedCargoAmount ?? 0) > (a.UnloadedAmount ?? 0))
+                    ? (a.LoadedAmount ?? a.AssignedCargoAmount ?? 0)
+                    : (a.UnloadedAmount ?? 0));
+
+            var query = baseQuery;
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(a =>
+                    a.Tractor.PolicePlateNumber.Contains(search) ||
+                    (a.Tractor.TractorType ?? "").Contains(search) ||
+                    (a.LoadingBillOfLadingNumber ?? "").Contains(search) ||
+                    (a.Notes ?? "").Contains(search) ||
+                    (
+                        a.DriverProfile != null &&
+                        (
+                            (a.DriverProfile.ApplicationUser.FirstName ?? "").Contains(search) ||
+                            (a.DriverProfile.ApplicationUser.LastName ?? "").Contains(search) ||
+                            ((a.DriverProfile.ApplicationUser.FirstName ?? "") + " " + (a.DriverProfile.ApplicationUser.LastName ?? "")).Contains(search)
+                        )
+                    )
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(statusFilter) &&
+                Enum.TryParse<AssignmentStatus>(statusFilter, out var status))
+            {
+                query = query.Where(a => a.Status == status);
+            }
+
+            query = (sortBy, sortAsc) switch
+            {
+                ("plate", true) => query.OrderBy(a => a.Tractor.PolicePlateNumber).ThenByDescending(a => a.Id),
+                ("plate", false) => query.OrderByDescending(a => a.Tractor.PolicePlateNumber).ThenByDescending(a => a.Id),
+
+                ("driver", true) => query.OrderBy(a => a.DriverProfile == null ? "" : ((a.DriverProfile.ApplicationUser.LastName ?? "") + " " + (a.DriverProfile.ApplicationUser.FirstName ?? ""))).ThenByDescending(a => a.Id),
+                ("driver", false) => query.OrderByDescending(a => a.DriverProfile == null ? "" : ((a.DriverProfile.ApplicationUser.LastName ?? "") + " " + (a.DriverProfile.ApplicationUser.FirstName ?? ""))).ThenByDescending(a => a.Id),
+
+                ("status", true) => query.OrderBy(a => a.Status).ThenByDescending(a => a.Id),
+                ("status", false) => query.OrderByDescending(a => a.Status).ThenByDescending(a => a.Id),
+
+                ("assigned", true) => query.OrderBy(a => a.AssignedCargoAmount ?? 0).ThenByDescending(a => a.Id),
+                ("assigned", false) => query.OrderByDescending(a => a.AssignedCargoAmount ?? 0).ThenByDescending(a => a.Id),
+
+                ("loaded", true) => query.OrderBy(a => a.LoadedAmount ?? 0).ThenByDescending(a => a.Id),
+                ("loaded", false) => query.OrderByDescending(a => a.LoadedAmount ?? 0).ThenByDescending(a => a.Id),
+
+                ("unloaded", true) => query.OrderBy(a => a.UnloadedAmount ?? 0).ThenByDescending(a => a.Id),
+                ("unloaded", false) => query.OrderByDescending(a => a.UnloadedAmount ?? 0).ThenByDescending(a => a.Id),
+
+                ("date", true) => query.OrderBy(a => a.AssignmentDate).ThenBy(a => a.Id),
+                _ => query.OrderByDescending(a => a.AssignmentDate).ThenByDescending(a => a.Id)
+            };
+
             var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
 
             var assignments = await query
-                .OrderByDescending(a => a.AssignmentDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -1095,20 +1414,28 @@ namespace TMS.MVC.Controllers
                 IsCompleted = a.Status == AssignmentStatus.Completed || a.Status == AssignmentStatus.Unloaded
             }).ToList();
 
-            var model = new TractorAssignmentIndexViewModel
+            return new TractorAssignmentIndexViewModel
             {
                 SubHavalehId = subHavalehId,
                 SubHavalehTitle = subHavaleh.Title,
                 HavalehNumber = subHavaleh.Havaleh.HavalehNumber,
+                CargoUnit = subHavaleh.Havaleh.Unit,
+                RequestedCargoAmount = subHavaleh.RequestedCargoAmount,
+                ActiveAssignmentsCount = activeAssignmentsCount,
+                CancelledAssignmentsCount = cancelledAssignmentsCount,
+                TotalAssignedAmount = totalAssignedAmount,
+                TotalLoadedAmount = totalLoadedAmount,
+                TotalUnloadedAmount = totalUnloadedAmount,
+                TotalEffectiveUsedAmount = totalEffectiveUsedAmount,
                 Items = items,
                 Search = search,
                 StatusFilter = statusFilter,
+                SortBy = sortBy,
+                SortDir = sortDir,
                 Page = page,
                 PageSize = pageSize,
                 TotalItems = totalItems
             };
-
-            return PartialView("_TractorAssignmentsList", model);
         }
 
         private async Task FillAssignmentHeaderAsync(TractorAssignmentUpsertViewModel model)

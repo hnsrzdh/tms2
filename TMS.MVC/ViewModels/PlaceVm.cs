@@ -32,9 +32,13 @@ namespace TMS.MVC.Models.ViewModels
         [Display(Name = "آدرس / توضیحات")]
         public string? Address { get; set; }
 
+        [Required(ErrorMessage = "عرض جغرافیایی الزامی است")]
+        [Range(-90, 90, ErrorMessage = "عرض جغرافیایی باید بین 90- و 90+ باشد")]
         [Display(Name = "عرض جغرافیایی")]
         public decimal? Latitude { get; set; }
 
+        [Required(ErrorMessage = "طول جغرافیایی الزامی است")]
+        [Range(-180, 180, ErrorMessage = "طول جغرافیایی باید بین 180- و 180+ باشد")]
         [Display(Name = "طول جغرافیایی")]
         public decimal? Longitude { get; set; }
 

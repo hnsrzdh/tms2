@@ -8,7 +8,7 @@ namespace TMS.MVC.Models
     {
         public int Id { get; set; }
 
-        [Required, MaxLength(50)]
+        [Required(ErrorMessage = "وارد کردن پلاک انتظامی الزامی است."), MaxLength(50)]
         public string PolicePlateNumber { get; set; } = "";
 
         [MaxLength(20)]
@@ -61,6 +61,7 @@ namespace TMS.MVC.Models
         public int TractorId { get; set; }
         public Tractor Tractor { get; set; } = null!;
 
+        [Required(ErrorMessage = "نام صاحب حساب الزامی است.")]
         [MaxLength(200)]
         public string? AccountOwnerName { get; set; }
 
@@ -73,6 +74,7 @@ namespace TMS.MVC.Models
         [MaxLength(50)]
         public string? CardNumber { get; set; }
 
+        [Required(ErrorMessage = "شماره شبا الزامی است.")]
         [MaxLength(50)]
         public string? ShebaNumber { get; set; }
 

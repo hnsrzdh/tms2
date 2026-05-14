@@ -6,7 +6,7 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن نام مکان الزامی است.")]
         [StringLength(300)]
         [Display(Name = "نام محصول")]
         public string Name { get; set; } = string.Empty;

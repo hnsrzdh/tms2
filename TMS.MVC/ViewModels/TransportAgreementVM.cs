@@ -34,37 +34,35 @@ namespace TMS.MVC.ViewModels
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن عنوان الزامی است.")]
         [Display(Name = "عنوان")]
         public string Title { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن نام صاحب کالا الزامی است.")]
         [Display(Name = "نام صاحب کالا")]
         public string CargoOwnerName { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن مبدا الزامی است.")]
         [Display(Name = "مبدا")]
         public string Origin { get; set; } = "";
 
-        [Required]
         [Display(Name = "مقصد")]
-        public string Destination { get; set; } = "";
+        public string? Destination { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن محصول الزامی است.")]
         [Display(Name = "محصول")]
         public string ProductName { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن مقدار الزامی است.")]
         [Display(Name = "مقدار")]
         public decimal? Amount { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب واحد الزامی است.")]
         [Display(Name = "واحد")]
         public string Unit { get; set; } = "";
 
-        [Required]
         [Display(Name = "وضعیت")]
-        public string Status { get; set; } = "";
+        public string? Status { get; set; }
     }
 
     public class TransportAgreementDocumentsViewModel

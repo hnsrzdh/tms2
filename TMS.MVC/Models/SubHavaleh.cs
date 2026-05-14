@@ -7,7 +7,7 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب حواله الزامی است.")]
         public long HavalehId { get; set; }
         public Havaleh Havaleh { get; set; } = null!;
 
@@ -27,11 +27,13 @@ namespace TMS.MVC.Models
         [Display(Name = "نوع حمل")]
         public string? TransportType { get; set; }
 
+        [Required(ErrorMessage = "انتخاب مقصد نهایی الزامی است.")]
         [Display(Name = "مقصد نهایی")]
         public long? DestinationPlaceId { get; set; }
         public Place? DestinationPlace { get; set; }
 
         [Column(TypeName = "decimal(18,4)")]
+        [Required(ErrorMessage = "فی صاحب کالا الزامی است.")]
         [Display(Name = "فی هر 1000 واحد - صاحب کالا")]
         public decimal? GoodsOwnerPricePer1000Unit { get; set; }
 
@@ -40,6 +42,7 @@ namespace TMS.MVC.Models
         public string? GoodsOwnerPriceCurrency { get; set; } = "ریال";
 
         [Column(TypeName = "decimal(18,4)")]
+        [Required(ErrorMessage = "انعام صاحب کالا الزامی است.")]
         [Display(Name = "انعام - صاحب کالا")]
         public decimal? GoodsOwnerTip { get; set; }
 
@@ -48,6 +51,7 @@ namespace TMS.MVC.Models
         public string? GoodsOwnerTipCurrency { get; set; } = "ریال";
 
         [Column(TypeName = "decimal(18,4)")]
+        [Required(ErrorMessage = "حق توقف صاحب کالا الزامی است.")]
         [Display(Name = "حق توقف ساعتی - صاحب کالا")]
         public decimal? GoodsOwnerStopFee { get; set; }
 
@@ -56,6 +60,7 @@ namespace TMS.MVC.Models
         public string? GoodsOwnerStopFeeCurrency { get; set; } = "ریال";
 
         [Column(TypeName = "decimal(18,4)")]
+        [Required(ErrorMessage = "فی راننده الزامی است.")]
         [Display(Name = "فی هر 1000 واحد - راننده")]
         public decimal? DriverPricePer1000Unit { get; set; }
 
@@ -64,6 +69,7 @@ namespace TMS.MVC.Models
         public string? DriverPriceCurrency { get; set; } = "ریال";
 
         [Column(TypeName = "decimal(18,4)")]
+        [Required(ErrorMessage = "انعام راننده الزامی است.")]
         [Display(Name = "انعام - راننده")]
         public decimal? DriverTip { get; set; }
 
@@ -72,6 +78,7 @@ namespace TMS.MVC.Models
         public string? DriverTipCurrency { get; set; } = "ریال";
 
         [Column(TypeName = "decimal(18,4)")]
+        [Required(ErrorMessage = "حق توقف راننده الزامی است.")]
         [Display(Name = "حق توقف ساعتی - راننده")]
         public decimal? DriverStopFee { get; set; }
 
@@ -79,9 +86,11 @@ namespace TMS.MVC.Models
         [Display(Name = "واحد حق توقف راننده")]
         public string? DriverStopFeeCurrency { get; set; } = "ریال";
 
+        [Required(ErrorMessage = "زمان مجاز بارگیری الزامی است.")]
         [Display(Name = "زمان مجاز بارگیری")]
         public int? AllowedLoadingTime { get; set; }
 
+        [Required(ErrorMessage = "زمان مجاز تخلیه الزامی است.")]
         [Display(Name = "زمان مجاز تحویل")]
         public int? AllowedDeliveryTime { get; set; }
 
@@ -121,12 +130,15 @@ namespace TMS.MVC.Models
         public string? RequestedCargoAmountType { get; set; }
 
         [Column(TypeName = "decimal(18,3)")]
+        [Required(ErrorMessage = "میزان محموله درخواستی الزامی است.")]
         [Display(Name = "میزان محموله درخواستی")]
         public decimal? RequestedCargoAmount { get; set; }
 
+        [Required(ErrorMessage = "تاریخ شروع الزامی است.")]
         [Display(Name = "تاریخ شروع")]
         public DateTime? StartDate { get; set; }
 
+        [Required(ErrorMessage = "تاریخ پایان الزامی است.")]
         [Display(Name = "تاریخ پایان")]
         public DateTime? EndDate { get; set; }
 
@@ -146,7 +158,12 @@ namespace TMS.MVC.Models
         public decimal TotalUnloadedAmount => TractorAssignments?.Where(x => x.Status != AssignmentStatus.Cancelled).Sum(x => x.UnloadedAmount ?? 0) ?? 0;
 
         [NotMapped]
-        public decimal RemainingToAssign => (RequestedCargoAmount ?? 0) - TotalAssignedAmount;
+        public decimal TotalEffectiveUsedAmount => TractorAssignments?
+            .Where(x => x.Status != AssignmentStatus.Cancelled)
+            .Sum(x => Math.Max(x.LoadedAmount ?? x.AssignedCargoAmount ?? 0, x.UnloadedAmount ?? 0)) ?? 0;
+
+        [NotMapped]
+        public decimal RemainingToAssign => (RequestedCargoAmount ?? 0) - TotalEffectiveUsedAmount;
 
         [NotMapped]
         public decimal RemainingToLoad => (RequestedCargoAmount ?? 0) - TotalLoadedAmount;
@@ -159,11 +176,11 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب ریزحواله الزامی است.")]
         public long SubHavalehId { get; set; }
         public SubHavaleh SubHavaleh { get; set; } = null!;
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب مکان الزامی است.")]
         public long PlaceId { get; set; }
         public Place Place { get; set; } = null!;
 

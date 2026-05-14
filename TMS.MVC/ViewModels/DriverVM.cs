@@ -6,7 +6,7 @@ namespace TMS.MVC.ViewModels
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب راننده الزامی است.")]
         public int DriverProfileId { get; set; }
 
         [Display(Name = "عنوان")]
@@ -59,7 +59,7 @@ namespace TMS.MVC.ViewModels
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب کاربر راننده الزامی است.")]
         [Display(Name = "کاربر راننده")]
         public string ApplicationUserId { get; set; } = "";
 
@@ -90,6 +90,7 @@ namespace TMS.MVC.ViewModels
         [Display(Name = "راننده")]
         public int DriverProfileId { get; set; }
 
+        [Required(ErrorMessage = "نام صاحب حساب الزامی است.")]
         [Display(Name = "نام صاحب حساب")]
         public string? AccountOwnerName { get; set; }
 
@@ -102,6 +103,7 @@ namespace TMS.MVC.ViewModels
         [Display(Name = "شماره کارت")]
         public string? CardNumber { get; set; }
 
+        [Required(ErrorMessage = "شماره شبا الزامی است.")]
         [Display(Name = "شماره شبا")]
         public string? ShebaNumber { get; set; }
 

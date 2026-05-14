@@ -1,4 +1,4 @@
-@using System.Globalization
+﻿@using System.Globalization
 @using TMS.MVC.ViewModels
 @model HavalehDetailsViewModel
 
@@ -13,27 +13,114 @@
         return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
     }
 
-    string Amount(decimal amount) => $"{amount:N0} {Model.Entity.Unit}";
-    string AmountNullable(decimal? amount) => amount.HasValue ? $"{amount.Value:N0} {Model.Entity.Unit}" : "-";
+    string Amount(decimal? value, string? unit = null, string empty = "-")
+    {
+        if (!value.HasValue) return empty;
+        var text = value.Value % 1 == 0 ? value.Value.ToString("N0") : value.Value.ToString("N3");
+        return string.IsNullOrWhiteSpace(unit) ? text : $"{text} {unit}";
+    }
+
+    string AmountDecimal(decimal value, string? unit = null)
+    {
+        var text = value % 1 == 0 ? value.ToString("N0") : value.ToString("N3");
+        return string.IsNullOrWhiteSpace(unit) ? text : $"{text} {unit}";
+    }
+
+    var havalehHasSubHavaleh = Model.SubTotalItems + Model.CompletedSubTotalItems > 0;
 }
 
 <style>
-    .havaleh-page-compact .form-label { margin-bottom: 0.25rem; font-size: 0.82rem; }
+    .havaleh-page-compact .form-label {
+        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+    }
+
     .havaleh-page-compact .form-control,
     .havaleh-page-compact .form-select,
     .havaleh-page-compact .input-group-text,
     .havaleh-page-compact .btn,
     .havaleh-page-compact .table,
     .havaleh-page-compact .badge,
-    .havaleh-page-compact .form-check-label { font-size: 0.82rem; }
-    .havaleh-page-compact .table > :not(caption) > * > * { padding: 0.45rem 0.55rem; }
-    .havaleh-page-compact .card-header { padding-top: 0.65rem; padding-bottom: 0.65rem; }
-    .havaleh-page-compact .card-body { padding-top: 0.85rem; }
-    .havaleh-page-compact .pagination .page-link { padding: 0.22rem 0.48rem; font-size: 0.78rem; }
-    .havaleh-page-compact .small-muted { font-size: 0.78rem; }
-    .havaleh-page-compact .summary-box { border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 0.65rem 0.75rem; background: #f8f9fa; height: 100%; }
-    .havaleh-page-compact .summary-box small { font-size: 0.76rem; }
-    .havaleh-page-compact .summary-box .value { display: block; margin-top: 0.25rem; font-weight: 600; color: #495057; }
+    .havaleh-page-compact .form-check-label,
+    .havaleh-page-compact .dropdown-item {
+        font-size: 0.82rem;
+    }
+
+    .havaleh-page-compact .table > :not(caption) > * > * {
+        padding: 0.45rem 0.55rem;
+        vertical-align: middle;
+    }
+
+    .havaleh-page-compact .card-header {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .havaleh-page-compact .card-body {
+        padding-top: 0.85rem;
+    }
+
+    .havaleh-page-compact .pagination .page-link {
+        padding: 0.22rem 0.48rem;
+        font-size: 0.78rem;
+    }
+
+    .havaleh-page-compact .small-muted {
+        font-size: 0.78rem;
+    }
+
+    .havaleh-page-compact .summary-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.65rem 0.75rem;
+        background: #f8f9fa;
+        height: 100%;
+    }
+
+    .havaleh-page-compact .summary-box small {
+        font-size: 0.76rem;
+    }
+
+    .havaleh-page-compact .summary-box .value {
+        display: block;
+        margin-top: 0.25rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .havaleh-page-compact .mini-line {
+        display: block;
+        color: #6c757d;
+        font-size: 0.76rem;
+        margin-top: 0.15rem;
+    }
+
+    .havaleh-page-compact .text-tight {
+        line-height: 1.65;
+    }
+
+    .havaleh-page-compact .route-cell {
+        min-width: 170px;
+        max-width: 240px;
+    }
+
+    .havaleh-page-compact .amount-cell {
+        min-width: 185px;
+    }
+
+    .havaleh-page-compact .status-cell {
+        min-width: 190px;
+    }
+
+    .havaleh-page-compact .progress {
+        height: 0.45rem;
+        background-color: #eef1f4;
+    }
+
+    .havaleh-page-compact .dropdown-menu {
+        min-width: 10rem;
+        text-align: right;
+    }
 </style>
 
 <div class="container-fluid havaleh-page-compact">
@@ -72,7 +159,14 @@
                 <small class="text-muted small-muted">خلاصه اطلاعات اصلی حواله</small>
             </div>
             <div class="d-flex gap-2">
-                <a asp-action="Edit" asp-route-id="@Model.Entity.Id" class="btn btn-outline-primary btn-sm px-3">ویرایش</a>
+                @if (havalehHasSubHavaleh)
+                {
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3" disabled title="این حواله دارای ریزحواله است و قابل ویرایش نیست.">ویرایش غیرفعال</button>
+                }
+                else
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Entity.Id" class="btn btn-outline-primary btn-sm px-3">ویرایش</a>
+                }
                 <a asp-action="Index" class="btn btn-secondary btn-sm px-3">بازگشت</a>
             </div>
         </div>
@@ -91,7 +185,7 @@
                 <div class="col-md-3"><div class="summary-box"><small>پیمانکار حمل</small><span class="value">@(Model.Entity.TransportContractorLegalEntity?.CompanyName ?? "-")</span></div></div>
                 <div class="col-md-3"><div class="summary-box"><small>صاحب کالا</small><span class="value">@(Model.Entity.GoodsOwnerLegalEntity?.CompanyName ?? "-")</span></div></div>
                 <div class="col-md-3"><div class="summary-box"><small>مبدا</small><span class="value">@(Model.Entity.OriginPlace?.Name ?? "-")</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>مقدار محصول</small><span class="value">@AmountNullable(Model.Entity.ProductAmount)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>مقدار محصول</small><span class="value">@Amount(Model.Entity.ProductAmount, Model.Entity.Unit)</span></div></div>
                 <div class="col-md-3"><div class="summary-box"><small>واحد</small><span class="value">@(Model.Entity.Unit ?? "-")</span></div></div>
                 <div class="col-md-3"><div class="summary-box"><small>تاریخ خرید</small><span class="value">@ToJalali(Model.Entity.PurchaseDate)</span></div></div>
                 <div class="col-md-3"><div class="summary-box"><small>تاریخ مجاز بارگیری</small><span class="value">@ToJalali(Model.Entity.AllowedLoadingDate)</span></div></div>
@@ -106,15 +200,14 @@
         </div>
         <div class="card-body">
             <div class="row g-2">
-                <div class="col-md-3"><div class="summary-box"><small>مقدار کل حواله</small><span class="value">@Amount(Model.TotalHavalehAmount)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>جمع ریزحواله‌ها</small><span class="value">@Amount(Model.TotalSubHavalehAmount)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>باقی‌مانده برای تعریف ریزحواله</small><span class="value @(Model.RemainingForSubHavaleh < 0 ? "text-danger" : "text-success")">@Amount(Model.RemainingForSubHavaleh)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>تخصیص داده شده</small><span class="value">@Amount(Model.TotalAssignedAmount)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>بارگیری شده</small><span class="value">@Amount(Model.TotalLoadedAmount)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>تخلیه شده</small><span class="value">@Amount(Model.TotalUnloadedAmount)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>باقی‌مانده جهت تخصیص</small><span class="value @(Model.RemainingToAssign < 0 ? "text-danger" : "")">@Amount(Model.RemainingToAssign)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>باقی‌مانده جهت بارگیری</small><span class="value @(Model.RemainingToLoad < 0 ? "text-danger" : "")">@Amount(Model.RemainingToLoad)</span></div></div>
-                <div class="col-md-3"><div class="summary-box"><small>باقی‌مانده جهت تخلیه</small><span class="value @(Model.RemainingToUnload < 0 ? "text-danger" : "")">@Amount(Model.RemainingToUnload)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>مقدار کل حواله</small><span class="value">@AmountDecimal(Model.TotalHavalehAmount, Model.Entity.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>جمع ریزحواله‌ها</small><span class="value">@AmountDecimal(Model.TotalSubHavalehAmount, Model.Entity.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>باقی‌مانده برای تعریف ریزحواله</small><span class="value @(Model.RemainingForSubHavaleh < 0 ? "text-danger" : "text-success")">@AmountDecimal(Model.RemainingForSubHavaleh, Model.Entity.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>ریزحواله‌های باز / تکمیل</small><span class="value">@Model.SubTotalItems / @Model.CompletedSubTotalItems مورد</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>تخصیص داده شده</small><span class="value">@AmountDecimal(Model.TotalAssignedAmount, Model.Entity.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>بارگیری شده</small><span class="value">@AmountDecimal(Model.TotalLoadedAmount, Model.Entity.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>تخلیه شده</small><span class="value">@AmountDecimal(Model.TotalUnloadedAmount, Model.Entity.Unit)</span></div></div>
+                <div class="col-md-3"><div class="summary-box"><small>معیار تکمیل ریزحواله</small><span class="value small">کل مقدار ریزحواله در مقصد تخلیه شده و تخصیص باز نداشته باشد.</span></div></div>
             </div>
         </div>
     </div>
@@ -122,79 +215,136 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h6 class="mb-0">ریزحواله‌ها</h6>
-                <small class="text-muted small-muted">مقدار هر ریزحواله از مقدار حواله کسر می‌شود و وضعیت تخصیص، بارگیری و تخلیه آن نمایش داده می‌شود.</small>
+                <h6 class="mb-0">ریزحواله‌های باز</h6>
+                <small class="text-muted small-muted">فقط ریزحواله‌هایی که هنوز کاملاً تخلیه و تکمیل نشده‌اند در این جدول نمایش داده می‌شوند.</small>
             </div>
             <a asp-action="AddSubHavaleh" asp-route-havalehId="@Model.Entity.Id" class="btn btn-primary btn-sm px-3">افزودن ریزحواله</a>
         </div>
-        <div class="card-body table-responsive">
-            <table class="table table-sm table-bordered table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>عنوان</th>
-                        <th>مقصد</th>
-                        <th>مقدار ریزحواله</th>
-                        <th>تخصیص</th>
-                        <th>بارگیری</th>
-                        <th>تخلیه</th>
-                        <th>تاریخ شروع</th>
-                        <th>تاریخ پایان</th>
-                        <th style="width:210px">عملیات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.SubItems.Any())
-                    {
-                        var rowNo = Model.SubRowNumberStart;
-                        foreach (var item in Model.SubItems)
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ریزحواله</th>
+                            <th class="route-cell">مقصد / مسیر</th>
+                            <th class="amount-cell">مقدارها</th>
+                            <th class="status-cell">وضعیت</th>
+                            <th>بازه زمانی</th>
+                            <th style="width:110px">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.SubItems.Any())
                         {
-                            <tr>
-                                <td>@rowNo</td>
-                                <td>@(string.IsNullOrWhiteSpace(item.Title) ? "-" : item.Title)</td>
-                                <td>@(string.IsNullOrWhiteSpace(item.DestinationCityDisplayName) ? "-" : item.DestinationCityDisplayName)</td>
-                                <td>@AmountNullable(item.RequestedCargoAmount)</td>
-                                <td>@Amount(item.AssignedAmount)</td>
-                                <td>@Amount(item.LoadedAmount)</td>
-                                <td>@Amount(item.UnloadedAmount)</td>
-                                <td>@ToJalali(item.StartDate)</td>
-                                <td>@ToJalali(item.EndDate)</td>
-                                <td>
-                                    <div class="d-flex gap-1 flex-wrap">
-                                        <a asp-action="EditSubHavaleh" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">ویرایش</a>
-                                        <a asp-action="SubHavalehDetails" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteSubModal_@item.Id">حذف</button>
-                                    </div>
-                                    <div class="modal fade" id="deleteSubModal_@item.Id" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content">
-                                                <form asp-action="DeleteSubHavaleh" method="post">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@item.Id" />
-                                                    <input type="hidden" name="havalehId" value="@Model.Entity.Id" />
-                                                    <div class="modal-header py-2"><h6 class="modal-title">حذف ریزحواله</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                                    <div class="modal-body small">آیا از حذف این ریزحواله مطمئن هستید؟<div class="mt-2 text-muted">@(item.Title ?? "بدون عنوان")</div></div>
-                                                    <div class="modal-footer py-2 gap-2"><button type="submit" class="btn btn-danger btn-sm px-3">حذف</button><button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button></div>
-                                                </form>
+                            var rowNo = Model.SubRowNumberStart;
+                            foreach (var item in Model.SubItems)
+                            {
+                                <tr>
+                                    <td>@rowNo</td>
+                                    <td class="text-tight">
+                                        <strong>@(string.IsNullOrWhiteSpace(item.Title) ? "بدون عنوان" : item.Title)</strong>
+                                        <span class="mini-line">نوع قرارداد: @(item.ContractType ?? "-")</span>
+                                        <span class="mini-line">نوع حمل: @(item.TransportType ?? "-")</span>
+                                    </td>
+                                    <td class="text-tight route-cell">
+                                        <strong>@(string.IsNullOrWhiteSpace(item.DestinationCityDisplayName) ? "-" : item.DestinationCityDisplayName)</strong>
+                                        <span class="mini-line">مسیر: @(item.RouteSummary ?? "بدون شهر میانی")</span>
+                                    </td>
+                                    <td class="amount-cell text-tight">
+                                        <strong>درخواستی: @Amount(item.RequestedCargoAmount, Model.Entity.Unit)</strong>
+                                        <span class="mini-line">تخصیص: @AmountDecimal(item.AssignedAmount, Model.Entity.Unit) | مصرف مؤثر: @AmountDecimal(item.EffectiveUsedAmount, Model.Entity.Unit)</span>
+                                        <span class="mini-line">مانده قابل برگشت/تخصیص: @AmountDecimal(item.RemainingToAssign, Model.Entity.Unit)</span>
+                                        <span class="mini-line">بارگیری: @AmountDecimal(item.LoadedAmount, Model.Entity.Unit) | تخلیه: @AmountDecimal(item.UnloadedAmount, Model.Entity.Unit)</span>
+                                    </td>
+                                    <td class="status-cell text-tight">
+                                        <span class="badge bg-warning text-dark">باز</span>
+                                        <span class="badge bg-secondary">@item.ActiveAssignmentCount تخصیص</span>
+                                        @if (item.HasOpenAssignment)
+                                        {
+                                            <span class="badge bg-info">تخصیص در جریان</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-dark text-dark border">بدون تخصیص باز</span>
+                                        }
+                                        <div class="progress mt-2" title="@item.CompletionPercent.ToString("N0")% تخلیه">
+                                            <div class="progress-bar" role="progressbar" style="width:@item.CompletionPercent.ToString("0", CultureInfo.InvariantCulture)%"></div>
+                                        </div>
+                                        <span class="mini-line">پیشرفت تخلیه: @item.CompletionPercent.ToString("N0")%</span>
+                                    </td>
+                                    <td class="text-tight">
+                                        <span class="mini-line">شروع: @ToJalali(item.StartDate)</span>
+                                        <span class="mini-line">پایان: @ToJalali(item.EndDate)</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="SubHavalehDetails" asp-route-id="@item.Id" class="btn btn-outline-primary">جزئیات</a>
+                                            <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="visually-hidden">عملیات</span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" asp-action="SubHavalehDetails" asp-route-id="@item.Id">جزئیات</a></li>
+                                                @if (item.CanEdit)
+                                                {
+                                                    <li><a class="dropdown-item" asp-action="EditSubHavaleh" asp-route-id="@item.Id">ویرایش</a></li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">ویرایش غیرفعال</span></li>
+                                                }
+                                                @if (item.CanReleaseRemainingToHavaleh)
+                                                {
+                                                    <li>
+                                                        <form asp-action="ReleaseSubHavalehRemaining" method="post" class="m-0">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.Id" />
+                                                            <button type="submit" class="dropdown-item text-warning" onclick="return confirm('باقیمانده این ریزحواله به حواله اصلی برگردانده شود؟');">برگرداندن مانده به حواله</button>
+                                                        </form>
+                                                    </li>
+                                                }
+                                                <li><hr class="dropdown-divider" /></li>
+                                                @if (item.CanDelete)
+                                                {
+                                                    <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteSubModal_@item.Id">حذف</button></li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">حذف غیرفعال</span></li>
+                                                }
+                                            </ul>
+                                        </div>
+                                        <div class="modal fade" id="deleteSubModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <form asp-action="DeleteSubHavaleh" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <input type="hidden" name="havalehId" value="@Model.Entity.Id" />
+                                                        <div class="modal-header py-2"><h6 class="modal-title">حذف ریزحواله</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                                        <div class="modal-body small">آیا از حذف این ریزحواله مطمئن هستید؟<div class="mt-2 text-muted">@(item.Title ?? "بدون عنوان")</div></div>
+                                                        <div class="modal-footer py-2 gap-2"><button type="submit" class="btn btn-danger btn-sm px-3">حذف</button><button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button></div>
+                                                    </form>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            rowNo++;
+                                    </td>
+                                </tr>
+                                rowNo++;
+                            }
                         }
-                    }
-                    else
-                    {
-                        <tr><td colspan="12" class="text-center py-4 text-muted">موردی ثبت نشده است.</td></tr>
-                    }
-                </tbody>
-            </table>
+                        else
+                        {
+                            <tr><td colspan="7" class="text-center py-4 text-muted">ریزحواله باز وجود ندارد.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
             @if (Model.SubTotalPages > 1)
             {
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
-                    <div class="text-muted small">صفحه @Model.SubPage از @Model.SubTotalPages - تعداد کل: @Model.SubTotalItems</div>
+                    <div class="text-muted small">صفحه @Model.SubPage از @Model.SubTotalPages - تعداد ریزحواله‌های باز: @Model.SubTotalItems</div>
                     <nav>
                         <ul class="pagination pagination-primary mb-0">
                             <li class="page-item @(Model.SubPage == 1 ? "disabled" : "")"><a class="page-link" asp-route-id="@Model.Entity.Id" asp-route-subPage="1" asp-route-subPageSize="@Model.SubPageSize">اول</a></li>
@@ -210,6 +360,126 @@
                     </nav>
                 </div>
             }
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">ریزحواله‌های تکمیل‌شده</h6>
+            <small class="text-muted small-muted">ریزحواله‌هایی که کل مقدارشان در مقصد تخلیه شده و تخصیص باز ندارند.</small>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ریزحواله</th>
+                            <th class="route-cell">مقصد / مسیر</th>
+                            <th class="amount-cell">مقدارها</th>
+                            <th class="status-cell">وضعیت</th>
+                            <th>بازه زمانی</th>
+                            <th style="width:110px">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.CompletedSubItems.Any())
+                        {
+                            var doneRowNo = 1;
+                            foreach (var item in Model.CompletedSubItems)
+                            {
+                                <tr>
+                                    <td>@doneRowNo</td>
+                                    <td class="text-tight">
+                                        <strong>@(string.IsNullOrWhiteSpace(item.Title) ? "بدون عنوان" : item.Title)</strong>
+                                        <span class="mini-line">نوع قرارداد: @(item.ContractType ?? "-")</span>
+                                        <span class="mini-line">نوع حمل: @(item.TransportType ?? "-")</span>
+                                    </td>
+                                    <td class="text-tight route-cell">
+                                        <strong>@(string.IsNullOrWhiteSpace(item.DestinationCityDisplayName) ? "-" : item.DestinationCityDisplayName)</strong>
+                                        <span class="mini-line">مسیر: @(item.RouteSummary ?? "بدون شهر میانی")</span>
+                                    </td>
+                                    <td class="amount-cell text-tight">
+                                        <strong>درخواستی: @Amount(item.RequestedCargoAmount, Model.Entity.Unit)</strong>
+                                        <span class="mini-line">تخصیص: @AmountDecimal(item.AssignedAmount, Model.Entity.Unit) | مصرف مؤثر: @AmountDecimal(item.EffectiveUsedAmount, Model.Entity.Unit)</span>
+                                        <span class="mini-line">بارگیری: @AmountDecimal(item.LoadedAmount, Model.Entity.Unit)</span>
+                                        <span class="mini-line">تخلیه: @AmountDecimal(item.UnloadedAmount, Model.Entity.Unit)</span>
+                                    </td>
+                                    <td class="status-cell text-tight">
+                                        <span class="badge bg-success">تکمیل‌شده</span>
+                                        <span class="badge bg-secondary">@item.ActiveAssignmentCount تخصیص</span>
+                                        <div class="progress mt-2" title="@item.CompletionPercent.ToString("N0")% تخلیه">
+                                            <div class="progress-bar" role="progressbar" style="width:@item.CompletionPercent.ToString("0", CultureInfo.InvariantCulture)%"></div>
+                                        </div>
+                                        <span class="mini-line">پیشرفت تخلیه: @item.CompletionPercent.ToString("N0")%</span>
+                                    </td>
+                                    <td class="text-tight">
+                                        <span class="mini-line">شروع: @ToJalali(item.StartDate)</span>
+                                        <span class="mini-line">پایان: @ToJalali(item.EndDate)</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="SubHavalehDetails" asp-route-id="@item.Id" class="btn btn-outline-primary">جزئیات</a>
+                                            <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="visually-hidden">عملیات</span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" asp-action="SubHavalehDetails" asp-route-id="@item.Id">جزئیات</a></li>
+                                                @if (item.CanEdit)
+                                                {
+                                                    <li><a class="dropdown-item" asp-action="EditSubHavaleh" asp-route-id="@item.Id">ویرایش</a></li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">ویرایش غیرفعال</span></li>
+                                                }
+                                                @if (item.CanReleaseRemainingToHavaleh)
+                                                {
+                                                    <li>
+                                                        <form asp-action="ReleaseSubHavalehRemaining" method="post" class="m-0">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.Id" />
+                                                            <button type="submit" class="dropdown-item text-warning" onclick="return confirm('باقیمانده این ریزحواله به حواله اصلی برگردانده شود؟');">برگرداندن مانده به حواله</button>
+                                                        </form>
+                                                    </li>
+                                                }
+                                                <li><hr class="dropdown-divider" /></li>
+                                                @if (item.CanDelete)
+                                                {
+                                                    <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteCompletedSubModal_@item.Id">حذف</button></li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">حذف غیرفعال</span></li>
+                                                }
+                                            </ul>
+                                        </div>
+                                        <div class="modal fade" id="deleteCompletedSubModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <form asp-action="DeleteSubHavaleh" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <input type="hidden" name="havalehId" value="@Model.Entity.Id" />
+                                                        <div class="modal-header py-2"><h6 class="modal-title">حذف ریزحواله</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                                        <div class="modal-body small">آیا از حذف این ریزحواله تکمیل‌شده مطمئن هستید؟<div class="mt-2 text-muted">@(item.Title ?? "بدون عنوان")</div></div>
+                                                        <div class="modal-footer py-2 gap-2"><button type="submit" class="btn btn-danger btn-sm px-3">حذف</button><button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button></div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                doneRowNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="7" class="text-center py-4 text-muted">ریزحواله تکمیل‌شده‌ای وجود ندارد.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

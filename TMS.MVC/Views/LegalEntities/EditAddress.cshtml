@@ -1,4 +1,4 @@
-@model TMS.MVC.Models.LegalEntityAddress
+﻿@model TMS.MVC.Models.LegalEntityAddress
 
 @{
     ViewData["Title"] = "ویرایش آدرس";
@@ -48,25 +48,23 @@
                 <input asp-for="Id" type="hidden" />
                 <input asp-for="LegalEntityId" type="hidden" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
                 <div class="row g-2">
                     <div class="col-md-4">
                         <label asp-for="Title" class="form-label"></label>
                         <input asp-for="Title" class="form-control form-control-sm" />
-                        <span asp-validation-for="Title" class="text-danger"></span>
+                        <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-8">
                         <label asp-for="PostalCode" class="form-label"></label>
                         <input asp-for="PostalCode" class="form-control form-control-sm" />
-                        <span asp-validation-for="PostalCode" class="text-danger"></span>
+                        <span asp-validation-for="PostalCode" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-12">
                         <label asp-for="AddressText" class="form-label"></label>
                         <textarea asp-for="AddressText" class="form-control form-control-sm" rows="4"></textarea>
-                        <span asp-validation-for="AddressText" class="text-danger"></span>
+                        <span asp-validation-for="AddressText" class="text-danger small"></span>
                     </div>
                 </div>
 

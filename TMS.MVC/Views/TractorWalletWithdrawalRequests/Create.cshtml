@@ -1,4 +1,4 @@
-@model TMS.MVC.ViewModels.TractorWalletWithdrawalCreateVm
+﻿@model TMS.MVC.ViewModels.TractorWalletWithdrawalCreateVm
 
 @{
     ViewData["Title"] = "درخواست برداشت از کیف پول کشنده";
@@ -58,22 +58,22 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="TractorId" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <label asp-for="Amount" class="form-label"></label>
+                        <label asp-for="Amount" class="form-label"></label> <span class="text-danger">*</span>
                         <div class="input-group input-group-sm">
                             <input asp-for="Amount" class="form-control form-control-sm" type="number" min="1" step="1" />
                             <span class="input-group-text">ریال</span>
                         </div>
-                        <span asp-validation-for="Amount" class="text-danger"></span>
+                        <span asp-validation-for="Amount" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-8">
                         <label asp-for="RequestNote" class="form-label"></label>
                         <textarea asp-for="RequestNote" class="form-control form-control-sm" rows="3" placeholder="توضیح اختیاری برای بخش مالی..."></textarea>
-                        <span asp-validation-for="RequestNote" class="text-danger"></span>
+                        <span asp-validation-for="RequestNote" class="text-danger small"></span>
                     </div>
                 </div>
 

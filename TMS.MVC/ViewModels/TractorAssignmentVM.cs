@@ -10,6 +10,7 @@ namespace TMS.MVC.ViewModels
         public long SubHavalehId { get; set; }
         public string? SubHavalehTitle { get; set; }
         public string? HavalehNumber { get; set; }
+        public string? CargoUnit { get; set; }
         public List<TractorAssignmentItemViewModel> Items { get; set; } = new();
         public string? Search { get; set; }
         public int Page { get; set; } = 1;
@@ -18,6 +19,42 @@ namespace TMS.MVC.ViewModels
         public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
         public int RowNumberStart => TotalItems == 0 ? 0 : ((Page - 1) * PageSize) + 1;
         public string? StatusFilter { get; set; }
+        public string? SortBy { get; set; } = "date";
+        public string? SortDir { get; set; } = "desc";
+        public bool IsSortAsc => string.Equals(SortDir, "asc", StringComparison.OrdinalIgnoreCase);
+
+        // Separate sorting state for Havalehs/SubHavalehDetails split assignment tables
+        public string? PendingSortBy { get; set; } = "date";
+        public string? PendingSortDir { get; set; } = "desc";
+        public bool IsPendingSortAsc => string.Equals(PendingSortDir, "asc", StringComparison.OrdinalIgnoreCase);
+        public string? CompletedSortBy { get; set; } = "date";
+        public string? CompletedSortDir { get; set; } = "desc";
+        public bool IsCompletedSortAsc => string.Equals(CompletedSortDir, "asc", StringComparison.OrdinalIgnoreCase);
+        public int ActiveAssignmentsCount { get; set; }
+        public int CancelledAssignmentsCount { get; set; }
+        public decimal? RequestedCargoAmount { get; set; }
+        public decimal TotalAssignedAmount { get; set; }
+        public decimal TotalLoadedAmount { get; set; }
+        public decimal TotalUnloadedAmount { get; set; }
+        public decimal TotalEffectiveUsedAmount { get; set; }
+        public decimal RemainingToAssign => (RequestedCargoAmount ?? 0) - TotalEffectiveUsedAmount;
+        public decimal RemainingToUnload => (RequestedCargoAmount ?? 0) - TotalUnloadedAmount;
+
+        // Used by Havalehs/SubHavalehDetails split tables
+        public List<TractorAssignmentItemViewModel> PendingItems { get; set; } = new();
+        public List<TractorAssignmentItemViewModel> CompletedItems { get; set; } = new();
+        public int PendingPage { get; set; } = 1;
+        public int CompletedPage { get; set; } = 1;
+        public int PendingTotalItems { get; set; }
+        public int CompletedTotalItems { get; set; }
+        public int PendingTotalPages => (int)Math.Ceiling((double)PendingTotalItems / PageSize);
+        public int CompletedTotalPages => (int)Math.Ceiling((double)CompletedTotalItems / PageSize);
+        public int PendingRowNumberStart => PendingTotalItems == 0 ? 0 : ((PendingPage - 1) * PageSize) + 1;
+        public int CompletedRowNumberStart => CompletedTotalItems == 0 ? 0 : ((CompletedPage - 1) * PageSize) + 1;
+        public int FilteredTotalItems => PendingTotalItems + CompletedTotalItems;
+        public decimal FilteredAssignedAmount { get; set; }
+        public decimal FilteredLoadedAmount { get; set; }
+        public decimal FilteredUnloadedAmount { get; set; }
     }
 
     public class TractorAssignmentItemViewModel
@@ -34,13 +71,30 @@ namespace TMS.MVC.ViewModels
         public bool IsCompleted { get; set; }
         public decimal? AssignedCargoAmount { get; set; }
         public bool IsTruckCapacityFull { get; set; }
+        public string? TractorType { get; set; }
+        public string? LoadingBillOfLadingNumber { get; set; }
+        public string? Notes { get; set; }
+        public DateTime? ArrivalAtOriginDate { get; set; }
+        public DateTime? LoadingStartDate { get; set; }
+        public DateTime? LoadingEndDate { get; set; }
+        public DateTime? ArrivalAtDestinationDate { get; set; }
+        public DateTime? UnloadingStartDate { get; set; }
+        public DateTime? UnloadingEndDate { get; set; }
+        public decimal? ShortageAmount { get; set; }
+        public decimal? FinalFare { get; set; }
+        public bool IsFinancialApproved { get; set; }
+        public bool IsSettled { get; set; }
+        public bool LoadingDocumentsApproved { get; set; }
+        public bool UnloadingDocumentsApproved { get; set; }
+        public bool AreDocumentsApproved => LoadingDocumentsApproved && UnloadingDocumentsApproved;
+        public bool IsClosedGroup { get; set; }
     }
 
     // ========== ایجاد/ویرایش ==========
     public class TractorAssignmentUpsertViewModel
     {
         public long Id { get; set; }
-        [Required] public long SubHavalehId { get; set; }
+        [Required(ErrorMessage = "انتخاب ریزحواله الزامی است.")] public long SubHavalehId { get; set; }
         [Display(Name = "عنوان زیرحواله")] public string? SubHavalehTitle { get; set; }
         [Display(Name = "شماره حواله")] public string? HavalehNumber { get; set; }
         [Required(ErrorMessage = "انتخاب کشنده الزامی است")] public int TractorId { get; set; }
@@ -48,6 +102,7 @@ namespace TMS.MVC.ViewModels
         [Display(Name = "راننده")] public int? DriverProfileId { get; set; }
         [Display(Name = "نام راننده")] public string? DriverFullName { get; set; }
 
+        [Required(ErrorMessage = "مقدار تخصیص الزامی است.")]
         [Display(Name = "مقدار تخصیص داده شده")]
         [Range(0.001, double.MaxValue, ErrorMessage = "مقدار تخصیص باید بزرگتر از صفر باشد.")]
         public decimal? AssignedCargoAmount { get; set; }

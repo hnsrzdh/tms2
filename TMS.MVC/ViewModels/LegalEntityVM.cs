@@ -7,7 +7,7 @@ namespace TMS.MVC.ViewModels
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب LegalEntityId الزامی است.")]
         public long LegalEntityId { get; set; }
 
         [Required(ErrorMessage = "عنوان الزامی است.")]
@@ -40,9 +40,10 @@ namespace TMS.MVC.ViewModels
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب LegalEntityId الزامی است.")]
         public long LegalEntityId { get; set; }
 
+        [Required(ErrorMessage = "نام صاحب حساب الزامی است.")]
         [Display(Name = "نام صاحب حساب")]
         [MaxLength(200)]
         public string? AccountOwnerName { get; set; }
@@ -59,6 +60,7 @@ namespace TMS.MVC.ViewModels
         [MaxLength(50)]
         public string? CardNumber { get; set; }
 
+        [Required(ErrorMessage = "شماره شبا الزامی است.")]
         [Display(Name = "شماره شبا")]
         [MaxLength(50)]
         public string? ShebaNumber { get; set; }
@@ -94,7 +96,7 @@ namespace TMS.MVC.ViewModels
     {
         public long? Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن نام شرکت الزامی است.")]
         [StringLength(300)]
         [Display(Name = "نام شرکت")]
         public string CompanyName { get; set; } = string.Empty;

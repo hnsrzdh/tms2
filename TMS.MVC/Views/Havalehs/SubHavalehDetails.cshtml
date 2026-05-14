@@ -41,7 +41,9 @@
     var assignedAmount = activeAssignments.Sum(x => x.AssignedCargoAmount ?? 0);
     var loadedAmount = activeAssignments.Sum(x => x.LoadedAmount ?? 0);
     var unloadedAmount = activeAssignments.Sum(x => x.UnloadedAmount ?? 0);
-    var remainingToAssign = requestedAmount - assignedAmount;
+    var effectiveUsedAmount = activeAssignments.Sum(x => Math.Max(x.LoadedAmount ?? x.AssignedCargoAmount ?? 0, x.UnloadedAmount ?? 0));
+    var hasBlockingAssignment = activeAssignments.Any();
+    var remainingToAssign = requestedAmount - effectiveUsedAmount;
     var remainingToLoad = requestedAmount - loadedAmount;
     var remainingToUnload = requestedAmount - unloadedAmount;
 }
@@ -152,6 +154,25 @@
 </div>
 
 <div class="container-fluid havaleh-page-compact">
+    @if (TempData["Ok"] != null)
+    {
+        <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning py-2 small">@TempData["Warning"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Error"]</div>
+    }
+    @if (hasBlockingAssignment)
+    {
+        <div class="alert alert-warning py-2 small">
+            این ریزحواله حداقل یک تخصیص لغو نشده دارد؛ بنابراین امکان ویرایش و حذف آن غیرفعال است.
+        </div>
+    }
+
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
@@ -160,11 +181,36 @@
             </div>
 
             <div class="d-flex gap-2">
-                <a asp-action="EditSubHavaleh"
-                   asp-route-id="@Model.Id"
-                   class="btn btn-outline-primary btn-sm px-3">
-                    ویرایش
-                </a>
+                @if (hasBlockingAssignment)
+                {
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm px-3"
+                            disabled
+                            title="این ریزحواله دارای تخصیص لغو نشده است و قابل ویرایش نیست.">
+                        ویرایش غیرفعال
+                    </button>
+                }
+                else
+                {
+                    <a asp-action="EditSubHavaleh"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-outline-primary btn-sm px-3">
+                        ویرایش
+                    </a>
+                }
+
+                @if (remainingToAssign > 0 && effectiveUsedAmount > 0)
+                {
+                    <form asp-action="ReleaseSubHavalehRemaining" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit"
+                                class="btn btn-outline-warning btn-sm px-3"
+                                onclick="return confirm('باقیمانده این ریزحواله به حواله اصلی برگردانده شود؟');">
+                            برگرداندن مانده به حواله
+                        </button>
+                    </form>
+                }
 
                 <a asp-action="Details"
                    asp-route-id="@Model.HavalehId"
@@ -470,7 +516,14 @@
 
                 <div class="col-md-3">
                     <div class="info-box">
-                        <small>باقی‌مانده جهت تخصیص</small>
+                        <small>مصرف مؤثر ریزحواله</small>
+                        <span class="value">@NumberWithUnit(effectiveUsedAmount, cargoUnit)</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <small>باقی‌مانده قابل برگشت/تخصیص</small>
                         <span class="value @(remainingToAssign < 0 ? "text-danger" : "")">@($"{remainingToAssign:N0} {cargoUnit}")</span>
                     </div>
                 </div>
@@ -522,28 +575,52 @@
 
 @section Scripts {
     <script>
-        let currentPage = 1;
+        let currentPendingPage = 1;
+        let currentCompletedPage = 1;
         let currentSearch = "";
         let currentStatus = "";
+        let currentPendingSortBy = "date";
+        let currentPendingSortDir = "desc";
+        let currentCompletedSortBy = "date";
+        let currentCompletedSortDir = "desc";
+        let currentPageSize = 10;
 
         document.addEventListener("DOMContentLoaded", function () {
             loadTractorAssignments(@Model.Id);
         });
 
-        function loadTractorAssignments(subHavalehId, page = 1, search = "", statusFilter = "") {
-            currentPage = page;
-            currentSearch = search;
-            currentStatus = statusFilter;
+        function loadTractorAssignments(
+            subHavalehId,
+            pendingPage = currentPendingPage,
+            completedPage = currentCompletedPage,
+            search = currentSearch,
+            statusFilter = currentStatus,
+            pendingSortBy = currentPendingSortBy,
+            pendingSortDir = currentPendingSortDir,
+            completedSortBy = currentCompletedSortBy,
+            completedSortDir = currentCompletedSortDir,
+            pageSize = currentPageSize) {
 
-            let url = `/TractorAssignment/GetAssignmentsList?subHavalehId=${subHavalehId}&page=${page}`;
+            currentPendingPage = pendingPage || 1;
+            currentCompletedPage = completedPage || 1;
+            currentSearch = search || "";
+            currentStatus = statusFilter || "";
+            currentPendingSortBy = pendingSortBy || "date";
+            currentPendingSortDir = pendingSortDir || "desc";
+            currentCompletedSortBy = completedSortBy || "date";
+            currentCompletedSortDir = completedSortDir || "desc";
+            currentPageSize = pageSize || 10;
 
-            if (search) {
-                url += `&search=${encodeURIComponent(search)}`;
-            }
-
-            if (statusFilter) {
-                url += `&statusFilter=${encodeURIComponent(statusFilter)}`;
-            }
+            let url = `/TractorAssignment/GetAssignmentsSplitList?subHavalehId=${subHavalehId}`;
+            url += `&pendingPage=${currentPendingPage}`;
+            url += `&completedPage=${currentCompletedPage}`;
+            url += `&pageSize=${currentPageSize}`;
+            url += `&pendingSortBy=${encodeURIComponent(currentPendingSortBy)}`;
+            url += `&pendingSortDir=${encodeURIComponent(currentPendingSortDir)}`;
+            url += `&completedSortBy=${encodeURIComponent(currentCompletedSortBy)}`;
+            url += `&completedSortDir=${encodeURIComponent(currentCompletedSortDir)}`;
+            url += `&search=${encodeURIComponent(currentSearch)}`;
+            url += `&statusFilter=${encodeURIComponent(currentStatus)}`;
 
             fetch(url)
                 .then(response => {
@@ -555,18 +632,7 @@
                 })
                 .then(html => {
                     document.getElementById("tractorAssignmentsList").innerHTML = html;
-
-                    document.querySelectorAll("#tractorAssignmentsList .page-link").forEach(link => {
-                        link.addEventListener("click", function (e) {
-                            e.preventDefault();
-
-                            const pageNum = parseInt(this.getAttribute("data-page"));
-
-                            if (!isNaN(pageNum)) {
-                                loadTractorAssignments(@Model.Id, pageNum, currentSearch, currentStatus);
-                            }
-                        });
-                    });
+                    bindAssignmentTableEvents();
                 })
                 .catch(error => {
                     console.error("Error loading tractor assignments:", error);
@@ -578,8 +644,141 @@
                 });
         }
 
+        function bindAssignmentTableEvents() {
+            const searchInput = document.getElementById("assignmentSearchInput");
+            const statusSelect = document.getElementById("assignmentStatusFilter");
+            const pageSizeSelect = document.getElementById("assignmentPageSize");
+            const filterButton = document.getElementById("assignmentFilterButton");
+            const clearButton = document.getElementById("assignmentClearButton");
+
+            document.querySelectorAll("#tractorAssignmentsList .page-link[data-page]").forEach(link => {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+
+                    if (this.closest(".page-item")?.classList.contains("disabled")) {
+                        return;
+                    }
+
+                    const pageNum = parseInt(this.getAttribute("data-page"));
+                    const tableName = this.getAttribute("data-table");
+                    if (isNaN(pageNum)) {
+                        return;
+                    }
+
+                    if (tableName === "completed") {
+                        loadTractorAssignments(
+                            @Model.Id,
+                            currentPendingPage,
+                            pageNum,
+                            currentSearch,
+                            currentStatus,
+                            currentPendingSortBy,
+                            currentPendingSortDir,
+                            currentCompletedSortBy,
+                            currentCompletedSortDir,
+                            currentPageSize);
+                    } else {
+                        loadTractorAssignments(
+                            @Model.Id,
+                            pageNum,
+                            currentCompletedPage,
+                            currentSearch,
+                            currentStatus,
+                            currentPendingSortBy,
+                            currentPendingSortDir,
+                            currentCompletedSortBy,
+                            currentCompletedSortDir,
+                            currentPageSize);
+                    }
+                });
+            });
+
+            document.querySelectorAll("#tractorAssignmentsList .assignment-sort-link").forEach(link => {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+
+                    const tableName = this.dataset.table || "pending";
+                    const sortBy = this.dataset.sort || "date";
+                    const sortDir = this.dataset.dir || "desc";
+
+                    if (tableName === "completed") {
+                        loadTractorAssignments(
+                            @Model.Id,
+                            currentPendingPage,
+                            1,
+                            currentSearch,
+                            currentStatus,
+                            currentPendingSortBy,
+                            currentPendingSortDir,
+                            sortBy,
+                            sortDir,
+                            currentPageSize);
+                    } else {
+                        loadTractorAssignments(
+                            @Model.Id,
+                            1,
+                            currentCompletedPage,
+                            currentSearch,
+                            currentStatus,
+                            sortBy,
+                            sortDir,
+                            currentCompletedSortBy,
+                            currentCompletedSortDir,
+                            currentPageSize);
+                    }
+                });
+            });
+
+            if (filterButton) {
+                filterButton.addEventListener("click", function () {
+                    loadTractorAssignments(
+                        @Model.Id,
+                        1,
+                        1,
+                        searchInput ? searchInput.value.trim() : "",
+                        statusSelect ? statusSelect.value : "",
+                        currentPendingSortBy,
+                        currentPendingSortDir,
+                        currentCompletedSortBy,
+                        currentCompletedSortDir,
+                        pageSizeSelect ? parseInt(pageSizeSelect.value) : currentPageSize
+                    );
+                });
+            }
+
+            if (clearButton) {
+                clearButton.addEventListener("click", function () {
+                    if (searchInput) searchInput.value = "";
+                    if (statusSelect) statusSelect.value = "";
+                    if (pageSizeSelect) pageSizeSelect.value = "10";
+                    loadTractorAssignments(@Model.Id, 1, 1, "", "", "date", "desc", "date", "desc", 10);
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (filterButton) filterButton.click();
+                    }
+                });
+            }
+
+            if (statusSelect) {
+                statusSelect.addEventListener("change", function () {
+                    if (filterButton) filterButton.click();
+                });
+            }
+
+            if (pageSizeSelect) {
+                pageSizeSelect.addEventListener("change", function () {
+                    if (filterButton) filterButton.click();
+                });
+            }
+        }
+
         function refreshTractorAssignments() {
-            loadTractorAssignments(@Model.Id, currentPage, currentSearch, currentStatus);
+            loadTractorAssignments(@Model.Id, currentPendingPage, currentCompletedPage);
         }
     </script>
 }

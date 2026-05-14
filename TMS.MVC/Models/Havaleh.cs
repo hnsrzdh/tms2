@@ -9,11 +9,12 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن شماره حواله الزامی است.")]
         [StringLength(100)]
         [Display(Name = "شماره حواله")]
         public string HavalehNumber { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "شماره قرارداد الزامی است.")]
         [StringLength(100)]
         [Display(Name = "شماره قرارداد")]
         public string? ContractNumber { get; set; }
@@ -25,19 +26,23 @@ namespace TMS.MVC.Models
         [Display(Name = "نیازمند اخذ مجوز ورود ناوگان")]
         public bool RequiresFleetEntryPermit { get; set; }
 
+        [Required(ErrorMessage = "انتخاب پیمانکار حمل الزامی است.")]
         [Display(Name = "پیمانکار حمل")]
         public long? TransportContractorLegalEntityId { get; set; }
         public LegalEntity? TransportContractorLegalEntity { get; set; }
 
+        [Required(ErrorMessage = "انتخاب صاحب کالا الزامی است.")]
         [Display(Name = "صاحب کالا")]
         public long? GoodsOwnerLegalEntityId { get; set; }
         public LegalEntity? GoodsOwnerLegalEntity { get; set; }
 
+        [Required(ErrorMessage = "انتخاب مبدا الزامی است.")]
         [Display(Name = "مبدا")]
         public long? OriginPlaceId { get; set; }
 
         public Place? OriginPlace { get; set; }
 
+        [Required(ErrorMessage = "انتخاب محصول الزامی است.")]
         [Display(Name = "محصول")]
         public long? ProductId { get; set; }
         public Product? Product { get; set; }
@@ -53,6 +58,7 @@ namespace TMS.MVC.Models
         [Display(Name = "تاریخ خرید")]
         public DateTime? PurchaseDate { get; set; }
 
+        [Required(ErrorMessage = "تاریخ مجاز بارگیری الزامی است.")]
         [Display(Name = "تاریخ مجاز بارگیری")]
         public DateTime? AllowedLoadingDate { get; set; }
 

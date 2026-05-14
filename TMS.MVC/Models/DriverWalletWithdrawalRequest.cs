@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMS.MVC.Models
@@ -15,7 +15,7 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب راننده پیشنهادی الزامی است.")]
         public int DriverProfileId { get; set; }
         public DriverProfile DriverProfile { get; set; } = null!;
 

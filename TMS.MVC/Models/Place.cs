@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMS.MVC.Models
@@ -31,10 +31,12 @@ namespace TMS.MVC.Models
         [Display(Name = "آدرس / توضیحات")]
         public string? Address { get; set; }
 
+        [Required(ErrorMessage = "عرض جغرافیایی الزامی است")]
         [Display(Name = "عرض جغرافیایی")]
         [Column(TypeName = "decimal(10,7)")]
         public decimal? Latitude { get; set; }
 
+        [Required(ErrorMessage = "طول جغرافیایی الزامی است")]
         [Display(Name = "طول جغرافیایی")]
         [Column(TypeName = "decimal(10,7)")]
         public decimal? Longitude { get; set; }

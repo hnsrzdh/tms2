@@ -461,6 +461,7 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("AccountOwnerName")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -483,6 +484,7 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("ShebaNumber")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -662,14 +664,15 @@ namespace TMS.MVC.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<DateTime?>("AllowedLoadingDate")
+                    b.Property<DateTime>("AllowedLoadingDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ContractNumber")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<long?>("GoodsOwnerLegalEntityId")
+                    b.Property<long>("GoodsOwnerLegalEntityId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("HavalehNumber")
@@ -681,13 +684,13 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<long?>("OriginPlaceId")
+                    b.Property<long>("OriginPlaceId")
                         .HasColumnType("bigint");
 
                     b.Property<decimal?>("ProductAmount")
                         .HasColumnType("decimal(18,3)");
 
-                    b.Property<long?>("ProductId")
+                    b.Property<long>("ProductId")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime?>("PurchaseDate")
@@ -699,7 +702,7 @@ namespace TMS.MVC.Migrations
                     b.Property<decimal?>("ShortagePenaltyPerUnit")
                         .HasColumnType("decimal(18,3)");
 
-                    b.Property<long?>("TransportContractorLegalEntityId")
+                    b.Property<long>("TransportContractorLegalEntityId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Unit")
@@ -769,6 +772,7 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -796,6 +800,7 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("AccountOwnerName")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -823,6 +828,7 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("ShebaNumber")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -1043,10 +1049,10 @@ namespace TMS.MVC.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<decimal?>("Latitude")
+                    b.Property<decimal>("Latitude")
                         .HasColumnType("decimal(10,7)");
 
-                    b.Property<decimal?>("Longitude")
+                    b.Property<decimal>("Longitude")
                         .HasColumnType("decimal(10,7)");
 
                     b.Property<string>("Name")
@@ -1161,41 +1167,41 @@ namespace TMS.MVC.Migrations
                     b.Property<decimal?>("AcceptableWeightLoss")
                         .HasColumnType("decimal(18,4)");
 
-                    b.Property<int?>("AllowedDeliveryTime")
+                    b.Property<int>("AllowedDeliveryTime")
                         .HasColumnType("int");
 
-                    b.Property<int?>("AllowedLoadingTime")
+                    b.Property<int>("AllowedLoadingTime")
                         .HasColumnType("int");
 
                     b.Property<string>("ContractType")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<long?>("DestinationPlaceId")
+                    b.Property<long>("DestinationPlaceId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("DriverPriceCurrency")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<decimal?>("DriverPricePer1000Unit")
+                    b.Property<decimal>("DriverPricePer1000Unit")
                         .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal?>("DriverStopFee")
+                    b.Property<decimal>("DriverStopFee")
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("DriverStopFeeCurrency")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<decimal?>("DriverTip")
+                    b.Property<decimal>("DriverTip")
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("DriverTipCurrency")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<DateTime?>("EndDate")
+                    b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal?>("FixedShortageAmount")
@@ -1205,17 +1211,17 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<decimal?>("GoodsOwnerPricePer1000Unit")
+                    b.Property<decimal>("GoodsOwnerPricePer1000Unit")
                         .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal?>("GoodsOwnerStopFee")
+                    b.Property<decimal>("GoodsOwnerStopFee")
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("GoodsOwnerStopFeeCurrency")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<decimal?>("GoodsOwnerTip")
+                    b.Property<decimal>("GoodsOwnerTip")
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("GoodsOwnerTipCurrency")
@@ -1239,7 +1245,7 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<decimal?>("RequestedCargoAmount")
+                    b.Property<decimal>("RequestedCargoAmount")
                         .HasColumnType("decimal(18,3)");
 
                     b.Property<string>("RequestedCargoAmountType")
@@ -1258,7 +1264,7 @@ namespace TMS.MVC.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<DateTime?>("StartDate")
+                    b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Title")
@@ -1590,7 +1596,7 @@ namespace TMS.MVC.Migrations
                     b.Property<DateTime?>("ArrivalAtOriginDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal?>("AssignedCargoAmount")
+                    b.Property<decimal>("AssignedCargoAmount")
                         .HasColumnType("decimal(18,3)");
 
                     b.Property<DateTime>("AssignmentDate")
@@ -1780,6 +1786,7 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("AccountOwnerName")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -1799,6 +1806,7 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("ShebaNumber")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -2035,7 +2043,6 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Destination")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -2050,7 +2057,6 @@ namespace TMS.MVC.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -2236,22 +2242,26 @@ namespace TMS.MVC.Migrations
                     b.HasOne("TMS.MVC.Models.LegalEntity", "GoodsOwnerLegalEntity")
                         .WithMany()
                         .HasForeignKey("GoodsOwnerLegalEntityId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("TMS.MVC.Models.Place", "OriginPlace")
                         .WithMany()
                         .HasForeignKey("OriginPlaceId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("TMS.MVC.Models.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("TMS.MVC.Models.LegalEntity", "TransportContractorLegalEntity")
                         .WithMany()
                         .HasForeignKey("TransportContractorLegalEntityId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("GoodsOwnerLegalEntity");
 
@@ -2344,7 +2354,8 @@ namespace TMS.MVC.Migrations
                     b.HasOne("TMS.MVC.Models.Place", "DestinationPlace")
                         .WithMany()
                         .HasForeignKey("DestinationPlaceId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("TMS.MVC.Models.Havaleh", "Havaleh")
                         .WithMany("SubHavalehs")

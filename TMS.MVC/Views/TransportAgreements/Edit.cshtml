@@ -1,4 +1,4 @@
-@using TMS.MVC.ViewModels
+﻿@using TMS.MVC.ViewModels
 @model TransportAgreementUpsertViewModel
 
 @{
@@ -74,26 +74,26 @@
         </div>
 
         <div class="card-body">
-            <form asp-action="Create" method="post" id="agreementForm">
+            <form asp-action="Edit" method="post" id="agreementForm">
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
                     <div class="col-md-6">
-                        <label asp-for="Title" class="form-label"></label>
+                        <label asp-for="Title" class="form-label">عنوان <span class="required-star text-danger">*</span></label>
                         <input asp-for="Title" class="form-control form-control-sm" />
-                        <span asp-validation-for="Title" class="text-danger"></span>
+                        <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="CargoOwnerName" class="form-label"></label>
+                        <label asp-for="CargoOwnerName" class="form-label">نام صاحب کالا <span class="required-star text-danger">*</span></label>
                         <input asp-for="CargoOwnerName" class="form-control form-control-sm" />
-                        <span asp-validation-for="CargoOwnerName" class="text-danger"></span>
+                        <span asp-validation-for="CargoOwnerName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Origin" class="form-label"></label>
+                        <label asp-for="Origin" class="form-label">مبدا <span class="required-star text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <input asp-for="Origin" class="form-control" readonly />
                             <button type="button"
@@ -103,7 +103,7 @@
                                 انتخاب
                             </button>
                         </div>
-                        <span asp-validation-for="Origin" class="text-danger"></span>
+                        <span asp-validation-for="Origin" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
@@ -117,11 +117,11 @@
                                 انتخاب
                             </button>
                         </div>
-                        <span asp-validation-for="Destination" class="text-danger"></span>
+                        <span asp-validation-for="Destination" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="ProductName" class="form-label"></label>
+                        <label asp-for="ProductName" class="form-label">محصول <span class="required-star text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <input asp-for="ProductName" class="form-control" readonly />
                             <button type="button"
@@ -131,29 +131,29 @@
                                 انتخاب
                             </button>
                         </div>
-                        <span asp-validation-for="ProductName" class="text-danger"></span>
+                        <span asp-validation-for="ProductName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="Amount" class="form-label"></label>
+                        <label asp-for="Amount" class="form-label">مقدار <span class="required-star text-danger">*</span></label>
                         <input asp-for="Amount" class="form-control form-control-sm js-amount-input" autocomplete="off" />
-                        <span asp-validation-for="Amount" class="text-danger"></span>
+                        <span asp-validation-for="Amount" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="Unit" class="form-label"></label>
+                        <label asp-for="Unit" class="form-label">واحد <span class="required-star text-danger">*</span></label>
                         <select asp-for="Unit" class="form-select form-select-sm">
                             <option value="">انتخاب کنید</option>
                             <option value="لیتر">لیتر</option>
                             <option value="کیلوگرم">کیلوگرم</option>
                         </select>
-                        <span asp-validation-for="Unit" class="text-danger"></span>
+                        <span asp-validation-for="Unit" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
                         <label asp-for="Status" class="form-label"></label>
                         <input asp-for="Status" class="form-control form-control-sm" />
-                        <span asp-validation-for="Status" class="text-danger"></span>
+                        <span asp-validation-for="Status" class="text-danger small"></span>
                     </div>
                 </div>
 

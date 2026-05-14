@@ -12,8 +12,20 @@
         var d = date.Value;
         return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
     }
-}
 
+    string Amount(decimal? value, string? unit = null, string empty = "-")
+    {
+        if (!value.HasValue) return empty;
+        var text = value.Value % 1 == 0 ? value.Value.ToString("N0") : value.Value.ToString("N3");
+        return string.IsNullOrWhiteSpace(unit) ? text : $"{text} {unit}";
+    }
+
+    string AmountDecimal(decimal value, string? unit = null)
+    {
+        var text = value % 1 == 0 ? value.ToString("N0") : value.ToString("N3");
+        return string.IsNullOrWhiteSpace(unit) ? text : $"{text} {unit}";
+    }
+}
 
 <style>
     .havaleh-page-compact .form-label {
@@ -27,12 +39,14 @@
     .havaleh-page-compact .btn,
     .havaleh-page-compact .table,
     .havaleh-page-compact .badge,
-    .havaleh-page-compact .form-check-label {
+    .havaleh-page-compact .form-check-label,
+    .havaleh-page-compact .dropdown-item {
         font-size: 0.82rem;
     }
 
     .havaleh-page-compact .table > :not(caption) > * > * {
         padding: 0.45rem 0.55rem;
+        vertical-align: middle;
     }
 
     .havaleh-page-compact .card-header {
@@ -82,6 +96,45 @@
         font-size: 0.78rem;
         color: #6c757d;
     }
+
+    .havaleh-page-compact .text-tight {
+        line-height: 1.65;
+    }
+
+    .havaleh-page-compact .mini-line {
+        display: block;
+        color: #6c757d;
+        font-size: 0.76rem;
+        margin-top: 0.15rem;
+    }
+
+    .havaleh-page-compact .amount-cell {
+        min-width: 185px;
+    }
+
+    .havaleh-page-compact .status-cell {
+        min-width: 190px;
+    }
+
+    .havaleh-page-compact .party-cell {
+        min-width: 190px;
+        max-width: 240px;
+    }
+
+    .havaleh-page-compact .route-cell {
+        min-width: 170px;
+        max-width: 230px;
+    }
+
+    .havaleh-page-compact .progress {
+        height: 0.45rem;
+        background-color: #eef1f4;
+    }
+
+    .havaleh-page-compact .dropdown-menu {
+        min-width: 10rem;
+        text-align: right;
+    }
 </style>
 
 <div class="container-fluid havaleh-page-compact">
@@ -90,8 +143,8 @@
             <div class="col-sm-6 col-12"><h4>@ViewData["Title"]</h4></div>
             <div class="col-sm-6 col-12">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item active">داشبورد</li>
-                    <li class="breadcrumb-item">حواله‌ها</li>
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">داشبورد</a></li>
+                    <li class="breadcrumb-item active">حواله‌ها</li>
                 </ol>
             </div>
         </div>
@@ -103,13 +156,16 @@
     {
         <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning py-2 small">@TempData["Warning"]</div>
+    }
 
     <div class="card">
-
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h6 class="mb-0">حواله‌ها</h6>
-                <small class="text-muted small-muted">مدیریت حواله‌ها، پیمانکار حمل، صاحب کالا، مبدا، محصول و مقدار محموله</small>
+                <h6 class="mb-0">حواله‌های باز</h6>
+                <small class="text-muted small-muted">فقط حواله‌هایی که هنوز کاملاً تخلیه و تکمیل نشده‌اند در این جدول نمایش داده می‌شوند.</small>
             </div>
             <div class="d-flex gap-2">
                 <a asp-action="Create" class="btn btn-primary btn-sm px-3">تعریف حواله جدید</a>
@@ -124,7 +180,7 @@
                            placeholder="جستجو بر اساس شماره حواله، قرارداد، نوع، شرکت، شهر یا محصول" />
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">تعداد</label>
+                    <label class="form-label">تعداد حواله‌های باز</label>
                     <select name="pageSize" class="form-select form-select-sm">
                         <option value="10" selected="@(Model.PageSize == 10)">10</option>
                         <option value="20" selected="@(Model.PageSize == 20)">20</option>
@@ -137,19 +193,39 @@
                 </div>
             </form>
 
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <div class="summary-box">
+                        <small class="text-muted">حواله‌های باز</small>
+                        <span class="value">@Model.TotalItems مورد</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="summary-box">
+                        <small class="text-muted">حواله‌های تکمیل‌شده</small>
+                        <span class="value">@Model.CompletedTotalItems مورد</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="summary-box">
+                        <small class="text-muted">معیار تکمیل</small>
+                        <span class="value small">تمام مقدار حواله در ریزحواله‌ها تعریف شده و کل مقدار در مقصد تخلیه شده باشد.</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>شماره حواله</th>
-                            <th>شماره قرارداد</th>
-                            <th>پیمانکار حمل</th>
-                            <th>صاحب کالا</th>
-                            <th>مبدا</th>
-                            <th>محصول</th>
-                            <th>مقدار</th>
-                            <th style="width:200px">عملیات</th>
+                            <th>حواله</th>
+                            <th class="party-cell">طرفین</th>
+                            <th class="route-cell">مبدا / محصول</th>
+                            <th class="amount-cell">مقدار و ریزحواله</th>
+                            <th class="status-cell">وضعیت اجرا</th>
+                            <th>تاریخ‌ها</th>
+                            <th style="width:95px">عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -158,28 +234,75 @@
                             var rowNo = Model.RowNumberStart;
                             foreach (var item in Model.Items)
                             {
+                                var remainingClass = item.RemainingSubHavalehAmount <= 0 ? "text-success" : "text-warning";
                                 <tr>
                                     <td>@rowNo</td>
-                                    <td>@item.HavalehNumber</td>
-                                    <td>@item.ContractNumber</td>
-                                    <td>@item.TransportContractorName</td>
-                                    <td>@item.GoodsOwnerName</td>
-                                    <td>@item.OriginCityText</td>
-                                    <td>@item.ProductName</td>
-                                    <td>@(item.ProductAmount.HasValue ? $"{item.ProductAmount:N0} {item.Unit}" : "-")</td>
+                                    <td class="text-tight">
+                                        <strong>@item.HavalehNumber</strong>
+                                        <span class="mini-line">قرارداد: @(string.IsNullOrWhiteSpace(item.ContractNumber) ? "-" : item.ContractNumber)</span>
+                                    </td>
+                                    <td class="party-cell text-tight">
+                                        <span class="d-block">پیمانکار: @(item.TransportContractorName ?? "-")</span>
+                                        <span class="mini-line">صاحب کالا: @(item.GoodsOwnerName ?? "-")</span>
+                                    </td>
+                                    <td class="route-cell text-tight">
+                                        <span class="d-block">مبدا: @(item.OriginCityText ?? "-")</span>
+                                        <span class="mini-line">محصول: @(item.ProductName ?? "-")</span>
+                                    </td>
+                                    <td class="amount-cell text-tight">
+                                        <span class="d-block">کل: @Amount(item.ProductAmount, item.Unit)</span>
+                                        <span class="mini-line">ریزحواله: @AmountDecimal(item.DefinedSubHavalehAmount, item.Unit) / @item.SubHavalehCount عدد</span>
+                                        <span class="mini-line @remainingClass">باقی‌مانده برای تعریف: @AmountDecimal(item.RemainingSubHavalehAmount, item.Unit)</span>
+                                    </td>
+                                    <td class="status-cell text-tight">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="badge bg-info">@item.CompletionPercent.ToString("N0")%</span>
+                                            <span class="mini-line mt-0">تخلیه: @AmountDecimal(item.UnloadedAmount, item.Unit)</span>
+                                        </div>
+                                        <div class="progress mb-1">
+                                            <div class="progress-bar" role="progressbar" style="width:@item.CompletionPercent.ToString("0", CultureInfo.InvariantCulture)%"></div>
+                                        </div>
+                                        <span class="mini-line">تخصیص: @AmountDecimal(item.AssignedAmount, item.Unit) / @item.ActiveAssignmentCount ناوگان</span>
+                                        <span class="mini-line">بارگیری: @AmountDecimal(item.LoadedAmount, item.Unit)</span>
+                                    </td>
+                                    <td class="text-tight">
+                                        <span class="d-block">خرید: @ToJalali(item.PurchaseDate)</span>
+                                        <span class="mini-line">مجاز بارگیری: @ToJalali(item.AllowedLoadingDate)</span>
+                                    </td>
                                     <td>
-                                        <div class="d-flex gap-1 flex-wrap">
-                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm">ویرایش</a>
+                                        <div class="btn-group" dir="rtl">
                                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a>
-                                            <button type="button"
-                                                    class="btn btn-outline-danger btn-sm"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#deleteModal_@item.Id">
-                                                حذف
+                                            <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="visually-hidden">عملیات</span>
                                             </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a asp-action="Details" asp-route-id="@item.Id" class="dropdown-item">جزئیات حواله</a></li>
+                                                @if (item.CanEdit)
+                                                {
+                                                    <li><a asp-action="Edit" asp-route-id="@item.Id" class="dropdown-item">ویرایش</a></li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">ویرایش غیرفعال</span></li>
+                                                }
+                                                <li><a asp-action="AddSubHavaleh" asp-route-havalehId="@item.Id" class="dropdown-item">افزودن ریزحواله</a></li>
+                                                <li><hr class="dropdown-divider" /></li>
+                                                @if (item.CanDelete)
+                                                {
+                                                    <li>
+                                                        <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal_Open_@item.Id">
+                                                            حذف
+                                                        </button>
+                                                    </li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">حذف غیرفعال</span></li>
+                                                }
+                                            </ul>
                                         </div>
 
-                                        <div class="modal fade" id="deleteModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                        <div class="modal fade" id="deleteModal_Open_@item.Id" tabindex="-1" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content">
                                                     <form asp-action="Delete" method="post">
@@ -211,7 +334,7 @@
                         }
                         else
                         {
-                            <tr><td colspan="14" class="text-center py-4">موردی یافت نشد.</td></tr>
+                            <tr><td colspan="8" class="text-center py-4">حواله باز یافت نشد.</td></tr>
                         }
                     </tbody>
                 </table>
@@ -220,13 +343,13 @@
             @if (Model.TotalPages > 1)
             {
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
-                    <div class="text-muted small">صفحه @Model.Page از @Model.TotalPages - تعداد کل: @Model.TotalItems</div>
+                    <div class="text-muted small">صفحه @Model.Page از @Model.TotalPages - تعداد حواله‌های باز: @Model.TotalItems</div>
                     <nav>
                         <ul class="pagination pagination-primary">
-                            <li class="page-item @(Model.Page == 1 ?"disabled" : "")">
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
                                 <a class="page-link" asp-route-page="1" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">اول</a>
                             </li>
-                            <li class="page-item @(Model.Page == 1 ?"disabled" : "")">
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
                                 <a class="page-link" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">قبلی</a>
                             </li>
                             @{
@@ -235,21 +358,144 @@
                             }
                             @for (int i = startPage; i <= endPage; i++)
                             {
-                                <li class="page-item @(i == Model.Page ?"active" : "")">
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
                                     <a class="page-link" asp-route-page="@i" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">@i</a>
                                 </li>
                             }
-                            <li class="page-item @(Model.Page == Model.TotalPages ?"disabled" : "")">
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
                                 <a class="page-link" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">بعدی</a>
                             </li>
-                            <li class="page-item @(Model.Page == Model.TotalPages ?"disabled" : "")">
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
                                 <a class="page-link" asp-route-page="@Model.TotalPages" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">آخر</a>
                             </li>
                         </ul>
                     </nav>
                 </div>
             }
-       
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">حواله‌های تکمیل‌شده</h6>
+                <small class="text-muted small-muted">حواله‌هایی که مقدار کامل آن‌ها تعریف و در مقصد تخلیه شده است.</small>
+            </div>
+            <span class="badge bg-success">@Model.CompletedTotalItems مورد</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>حواله</th>
+                            <th class="party-cell">طرفین</th>
+                            <th class="route-cell">مبدا / محصول</th>
+                            <th class="amount-cell">مقدار</th>
+                            <th class="status-cell">خلاصه تکمیل</th>
+                            <th style="width:95px">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.CompletedItems.Any())
+                        {
+                            var doneRowNo = 1;
+                            foreach (var item in Model.CompletedItems)
+                            {
+                                <tr>
+                                    <td>@doneRowNo</td>
+                                    <td class="text-tight">
+                                        <strong>@item.HavalehNumber</strong>
+                                        <span class="mini-line">قرارداد: @(string.IsNullOrWhiteSpace(item.ContractNumber) ? "-" : item.ContractNumber)</span>
+                                    </td>
+                                    <td class="party-cell text-tight">
+                                        <span class="d-block">پیمانکار: @(item.TransportContractorName ?? "-")</span>
+                                        <span class="mini-line">صاحب کالا: @(item.GoodsOwnerName ?? "-")</span>
+                                    </td>
+                                    <td class="route-cell text-tight">
+                                        <span class="d-block">مبدا: @(item.OriginCityText ?? "-")</span>
+                                        <span class="mini-line">محصول: @(item.ProductName ?? "-")</span>
+                                    </td>
+                                    <td class="amount-cell text-tight">
+                                        <span class="d-block">کل: @Amount(item.ProductAmount, item.Unit)</span>
+                                        <span class="mini-line">ریزحواله: @AmountDecimal(item.DefinedSubHavalehAmount, item.Unit) / @item.SubHavalehCount عدد</span>
+                                        <span class="mini-line">تخلیه‌شده: @AmountDecimal(item.UnloadedAmount, item.Unit)</span>
+                                    </td>
+                                    <td class="status-cell text-tight">
+                                        <span class="badge bg-success">تکمیل‌شده</span>
+                                        <span class="mini-line">ناوگان فعال/انجام‌شده: @item.ActiveAssignmentCount</span>
+                                        <span class="mini-line">آخرین تاریخ مجاز بارگیری: @ToJalali(item.AllowedLoadingDate)</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" dir="rtl">
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm">جزئیات</a>
+                                            <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="visually-hidden">عملیات</span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a asp-action="Details" asp-route-id="@item.Id" class="dropdown-item">جزئیات حواله</a></li>
+                                                @if (item.CanEdit)
+                                                {
+                                                    <li><a asp-action="Edit" asp-route-id="@item.Id" class="dropdown-item">ویرایش</a></li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">ویرایش غیرفعال</span></li>
+                                                }
+                                                <li><hr class="dropdown-divider" /></li>
+                                                @if (item.CanDelete)
+                                                {
+                                                    <li>
+                                                        <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal_Done_@item.Id">
+                                                            حذف
+                                                        </button>
+                                                    </li>
+                                                }
+                                                else
+                                                {
+                                                    <li><span class="dropdown-item disabled text-muted" title="@item.LockReason">حذف غیرفعال</span></li>
+                                                }
+                                            </ul>
+                                        </div>
+
+                                        <div class="modal fade" id="deleteModal_Done_@item.Id" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <form asp-action="Delete" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@item.Id" />
+
+                                                        <div class="modal-header py-2">
+                                                            <h6 class="modal-title">تایید حذف حواله</h6>
+                                                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+                                                        </div>
+
+                                                        <div class="modal-body small">
+                                                            <p class="mb-0">آیا از حذف این حواله تکمیل‌شده مطمئن هستید؟</p>
+                                                            <div class="mt-2 text-muted">شماره حواله: @item.HavalehNumber</div>
+                                                        </div>
+
+                                                        <div class="modal-footer py-2 gap-2">
+                                                            <button type="submit" class="btn btn-danger btn-sm px-3">حذف</button>
+                                                            <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">انصراف</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                doneRowNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="7" class="text-center py-4">حواله تکمیل‌شده‌ای یافت نشد.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

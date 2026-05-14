@@ -1,0 +1,538 @@
+﻿@using System.Globalization
+@using TMS.MVC.Models
+@using TMS.MVC.ViewModels
+@model TMS.MVC.ViewModels.TractorAssignmentIndexViewModel
+
+@{
+    string ToJalali(DateTime? date)
+    {
+        if (!date.HasValue) return "-";
+        var pc = new PersianCalendar();
+        var d = date.Value;
+        return $"{pc.GetYear(d):0000}/{pc.GetMonth(d):00}/{pc.GetDayOfMonth(d):00}";
+    }
+
+    string Amount(decimal? amount) => amount.HasValue ? amount.Value.ToString("N0") : "-";
+
+    string GetStatusDisplay(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "تخصیص داده شده",
+        AssignmentStatus.ArrivedAtOrigin => "رسیده به مبدا",
+        AssignmentStatus.Loading => "در حال بارگیری",
+        AssignmentStatus.Loaded => "بارگیری شده",
+        AssignmentStatus.InTransit => "در راه",
+        AssignmentStatus.ArrivedAtDestination => "رسیده به مقصد",
+        AssignmentStatus.Unloading => "در حال تخلیه",
+        AssignmentStatus.Unloaded => "تخلیه شده",
+        AssignmentStatus.Completed => "تکمیل شده",
+        AssignmentStatus.CancellationRequested => "درخواست لغو",
+        AssignmentStatus.Cancelled => "لغو شده",
+        _ => "نامشخص"
+    };
+
+    string GetStatusBadgeClass(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "bg-secondary",
+        AssignmentStatus.ArrivedAtOrigin => "bg-info text-dark",
+        AssignmentStatus.Loading => "bg-info text-dark",
+        AssignmentStatus.Loaded => "bg-primary",
+        AssignmentStatus.InTransit => "bg-primary",
+        AssignmentStatus.ArrivedAtDestination => "bg-success",
+        AssignmentStatus.Unloading => "bg-warning text-dark",
+        AssignmentStatus.Unloaded => "bg-warning text-dark",
+        AssignmentStatus.Completed => "bg-success",
+        AssignmentStatus.CancellationRequested => "bg-warning text-dark",
+        AssignmentStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    string SortIcon(string column, string? tableSortBy, string? tableSortDir)
+    {
+        if (!string.Equals(tableSortBy, column, StringComparison.OrdinalIgnoreCase)) return "↕";
+        return string.Equals(tableSortDir, "asc", StringComparison.OrdinalIgnoreCase) ? "↑" : "↓";
+    }
+
+    string NextSortDir(string column, string? tableSortBy, string? tableSortDir)
+    {
+        if (!string.Equals(tableSortBy, column, StringComparison.OrdinalIgnoreCase)) return "asc";
+        return string.Equals(tableSortDir, "asc", StringComparison.OrdinalIgnoreCase) ? "desc" : "asc";
+    }
+
+    decimal Percent(decimal? value, decimal? total)
+    {
+        var denominator = total ?? 0;
+        if (denominator <= 0) return 0;
+        var result = ((value ?? 0) / denominator) * 100;
+        if (result < 0) return 0;
+        if (result > 100) return 100;
+        return result;
+    }
+
+    int StageNo(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => 1,
+        AssignmentStatus.ArrivedAtOrigin => 2,
+        AssignmentStatus.Loading => 3,
+        AssignmentStatus.Loaded => 3,
+        AssignmentStatus.InTransit => 4,
+        AssignmentStatus.ArrivedAtDestination => 5,
+        AssignmentStatus.Unloading => 5,
+        AssignmentStatus.Unloaded => 6,
+        AssignmentStatus.Completed => 6,
+        AssignmentStatus.CancellationRequested => 1,
+        AssignmentStatus.Cancelled => 6,
+        _ => 1
+    };
+
+    string StageLabel(AssignmentStatus status) => status switch
+    {
+        AssignmentStatus.Assigned => "ثبت تخصیص",
+        AssignmentStatus.ArrivedAtOrigin => "ورود به مبدا",
+        AssignmentStatus.Loading => "بارگیری",
+        AssignmentStatus.Loaded => "بارگیری",
+        AssignmentStatus.InTransit => "حرکت به مقصد",
+        AssignmentStatus.ArrivedAtDestination => "ورود به مقصد",
+        AssignmentStatus.Unloading => "تخلیه",
+        AssignmentStatus.Unloaded => "تخلیه کامل",
+        AssignmentStatus.Completed => "تکمیل نهایی",
+        AssignmentStatus.CancellationRequested => "درخواست لغو",
+        AssignmentStatus.Cancelled => "لغو و بسته شده",
+        _ => "در حال بررسی"
+    };
+
+    decimal StagePercent(AssignmentStatus status)
+    {
+        var stage = StageNo(status);
+        if (stage <= 0) return 0;
+        return Math.Min(100, Math.Max(0, (stage / 6m) * 100m));
+    }
+
+    bool IsUnloadedForClose(TractorAssignmentItemViewModel item) =>
+        item.Status == AssignmentStatus.Unloaded ||
+        item.Status == AssignmentStatus.Completed ||
+        item.UnloadingEndDate.HasValue ||
+        (item.UnloadedAmount.HasValue && item.AssignedCargoAmount.HasValue && item.AssignedCargoAmount.Value > 0 && item.UnloadedAmount.Value >= item.AssignedCargoAmount.Value);
+
+    int CloseStageNo(TractorAssignmentItemViewModel item)
+    {
+        if (item.Status == AssignmentStatus.Cancelled || item.IsClosedGroup) return 4;
+        if (IsUnloadedForClose(item) && item.AreDocumentsApproved) return 3;
+        if (IsUnloadedForClose(item)) return 2;
+        return 1;
+    }
+
+    string CloseStageLabel(TractorAssignmentItemViewModel item)
+    {
+        if (item.Status == AssignmentStatus.Cancelled) return "لغو و بسته شده";
+        if (item.IsClosedGroup) return "بسته شده";
+        if (IsUnloadedForClose(item) && item.AreDocumentsApproved) return "در انتظار بستن پرونده";
+        if (IsUnloadedForClose(item)) return "در انتظار تایید مدارک";
+        return StageLabel(item.Status);
+    }
+
+    decimal CloseStagePercent(TractorAssignmentItemViewModel item) =>
+        Math.Min(100, Math.Max(0, (CloseStageNo(item) / 4m) * 100m));
+
+    var requestedAmount = Model.RequestedCargoAmount ?? 0;
+    var assignProgress = Percent(Model.TotalAssignedAmount, requestedAmount);
+    var loadProgressTotal = Percent(Model.TotalLoadedAmount, requestedAmount);
+    var unloadProgressTotal = Percent(Model.TotalUnloadedAmount, requestedAmount);
+    var assignProgressWidth = assignProgress.ToString("0", CultureInfo.InvariantCulture);
+    var loadProgressTotalWidth = loadProgressTotal.ToString("0", CultureInfo.InvariantCulture);
+    var unloadProgressTotalWidth = unloadProgressTotal.ToString("0", CultureInfo.InvariantCulture);
+
+    var pendingStartRow = Model.PendingTotalItems == 0 ? 0 : Model.PendingRowNumberStart;
+    var pendingEndRow = Model.PendingTotalItems == 0 ? 0 : Math.Min(Model.PendingPage * Model.PageSize, Model.PendingTotalItems);
+    var completedStartRow = Model.CompletedTotalItems == 0 ? 0 : Model.CompletedRowNumberStart;
+    var completedEndRow = Model.CompletedTotalItems == 0 ? 0 : Math.Min(Model.CompletedPage * Model.PageSize, Model.CompletedTotalItems);
+}
+
+<style>
+    .assignment-split-list .filter-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .75rem;
+        padding: .75rem;
+        background: #f8f9fa;
+    }
+
+    .assignment-split-list .mini-summary {
+        border: 1px solid #e5e7eb;
+        border-radius: .75rem;
+        padding: .6rem .7rem;
+        background: #fff;
+        height: 100%;
+    }
+
+    .assignment-split-list .mini-summary small {
+        display: block;
+        color: #6c757d;
+        font-size: .74rem;
+    }
+
+    .assignment-split-list .mini-summary strong {
+        display: block;
+        margin-top: .2rem;
+        font-size: .86rem;
+    }
+
+    .assignment-split-list .progress {
+        height: .42rem;
+        border-radius: 999px;
+    }
+
+    .assignment-split-list .stage-progress {
+        height: .55rem;
+    }
+
+    .assignment-split-list .assignment-meta {
+        line-height: 1.65;
+    }
+
+    .assignment-split-list .table td,
+    .assignment-split-list .table th {
+        vertical-align: middle;
+    }
+
+    .assignment-split-list .status-cell .badge {
+        min-width: 82px;
+    }
+
+    .assignment-split-list .amount-cell {
+        min-width: 180px;
+    }
+
+    .assignment-split-list .progress-cell {
+        min-width: 190px;
+    }
+</style>
+
+<div class="assignment-split-list">
+    <div class="filter-box mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">جستجو</label>
+                <input type="text"
+                       id="assignmentSearchInput"
+                       value="@Model.Search"
+                       class="form-control form-control-sm"
+                       placeholder="پلاک، راننده، نوع کشنده، بارنامه یا توضیحات..." />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">وضعیت</label>
+                <select id="assignmentStatusFilter" class="form-select form-select-sm">
+                    <option value="">همه وضعیت‌ها</option>
+                    <option value="Assigned" selected="@(Model.StatusFilter == "Assigned")">تخصیص داده شده</option>
+                    <option value="ArrivedAtOrigin" selected="@(Model.StatusFilter == "ArrivedAtOrigin")">رسیده به مبدا</option>
+                    <option value="Loading" selected="@(Model.StatusFilter == "Loading")">در حال بارگیری</option>
+                    <option value="Loaded" selected="@(Model.StatusFilter == "Loaded")">بارگیری شده</option>
+                    <option value="InTransit" selected="@(Model.StatusFilter == "InTransit")">در راه</option>
+                    <option value="ArrivedAtDestination" selected="@(Model.StatusFilter == "ArrivedAtDestination")">رسیده به مقصد</option>
+                    <option value="Unloading" selected="@(Model.StatusFilter == "Unloading")">در حال تخلیه</option>
+                    <option value="Unloaded" selected="@(Model.StatusFilter == "Unloaded")">تخلیه شده</option>
+                    <option value="Completed" selected="@(Model.StatusFilter == "Completed")">تکمیل شده</option>
+                    <option value="CancellationRequested" selected="@(Model.StatusFilter == "CancellationRequested")">درخواست لغو</option>
+                    <option value="Cancelled" selected="@(Model.StatusFilter == "Cancelled")">لغو شده</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">تعداد در صفحه</label>
+                <select id="assignmentPageSize" class="form-select form-select-sm">
+                    <option value="5" selected="@(Model.PageSize == 5)">5 رکورد</option>
+                    <option value="10" selected="@(Model.PageSize == 10)">10 رکورد</option>
+                    <option value="20" selected="@(Model.PageSize == 20)">20 رکورد</option>
+                    <option value="50" selected="@(Model.PageSize == 50)">50 رکورد</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button type="button" id="assignmentFilterButton" class="btn btn-info btn-sm flex-fill">اعمال فیلتر</button>
+                <button type="button" id="assignmentClearButton" class="btn btn-outline-secondary btn-sm flex-fill">پاک کردن</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-2 col-6">
+            <div class="mini-summary">
+                <small>کل نتایج فیلترشده</small>
+                <strong>@Model.FilteredTotalItems</strong>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="mini-summary">
+                <small>تکمیل‌نشده</small>
+                <strong class="text-primary">@Model.PendingTotalItems</strong>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="mini-summary">
+                <small>بسته‌شده / لغوشده</small>
+                <strong class="text-success">@Model.CompletedTotalItems</strong>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="mini-summary">
+                <small>تخصیص فعال</small>
+                <strong>@Model.ActiveAssignmentsCount</strong>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="mini-summary">
+                <small>لغوشده</small>
+                <strong class="text-danger">@Model.CancelledAssignmentsCount</strong>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="mini-summary">
+                <small>مانده تخلیه</small>
+                <strong class="@(Model.RemainingToUnload < 0 ? "text-danger" : "")">@Amount(Model.RemainingToUnload)</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-4">
+            <div class="mini-summary">
+                <small>پیشرفت تخصیص از مقدار زیرحواله</small>
+                <strong>@Amount(Model.TotalAssignedAmount) از @Amount(Model.RequestedCargoAmount) (@assignProgress.ToString("N0")%)</strong>
+                <div class="progress mt-2"><div class="progress-bar" style="width:@assignProgressWidth%"></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mini-summary">
+                <small>پیشرفت بارگیری</small>
+                <strong>@Amount(Model.TotalLoadedAmount) از @Amount(Model.RequestedCargoAmount) (@loadProgressTotal.ToString("N0")%)</strong>
+                <div class="progress mt-2"><div class="progress-bar" style="width:@loadProgressTotalWidth%"></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mini-summary">
+                <small>پیشرفت تخلیه</small>
+                <strong>@Amount(Model.TotalUnloadedAmount) از @Amount(Model.RequestedCargoAmount) (@unloadProgressTotal.ToString("N0")%)</strong>
+                <div class="progress mt-2"><div class="progress-bar" style="width:@unloadProgressTotalWidth%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div>
+            <h6 class="mb-0">تخصیص‌های باز / در جریان</h6>
+            <small class="text-muted">نمایش @pendingStartRow تا @pendingEndRow از @Model.PendingTotalItems تخصیص باز</small>
+        </div>
+    </div>
+
+    <div class="table-responsive mb-3">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:52px;">#</th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="pending" data-sort="plate" data-dir='@NextSortDir("plate", Model.PendingSortBy, Model.PendingSortDir)'>کشنده <span class="text-muted">@SortIcon("plate", Model.PendingSortBy, Model.PendingSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="pending" data-sort="driver" data-dir='@NextSortDir("driver", Model.PendingSortBy, Model.PendingSortDir)'>راننده <span class="text-muted">@SortIcon("driver", Model.PendingSortBy, Model.PendingSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="pending" data-sort="status" data-dir='@NextSortDir("status", Model.PendingSortBy, Model.PendingSortDir)'>وضعیت <span class="text-muted">@SortIcon("status", Model.PendingSortBy, Model.PendingSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="pending" data-sort="date" data-dir='@NextSortDir("date", Model.PendingSortBy, Model.PendingSortDir)'>تاریخ‌ها <span class="text-muted">@SortIcon("date", Model.PendingSortBy, Model.PendingSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="pending" data-sort="assigned" data-dir='@NextSortDir("assigned", Model.PendingSortBy, Model.PendingSortDir)'>مقادیر <span class="text-muted">@SortIcon("assigned", Model.PendingSortBy, Model.PendingSortDir)</span></a></th>
+                    <th>روند</th>
+                    <th style="width:105px;">عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.PendingItems.Any())
+                {
+                    var rowNo = Model.PendingRowNumberStart;
+                    foreach (var item in Model.PendingItems)
+                    {
+                        var loadProgress = Percent(item.LoadedAmount, item.AssignedCargoAmount);
+                        var unloadProgress = Percent(item.UnloadedAmount, item.AssignedCargoAmount);
+                        var stageProgress = CloseStagePercent(item);
+                        var stageProgressWidth = stageProgress.ToString("0", CultureInfo.InvariantCulture);
+                        var stage = CloseStageNo(item);
+                        var closeStageLabel = CloseStageLabel(item);
+                        <tr class="@(item.Status == AssignmentStatus.Cancelled ? "table-light text-muted" : "")">
+                            <td>@rowNo</td>
+                            <td class="assignment-meta">
+                                <strong>@item.PolicePlateNumber</strong>
+                                <span class="d-block small text-muted">@(item.TractorType ?? "نوع نامشخص")</span>
+                                @if (!string.IsNullOrWhiteSpace(item.LoadingBillOfLadingNumber))
+                                {
+                                    <span class="d-block small text-muted">بارنامه: @item.LoadingBillOfLadingNumber</span>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(item.DriverName) ? "-" : item.DriverName)</td>
+                            <td class="status-cell">
+                                <span class="badge @GetStatusBadgeClass(item.Status)">@GetStatusDisplay(item.Status)</span>
+                            </td>
+                            <td class="small text-nowrap assignment-meta">
+                                <span class="d-block">تخصیص: @ToJalali(item.AssignmentDate)</span>
+                                <span class="d-block text-muted">مبدا: @ToJalali(item.ArrivalAtOriginDate)</span>
+                                <span class="d-block text-muted">بارگیری: @ToJalali(item.LoadingEndDate)</span>
+                                <span class="d-block text-muted">مقصد: @ToJalali(item.ArrivalAtDestinationDate)</span>
+                            </td>
+                            <td class="amount-cell">
+                                <strong>@Amount(item.AssignedCargoAmount)</strong>
+                                <span class="small text-muted"> تخصیص</span>
+                                <div class="small mt-1">بارگیری: @Amount(item.LoadedAmount) (@loadProgress.ToString("N0")%)</div>
+                                <div class="small">تخلیه: @Amount(item.UnloadedAmount) (@unloadProgress.ToString("N0")%)</div>
+                                <div class="small text-muted mt-1">ظرفیت: @(item.IsTruckCapacityFull ? "کامل" : "دارای ظرفیت آزاد")</div>
+                            </td>
+                            <td class="progress-cell">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>@closeStageLabel</span>
+                                    <span>مرحله @(stage <= 0 ? 0 : stage) از 4</span>
+                                </div>
+                                <div class="progress stage-progress mb-1"><div class="progress-bar" style="width:@stageProgressWidth%"></div></div>
+                                <div class="small @(item.AreDocumentsApproved ? "text-success" : "text-warning")">مدارک: @(item.AreDocumentsApproved ? "تایید شده" : "در انتظار")</div>
+                                <div class="small text-muted">آیتم @rowNo از @Model.PendingTotalItems تخصیص باز</div>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary">جزئیات</a>
+                                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"><span class="visually-hidden">عملیات</span></button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.Id" class="dropdown-item">جزئیات تخصیص</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        rowNo++;
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">هیچ تخصیص باز‌ای با فیلترهای فعلی پیدا نشد.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.PendingTotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div class="text-muted small">صفحه @Model.PendingPage از @Model.PendingTotalPages</div>
+            <nav>
+                <ul class="pagination pagination-primary mb-0">
+                    <li class="page-item @(Model.PendingPage == 1 ? "disabled" : "")"><a class="page-link" href="#" data-table="pending" data-page="1">اول</a></li>
+                    <li class="page-item @(Model.PendingPage == 1 ? "disabled" : "")"><a class="page-link" href="#" data-table="pending" data-page="@(Model.PendingPage - 1)">قبلی</a></li>
+                    @{ var ps = Math.Max(1, Model.PendingPage - 2); var pe = Math.Min(Model.PendingTotalPages, Model.PendingPage + 2); }
+                    @for (int i = ps; i <= pe; i++)
+                    {
+                        <li class="page-item @(i == Model.PendingPage ? "active" : "")"><a class="page-link" href="#" data-table="pending" data-page="@i">@i</a></li>
+                    }
+                    <li class="page-item @(Model.PendingPage == Model.PendingTotalPages ? "disabled" : "")"><a class="page-link" href="#" data-table="pending" data-page="@(Model.PendingPage + 1)">بعدی</a></li>
+                    <li class="page-item @(Model.PendingPage == Model.PendingTotalPages ? "disabled" : "")"><a class="page-link" href="#" data-table="pending" data-page="@Model.PendingTotalPages">آخر</a></li>
+                </ul>
+            </nav>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4 mb-2">
+        <div>
+            <h6 class="mb-0">تخصیص‌های بسته‌شده</h6>
+            <small class="text-muted">فقط موارد لغوشده یا مواردی که تخلیه، تایید مدارک و بستن پرونده را کامل کرده‌اند</small>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:52px;">#</th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="completed" data-sort="plate" data-dir='@NextSortDir("plate", Model.CompletedSortBy, Model.CompletedSortDir)'>کشنده <span class="text-muted">@SortIcon("plate", Model.CompletedSortBy, Model.CompletedSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="completed" data-sort="driver" data-dir='@NextSortDir("driver", Model.CompletedSortBy, Model.CompletedSortDir)'>راننده <span class="text-muted">@SortIcon("driver", Model.CompletedSortBy, Model.CompletedSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="completed" data-sort="status" data-dir='@NextSortDir("status", Model.CompletedSortBy, Model.CompletedSortDir)'>وضعیت <span class="text-muted">@SortIcon("status", Model.CompletedSortBy, Model.CompletedSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="completed" data-sort="date" data-dir='@NextSortDir("date", Model.CompletedSortBy, Model.CompletedSortDir)'>تاریخ‌ها <span class="text-muted">@SortIcon("date", Model.CompletedSortBy, Model.CompletedSortDir)</span></a></th>
+                    <th><a href="#" class="assignment-sort-link text-decoration-none" data-table="completed" data-sort="assigned" data-dir='@NextSortDir("assigned", Model.CompletedSortBy, Model.CompletedSortDir)'>مقادیر <span class="text-muted">@SortIcon("assigned", Model.CompletedSortBy, Model.CompletedSortDir)</span></a></th>
+                    <th>روند</th>
+                    <th style="width:105px;">عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.CompletedItems.Any())
+                {
+                    var rowNo = Model.CompletedRowNumberStart;
+                    foreach (var item in Model.CompletedItems)
+                    {
+                        var loadProgress = Percent(item.LoadedAmount, item.AssignedCargoAmount);
+                        var unloadProgress = Percent(item.UnloadedAmount, item.AssignedCargoAmount);
+                        var stageProgress = CloseStagePercent(item);
+                        var stageProgressWidth = stageProgress.ToString("0", CultureInfo.InvariantCulture);
+                        var stage = CloseStageNo(item);
+                        var closeStageLabel = CloseStageLabel(item);
+                        <tr class="@(item.Status == AssignmentStatus.Cancelled ? "table-light text-muted" : "")">
+                            <td>@rowNo</td>
+                            <td class="assignment-meta">
+                                <strong>@item.PolicePlateNumber</strong>
+                                <span class="d-block small text-muted">@(item.TractorType ?? "نوع نامشخص")</span>
+                                @if (!string.IsNullOrWhiteSpace(item.LoadingBillOfLadingNumber))
+                                {
+                                    <span class="d-block small text-muted">بارنامه: @item.LoadingBillOfLadingNumber</span>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(item.DriverName) ? "-" : item.DriverName)</td>
+                            <td class="status-cell">
+                                <span class="badge @GetStatusBadgeClass(item.Status)">@GetStatusDisplay(item.Status)</span>
+                            </td>
+                            <td class="small text-nowrap assignment-meta">
+                                <span class="d-block">تخصیص: @ToJalali(item.AssignmentDate)</span>
+                                <span class="d-block text-muted">بارگیری: @ToJalali(item.LoadingEndDate)</span>
+                                <span class="d-block text-muted">ورود مقصد: @ToJalali(item.ArrivalAtDestinationDate)</span>
+                                <span class="d-block text-muted">تخلیه: @ToJalali(item.UnloadingEndDate)</span>
+                            </td>
+                            <td class="amount-cell">
+                                <strong>@Amount(item.AssignedCargoAmount)</strong>
+                                <span class="small text-muted"> تخصیص</span>
+                                <div class="small mt-1">بارگیری: @Amount(item.LoadedAmount) (@loadProgress.ToString("N0")%)</div>
+                                <div class="small">تخلیه: @Amount(item.UnloadedAmount) (@unloadProgress.ToString("N0")%)</div>
+                                <div class="small text-muted mt-1">ظرفیت: @(item.IsTruckCapacityFull ? "کامل" : "دارای ظرفیت آزاد")</div>
+                            </td>
+                            <td class="progress-cell">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>@closeStageLabel</span>
+                                    <span>مرحله @(stage <= 0 ? 0 : stage) از 4</span>
+                                </div>
+                                <div class="progress stage-progress mb-1"><div class="progress-bar" style="width:@stageProgressWidth%"></div></div>
+                                <div class="small @(item.AreDocumentsApproved ? "text-success" : "text-warning")">مدارک: @(item.AreDocumentsApproved ? "تایید شده" : "در انتظار")</div>
+                                <div class="small text-muted">آیتم @rowNo از @Model.CompletedTotalItems تخصیص بسته‌شده</div>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary">جزئیات</a>
+                                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"><span class="visually-hidden">عملیات</span></button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a asp-controller="TractorAssignment" asp-action="Details" asp-route-id="@item.Id" class="dropdown-item">جزئیات تخصیص</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        rowNo++;
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">هیچ تخصیص بسته‌شده‌ای با فیلترهای فعلی پیدا نشد.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.CompletedTotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+            <div class="text-muted small">صفحه @Model.CompletedPage از @Model.CompletedTotalPages</div>
+            <nav>
+                <ul class="pagination pagination-primary mb-0">
+                    <li class="page-item @(Model.CompletedPage == 1 ? "disabled" : "")"><a class="page-link" href="#" data-table="completed" data-page="1">اول</a></li>
+                    <li class="page-item @(Model.CompletedPage == 1 ? "disabled" : "")"><a class="page-link" href="#" data-table="completed" data-page="@(Model.CompletedPage - 1)">قبلی</a></li>
+                    @{ var cs = Math.Max(1, Model.CompletedPage - 2); var ce = Math.Min(Model.CompletedTotalPages, Model.CompletedPage + 2); }
+                    @for (int i = cs; i <= ce; i++)
+                    {
+                        <li class="page-item @(i == Model.CompletedPage ? "active" : "")"><a class="page-link" href="#" data-table="completed" data-page="@i">@i</a></li>
+                    }
+                    <li class="page-item @(Model.CompletedPage == Model.CompletedTotalPages ? "disabled" : "")"><a class="page-link" href="#" data-table="completed" data-page="@(Model.CompletedPage + 1)">بعدی</a></li>
+                    <li class="page-item @(Model.CompletedPage == Model.CompletedTotalPages ? "disabled" : "")"><a class="page-link" href="#" data-table="completed" data-page="@Model.CompletedTotalPages">آخر</a></li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

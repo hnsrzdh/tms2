@@ -1,4 +1,4 @@
-@model TMS.MVC.ViewModels.LegalEntityFormVm
+﻿@model TMS.MVC.ViewModels.LegalEntityFormVm
 
 @{
     ViewData["Title"] = "ویرایش شخص حقوقی";
@@ -47,25 +47,23 @@
                 @Html.AntiForgeryToken()
                 <input asp-for="Id" type="hidden" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
                 <div class="row g-2">
                     <div class="col-md-4">
                         <label asp-for="CompanyName" class="form-label"></label>
                         <input asp-for="CompanyName" class="form-control form-control-sm" />
-                        <span asp-validation-for="CompanyName" class="text-danger"></span>
+                        <span asp-validation-for="CompanyName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="CompanyType" class="form-label"></label>
                         <input asp-for="CompanyType" class="form-control form-control-sm" />
-                        <span asp-validation-for="CompanyType" class="text-danger"></span>
+                        <span asp-validation-for="CompanyType" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="City" class="form-label"></label>
                         <input asp-for="City" class="form-control form-control-sm" />
-                        <span asp-validation-for="City" class="text-danger"></span>
+                        <span asp-validation-for="City" class="text-danger small"></span>
                     </div>
                 </div>
 

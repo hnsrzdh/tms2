@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMS.MVC.Models
@@ -7,17 +7,17 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب ریزحواله الزامی است.")]
         [Display(Name = "ریزحواله")]
         public long SubHavalehId { get; set; }
         public SubHavaleh SubHavaleh { get; set; } = null!;
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب کشنده الزامی است.")]
         [Display(Name = "کشنده")]
         public int TractorId { get; set; }
         public Tractor Tractor { get; set; } = null!;
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب درخواست‌دهنده الزامی است.")]
         [StringLength(450)]
         [Display(Name = "درخواست‌دهنده")]
         public string RequesterUserId { get; set; } = string.Empty;

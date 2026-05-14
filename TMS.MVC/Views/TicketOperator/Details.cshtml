@@ -1,4 +1,4 @@
-@using System.Globalization
+﻿@using System.Globalization
 @using TMS.MVC.Models
 @model TMS.MVC.ViewModels.TicketDetailsViewModel
 
@@ -82,7 +82,7 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="TicketId" value="@Model.Id" />
                     <div class="col-md-3">
-                        <label class="form-label">وضعیت</label>
+                        <label class="form-label">وضعیت <span class="text-danger">*</span></label>
                         <select name="Status" class="form-select form-select-sm">
                             <option value="Open">باز</option>
                             <option value="WaitingForOperator">در انتظار اپراتور</option>

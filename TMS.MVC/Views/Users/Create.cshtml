@@ -94,38 +94,36 @@
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
                 <div class="row g-2">
                     <div class="col-md-6">
-                        <label asp-for="Email" class="form-label">ایمیل / نام کاربری</label>
+                        <label asp-for="Email" class="form-label">ایمیل / نام کاربری <span class="required-star">*</span></label>
                         <input asp-for="Email" class="form-control form-control-sm" />
-                        <span asp-validation-for="Email" class="text-danger"></span>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
                         <div class="form-text">ایمیل فقط هنگام ایجاد کاربر تعیین می‌شود و بعداً قابل تغییر نیست.</div>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="FirstName" class="form-label"></label>
+                        <label asp-for="FirstName" class="form-label">نام <span class="required-star">*</span></label>
                         <input asp-for="FirstName" class="form-control form-control-sm" />
-                        <span asp-validation-for="FirstName" class="text-danger"></span>
+                        <span asp-validation-for="FirstName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="LastName" class="form-label"></label>
+                        <label asp-for="LastName" class="form-label">نام خانوادگی <span class="required-star">*</span></label>
                         <input asp-for="LastName" class="form-control form-control-sm" />
-                        <span asp-validation-for="LastName" class="text-danger"></span>
+                        <span asp-validation-for="LastName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Password" class="form-label">رمز عبور</label>
+                        <label asp-for="Password" class="form-label">رمز عبور <span class="required-star">*</span></label>
                         <input asp-for="Password" class="form-control form-control-sm" />
-                        <span asp-validation-for="Password" class="text-danger"></span>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="ConfirmPassword" class="form-label">تکرار رمز عبور</label>
+                        <label asp-for="ConfirmPassword" class="form-label">تکرار رمز عبور <span class="required-star">*</span></label>
                         <input asp-for="ConfirmPassword" class="form-control form-control-sm" />
-                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                     </div>
 
                     <div class="col-12 mt-2">

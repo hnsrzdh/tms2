@@ -1,4 +1,4 @@
-@model TMS.MVC.ViewModels.DriverBankAccountUpsertViewModel
+﻿@model TMS.MVC.ViewModels.DriverBankAccountUpsertViewModel
 
 @{
     ViewData["Title"] = "افزودن اطلاعات بانکی راننده";
@@ -47,7 +47,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="DriverProfileId" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
                     <div class="col-md-4">

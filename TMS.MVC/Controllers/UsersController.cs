@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -128,7 +128,13 @@ public class UsersController : Controller
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)
-                ModelState.AddModelError(string.Empty, error.Description);
+            {
+                var fieldName = error.Code.Contains("Password", StringComparison.OrdinalIgnoreCase)
+                    ? nameof(vm.Password)
+                    : nameof(vm.Email);
+
+                ModelState.AddModelError(fieldName, error.Description);
+            }
 
             return View(vm);
         }
@@ -189,7 +195,7 @@ public class UsersController : Controller
         if (!updateResult.Succeeded)
         {
             foreach (var error in updateResult.Errors)
-                ModelState.AddModelError(string.Empty, error.Description);
+                ModelState.AddModelError(nameof(vm.FirstName), error.Description);
 
             return View(vm);
         }
@@ -260,7 +266,7 @@ public class UsersController : Controller
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)
-                ModelState.AddModelError(string.Empty, error.Description);
+                ModelState.AddModelError(nameof(vm.NewPassword), error.Description);
 
             return View(vm);
         }

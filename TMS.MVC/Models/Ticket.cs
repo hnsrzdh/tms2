@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMS.MVC.Models
@@ -24,7 +24,7 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن عنوان الزامی است.")]
         [MaxLength(250)]
         public string Title { get; set; } = null!;
 
@@ -35,7 +35,7 @@ namespace TMS.MVC.Models
 
         public TicketStatus Status { get; set; } = TicketStatus.Open;
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب کاربر ثبت‌کننده الزامی است.")]
         public string CreatedByUserId { get; set; } = null!;
 
         public ApplicationUser CreatedByUser { get; set; } = null!;
@@ -62,12 +62,12 @@ namespace TMS.MVC.Models
         public long TicketId { get; set; }
         public Ticket Ticket { get; set; } = null!;
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب کاربر فرستنده الزامی است.")]
         public string SenderUserId { get; set; } = null!;
 
         public ApplicationUser SenderUser { get; set; } = null!;
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن شرح درخواست الزامی است.")]
         [MaxLength(4000)]
         public string Body { get; set; } = null!;
 

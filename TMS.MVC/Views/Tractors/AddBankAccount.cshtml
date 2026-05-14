@@ -54,19 +54,19 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="TractorId" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
                     <div class="col-md-4">
                         <label asp-for="AccountOwnerName" class="form-label"></label>
                         <input asp-for="AccountOwnerName" class="form-control form-control-sm" />
-                        <span asp-validation-for="AccountOwnerName" class="text-danger"></span>
+                        <span asp-validation-for="AccountOwnerName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="BankName" class="form-label"></label>
                         <input asp-for="BankName" class="form-control form-control-sm" />
-                        <span asp-validation-for="BankName" class="text-danger"></span>
+                        <span asp-validation-for="BankName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4 d-flex align-items-center">
@@ -79,25 +79,25 @@
                     <div class="col-md-4">
                         <label asp-for="AccountNumber" class="form-label"></label>
                         <input asp-for="AccountNumber" class="form-control form-control-sm" />
-                        <span asp-validation-for="AccountNumber" class="text-danger"></span>
+                        <span asp-validation-for="AccountNumber" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="CardNumber" class="form-label"></label>
                         <input asp-for="CardNumber" class="form-control form-control-sm" />
-                        <span asp-validation-for="CardNumber" class="text-danger"></span>
+                        <span asp-validation-for="CardNumber" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="ShebaNumber" class="form-label"></label>
                         <input asp-for="ShebaNumber" class="form-control form-control-sm" />
-                        <span asp-validation-for="ShebaNumber" class="text-danger"></span>
+                        <span asp-validation-for="ShebaNumber" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-12">
                         <label asp-for="Description" class="form-label"></label>
                         <textarea asp-for="Description" class="form-control form-control-sm" rows="4"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
                 </div>
 

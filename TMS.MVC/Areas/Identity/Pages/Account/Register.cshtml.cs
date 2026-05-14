@@ -53,6 +53,10 @@ namespace TMS.MVC.Areas.Identity.Pages.Account
 
         public class InputModel
         {
+            [Required(ErrorMessage = "وارد کردن نام و نام خانوادگی الزامی است.")]
+            [Display(Name = "نام و نام خانوادگی")]
+            public string FullName { get; set; }
+
             [Required(ErrorMessage = "ایمیل الزامی است.")]
             [EmailAddress(ErrorMessage = "فرمت ایمیل صحیح نیست.")]
             [Display(Name = "ایمیل")]
@@ -70,8 +74,8 @@ namespace TMS.MVC.Areas.Identity.Pages.Account
             [Compare("Password", ErrorMessage = "رمز عبور و تکرار آن یکسان نیستند.")]
             public string ConfirmPassword { get; set; }
 
-            [MustBeTrue(ErrorMessage = "پذیرش قوانین و شرایط الزامی است.")]
-            [Display(Name = "پذیرش قوانین")]
+            [Range(typeof(bool), "true", "true", ErrorMessage = "قبول قوانین و شرایط الزامی است.")]
+            [Display(Name = "موافقت با قوانین و شرایط")]
             public bool AcceptTerms { get; set; }
         }
         public class MustBeTrueAttribute : ValidationAttribute

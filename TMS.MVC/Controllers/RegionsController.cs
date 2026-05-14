@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -120,7 +120,7 @@ namespace TMS.MVC.Controllers
 
             if (duplicate)
             {
-                ModelState.AddModelError("", "این مکان قبلاً برای این شهر ثبت شده است.");
+                ModelState.AddModelError(nameof(PlaceFormVm.Name), "این مکان قبلاً برای این شهر ثبت شده است.");
                 await FillFormLists(model);
                 return View(model);
             }
@@ -194,7 +194,7 @@ namespace TMS.MVC.Controllers
 
             if (duplicate)
             {
-                ModelState.AddModelError("", "این مکان قبلاً برای این شهر ثبت شده است.");
+                ModelState.AddModelError(nameof(PlaceFormVm.Name), "این مکان قبلاً برای این شهر ثبت شده است.");
                 await FillFormLists(model);
                 return View(model);
             }

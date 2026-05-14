@@ -7,12 +7,12 @@ namespace TMS.MVC.Models
     {
         public long Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب ریزحواله الزامی است.")]
         [Display(Name = "زیرحواله")]
         public long SubHavalehId { get; set; }
         public SubHavaleh SubHavaleh { get; set; } = null!;
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب کشنده الزامی است.")]
         [Display(Name = "کشنده")]
         public int TractorId { get; set; }
         public Tractor Tractor { get; set; } = null!;
@@ -27,6 +27,7 @@ namespace TMS.MVC.Models
         [StringLength(500)]
         [Display(Name = "توضیحات")]
         public string? Notes { get; set; }
+        [Required(ErrorMessage = "مقدار تخصیص الزامی است.")]
         [Column(TypeName = "decimal(18,3)")]
         [Display(Name = "مقدار تخصیص داده شده")]
         public decimal? AssignedCargoAmount { get; set; }
@@ -243,14 +244,14 @@ namespace TMS.MVC.Models
     public class LoadingDocument
     {
         public long Id { get; set; }
-        [Required]
+        [Required(ErrorMessage = "انتخاب تخصیص کشنده الزامی است.")]
         public long TractorAssignmentId { get; set; }
         public TractorAssignment TractorAssignment { get; set; } = null!;
-        [Required]
+        [Required(ErrorMessage = "وارد کردن عنوان الزامی است.")]
         [StringLength(200)]
         [Display(Name = "عنوان مدرک")]
         public string Title { get; set; } = string.Empty;
-        [Required]
+        [Required(ErrorMessage = "وارد کردن مسیر فایل الزامی است.")]
         [StringLength(500)]
         [Display(Name = "مسیر فایل")]
         public string FilePath { get; set; } = string.Empty;
@@ -278,14 +279,14 @@ namespace TMS.MVC.Models
     public class UnloadingDocument
     {
         public long Id { get; set; }
-        [Required]
+        [Required(ErrorMessage = "انتخاب تخصیص کشنده الزامی است.")]
         public long TractorAssignmentId { get; set; }
         public TractorAssignment TractorAssignment { get; set; } = null!;
-        [Required]
+        [Required(ErrorMessage = "وارد کردن عنوان الزامی است.")]
         [StringLength(200)]
         [Display(Name = "عنوان مدرک")]
         public string Title { get; set; } = string.Empty;
-        [Required]
+        [Required(ErrorMessage = "وارد کردن مسیر فایل الزامی است.")]
         [StringLength(500)]
         [Display(Name = "مسیر فایل")]
         public string FilePath { get; set; } = string.Empty;
@@ -313,7 +314,7 @@ namespace TMS.MVC.Models
     public class LocationTracking
     {
         public long Id { get; set; }
-        [Required]
+        [Required(ErrorMessage = "انتخاب تخصیص کشنده الزامی است.")]
         public long TractorAssignmentId { get; set; }
         public TractorAssignment TractorAssignment { get; set; } = null!;
         [Display(Name = "عرض جغرافیایی")]
@@ -336,15 +337,15 @@ namespace TMS.MVC.Models
     public class ChatMessage
     {
         public long Id { get; set; }
-        [Required]
+        [Required(ErrorMessage = "انتخاب تخصیص کشنده الزامی است.")]
         [Display(Name = "تخصیص کشنده")]
         public long TractorAssignmentId { get; set; }
         public TractorAssignment TractorAssignment { get; set; } = null!;
-        [Required]
+        [Required(ErrorMessage = "انتخاب فرستنده الزامی است.")]
         [StringLength(50)]
         [Display(Name = "فرستنده")]
         public string SenderId { get; set; } = string.Empty;
-        [Required]
+        [Required(ErrorMessage = "وارد کردن نام فرستنده الزامی است.")]
         [StringLength(200)]
         [Display(Name = "نام فرستنده")]
         public string SenderName { get; set; } = string.Empty;

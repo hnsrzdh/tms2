@@ -1,5 +1,6 @@
 ﻿@model TMS.MVC.Models.ViewModels.PlaceFormVm
 @using System.Text.Json
+@using System.Globalization
 
 @{
     var isEdit = Model.Id.HasValue;
@@ -7,12 +8,14 @@
 
     var defaultLat = Model.Latitude ?? 35.6892m;
     var defaultLng = Model.Longitude ?? 51.3890m;
+    var defaultLatJs = defaultLat.ToString(CultureInfo.InvariantCulture);
+    var defaultLngJs = defaultLng.ToString(CultureInfo.InvariantCulture);
 
     var countryProvinceJson = JsonSerializer.Serialize(Model.CountryProvinceMap);
     var provinceCityJson = JsonSerializer.Serialize(Model.ProvinceCityMap);
 }
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
 
 <style>
     .place-map-box {
@@ -78,11 +81,9 @@
 
                 <input type="hidden" asp-for="Id" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <label asp-for="CountryName" class="form-label"></label>
+                        <label asp-for="CountryName" class="form-label">کشور <span class="required-star">*</span></label>
                         <input asp-for="CountryName" class="form-control form-control-sm" list="countryList" autocomplete="off" />
                         <datalist id="countryList">
                             @foreach (var item in Model.Countries)
@@ -90,11 +91,11 @@
                                 <option value="@item.Value"></option>
                             }
                         </datalist>
-                        <span asp-validation-for="CountryName" class="text-danger"></span>
+                        <span asp-validation-for="CountryName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="ProvinceName" class="form-label"></label>
+                        <label asp-for="ProvinceName" class="form-label">استان <span class="required-star">*</span></label>
                         <input asp-for="ProvinceName" class="form-control form-control-sm" list="provinceList" autocomplete="off" />
                         <datalist id="provinceList">
                             @foreach (var item in Model.Provinces)
@@ -102,11 +103,11 @@
                                 <option value="@item.Value"></option>
                             }
                         </datalist>
-                        <span asp-validation-for="ProvinceName" class="text-danger"></span>
+                        <span asp-validation-for="ProvinceName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="CityName" class="form-label"></label>
+                        <label asp-for="CityName" class="form-label">شهر <span class="required-star">*</span></label>
                         <input asp-for="CityName" class="form-control form-control-sm" list="cityList" autocomplete="off" />
                         <datalist id="cityList">
                             @foreach (var item in Model.Cities)
@@ -114,19 +115,19 @@
                                 <option value="@item.Value"></option>
                             }
                         </datalist>
-                        <span asp-validation-for="CityName" class="text-danger"></span>
+                        <span asp-validation-for="CityName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Name" class="form-label"></label>
+                        <label asp-for="Name" class="form-label">نام مکان <span class="required-star">*</span></label>
                         <input asp-for="Name" class="form-control form-control-sm" placeholder="مثلاً انبار مرکزی، معدن، کارخانه، محل تخلیه..." />
-                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <span asp-validation-for="Name" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="Address" class="form-label"></label>
                         <input asp-for="Address" class="form-control form-control-sm" placeholder="آدرس یا توضیحات کوتاه" />
-                        <span asp-validation-for="Address" class="text-danger"></span>
+                        <span asp-validation-for="Address" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
@@ -137,15 +138,15 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="Latitude" class="form-label"></label>
+                        <label asp-for="Latitude" class="form-label">عرض جغرافیایی <span class="required-star">*</span></label>
                         <input asp-for="Latitude" class="form-control form-control-sm" id="Latitude" dir="ltr" />
-                        <span asp-validation-for="Latitude" class="text-danger"></span>
+                        <span asp-validation-for="Latitude" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="Longitude" class="form-label"></label>
+                        <label asp-for="Longitude" class="form-label">طول جغرافیایی <span class="required-star">*</span></label>
                         <input asp-for="Longitude" class="form-control form-control-sm" id="Longitude" dir="ltr" />
-                        <span asp-validation-for="Longitude" class="text-danger"></span>
+                        <span asp-validation-for="Longitude" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-2">
@@ -198,12 +199,9 @@
     </div>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <script>
+<script>
         const countryProvinceMap = @Html.Raw(countryProvinceJson);
         const provinceCityMap = @Html.Raw(provinceCityJson);
 
@@ -242,6 +240,9 @@
             cityInput.value = "";
         });
 
+        const defaultLatitude = @Html.Raw(defaultLatJs);
+        const defaultLongitude = @Html.Raw(defaultLngJs);
+
         let map;
         let marker;
 
@@ -252,15 +253,19 @@
 
         function getCurrentLat() {
             const value = normalizeDecimal(document.getElementById("Latitude").value);
-            return value ? parseFloat(value) : @defaultLat;
+            const lat = value ? parseFloat(value) : defaultLatitude;
+            return Number.isFinite(lat) ? lat : defaultLatitude;
         }
 
         function getCurrentLng() {
             const value = normalizeDecimal(document.getElementById("Longitude").value);
-            return value ? parseFloat(value) : @defaultLng;
+            const lng = value ? parseFloat(value) : defaultLongitude;
+            return Number.isFinite(lng) ? lng : defaultLongitude;
         }
 
         function setCoordinates(lat, lng) {
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
             const fixedLat = lat.toFixed(7);
             const fixedLng = lng.toFixed(7);
 
@@ -268,7 +273,26 @@
             document.getElementById("Longitude").value = fixedLng;
         }
 
+        function updateMapFromInputs() {
+            const lat = getCurrentLat();
+            const lng = getCurrentLng();
+            setCoordinates(lat, lng);
+
+            if (map && marker) {
+                marker.setLatLng([lat, lng]);
+                map.setView([lat, lng], map.getZoom() || 13);
+                setTimeout(function () {
+                    map.invalidateSize();
+                }, 100);
+            }
+        }
+
         function initMap() {
+            if (typeof L === "undefined") {
+                console.error("Leaflet library was not loaded. Check CDN/network access.");
+                return;
+            }
+
             const lat = getCurrentLat();
             const lng = getCurrentLng();
 
@@ -308,16 +332,12 @@
 
         const mapModal = document.getElementById("mapModal");
 
-        mapModal.addEventListener("shown.bs.modal", function () {
-            initMap();
-        });
+        if (mapModal) {
+            mapModal.addEventListener("shown.bs.modal", function () {
+                initMap();
+            });
+        }
 
-        document.getElementById("Latitude").addEventListener("change", function () {
-            setCoordinates(getCurrentLat(), getCurrentLng());
-        });
-
-        document.getElementById("Longitude").addEventListener("change", function () {
-            setCoordinates(getCurrentLat(), getCurrentLng());
-        });
-    </script>
-}
+        document.getElementById("Latitude").addEventListener("change", updateMapFromInputs);
+        document.getElementById("Longitude").addEventListener("change", updateMapFromInputs);
+</script>

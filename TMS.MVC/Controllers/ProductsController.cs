@@ -15,6 +15,7 @@ namespace TMS.MVC.Controllers
         private const string LoadTypePropertyName = "نوع بار";
         private const string CargoNaturePropertyName = "ماهیت بار";
         private const string UnitPropertyName = "واحد اندازه‌گیری";
+        private const string DefaultDensityValue = "2000";
 
         public ProductsController(ApplicationDbContext db)
         {
@@ -97,7 +98,7 @@ namespace TMS.MVC.Controllers
             var existing = await _db.Products.FirstOrDefaultAsync(x => x.Name == name);
             if (existing != null)
             {
-                ModelState.AddModelError("", "محصولی با این نام قبلاً ثبت شده است.");
+                ModelState.AddModelError(nameof(model.Name), "محصولی با این نام قبلاً ثبت شده است.");
                 return View(model);
             }
 
@@ -171,7 +172,7 @@ namespace TMS.MVC.Controllers
             var duplicate = await _db.Products.FirstOrDefaultAsync(x => x.Id != id && x.Name == name);
             if (duplicate != null)
             {
-                ModelState.AddModelError("", "محصول دیگری با این نام قبلاً ثبت شده است.");
+                ModelState.AddModelError(nameof(model.Name), "محصول دیگری با این نام قبلاً ثبت شده است.");
                 return View(model);
             }
 
@@ -241,7 +242,7 @@ namespace TMS.MVC.Controllers
                     continue;
                 }
 
-                var density = NormalizeNullableText(ws.Cell(row, 2).GetString());
+                var density = NormalizeNullableText(ws.Cell(row, 2).GetString()) ?? DefaultDensityValue;
                 var loadType = NormalizeNullableText(ws.Cell(row, 3).GetString()) ?? "تمیز";
                 var cargoNature = NormalizeNullableText(ws.Cell(row, 4).GetString()) ?? "مایع";
                 var unit = NormalizeNullableText(ws.Cell(row, 5).GetString()) ?? "لیتر";
@@ -304,24 +305,27 @@ namespace TMS.MVC.Controllers
         private void ValidateProperties(ProductFormVm model)
         {
             var rows = model.Properties
-                .Where(x => !string.IsNullOrWhiteSpace(x.Name) || !string.IsNullOrWhiteSpace(x.Value))
+                .Select((item, index) => new { Item = item, Index = index })
+                .Where(x => !string.IsNullOrWhiteSpace(x.Item.Name) || !string.IsNullOrWhiteSpace(x.Item.Value))
                 .ToList();
 
-            foreach (var row in rows.Where(x => string.IsNullOrWhiteSpace(x.Name)))
+            foreach (var row in rows.Where(x => string.IsNullOrWhiteSpace(x.Item.Name)))
             {
-                ModelState.AddModelError(nameof(model.Properties), "برای هر مقدار خصوصیت، نام خصوصیت هم باید وارد شود.");
+                ModelState.AddModelError($"Properties[{row.Index}].Name", "برای هر مقدار خصوصیت، نام خصوصیت هم باید وارد شود.");
             }
 
-            var duplicateNames = rows
-                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
-                .GroupBy(x => x.Name!.Trim())
+            var duplicateGroups = rows
+                .Where(x => !string.IsNullOrWhiteSpace(x.Item.Name))
+                .GroupBy(x => x.Item.Name!.Trim())
                 .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
                 .ToList();
 
-            if (duplicateNames.Any())
+            foreach (var group in duplicateGroups)
             {
-                ModelState.AddModelError(nameof(model.Properties), "نام خصوصیت‌ها نباید تکراری باشد: " + string.Join("، ", duplicateNames));
+                foreach (var row in group)
+                {
+                    ModelState.AddModelError($"Properties[{row.Index}].Name", "نام خصوصیت نباید تکراری باشد.");
+                }
             }
         }
 
@@ -343,7 +347,7 @@ namespace TMS.MVC.Controllers
         {
             return new List<ProductPropertyFormVm>
             {
-                new() { Name = DensityPropertyName, Value = null, DisplayOrder = 1 },
+                new() { Name = DensityPropertyName, Value = DefaultDensityValue, DisplayOrder = 1 },
                 new() { Name = LoadTypePropertyName, Value = "تمیز", DisplayOrder = 2 },
                 new() { Name = CargoNaturePropertyName, Value = "مایع", DisplayOrder = 3 },
                 new() { Name = UnitPropertyName, Value = "لیتر", DisplayOrder = 4 }
@@ -352,7 +356,7 @@ namespace TMS.MVC.Controllers
 
         private void EnsureDefaultPropertyRows(List<ProductPropertyFormVm> properties, string? oldType)
         {
-            EnsurePropertyRow(properties, DensityPropertyName, null, 1);
+            EnsurePropertyRow(properties, DensityPropertyName, DefaultDensityValue, 1);
             EnsurePropertyRow(properties, LoadTypePropertyName, oldType ?? "تمیز", 2);
             EnsurePropertyRow(properties, CargoNaturePropertyName, "مایع", 3);
             EnsurePropertyRow(properties, UnitPropertyName, "لیتر", 4);

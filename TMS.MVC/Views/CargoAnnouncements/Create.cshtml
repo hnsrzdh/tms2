@@ -1,4 +1,4 @@
-@model TMS.MVC.ViewModels.CargoAnnouncementFormViewModel
+﻿@model TMS.MVC.ViewModels.CargoAnnouncementFormViewModel
 
 @{
     ViewData["Title"] = "ثبت اعلام بار";
@@ -64,7 +64,7 @@
     <form asp-action="Create" method="post" id="cargoAnnouncementCreateForm">
         @Html.AntiForgeryToken()
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+        <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
 
         <div class="alert alert-info py-2 small mb-3">
             این فرم فقط برای اعلام بار مشتری است و مستقیماً حواله ایجاد نمی‌کند. پس از ثبت، اپراتور با شرکت تماس می‌گیرد و در صورت تایید، حواله به‌صورت جداگانه ثبت می‌شود.
@@ -78,18 +78,18 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <label asp-for="CustomerCompanyName" class="form-label"></label>
+                        <label asp-for="CustomerCompanyName" class="form-label">نام شرکت / صاحب کالا <span class="text-danger">*</span></label>
                         <input asp-for="CustomerCompanyName" class="form-control form-control-sm" placeholder="مثلاً شرکت نمونه" />
                         <span asp-validation-for="CustomerCompanyName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="ContactPersonName" class="form-label"></label>
+                        <label asp-for="ContactPersonName" class="form-label">نام شخص رابط</label>
                         <input asp-for="ContactPersonName" class="form-control form-control-sm" placeholder="نام شخص رابط" />
                     </div>
 
                     <div class="col-md-2">
-                        <label asp-for="ContactMobile" class="form-label"></label>
+                        <label asp-for="ContactMobile" class="form-label">موبایل <span class="text-danger">*</span></label>
                         <input asp-for="ContactMobile" class="form-control form-control-sm" placeholder="09..." />
                         <span asp-validation-for="ContactMobile" class="text-danger small"></span>
                     </div>
@@ -100,13 +100,13 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="ContactEmail" class="form-label"></label>
+                        <label asp-for="ContactEmail" class="form-label">ایمیل</label>
                         <input asp-for="ContactEmail" class="form-control form-control-sm" placeholder="ایمیل، در صورت وجود" />
                         <span asp-validation-for="ContactEmail" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="AnnouncementType" class="form-label"></label>
+                        <label asp-for="AnnouncementType" class="form-label">نوع درخواست / نوع حواله</label>
                         <input asp-for="AnnouncementType" class="form-control form-control-sm" placeholder="مثلاً حمل داخلی / قراردادی / فوری" />
                     </div>
 
@@ -129,13 +129,13 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <label asp-for="OriginPlaceName" class="form-label"></label>
+                        <label asp-for="OriginPlaceName" class="form-label">مبدا <span class="text-danger">*</span></label>
                         <input asp-for="OriginPlaceName" class="form-control form-control-sm" placeholder="مثلاً تهران / پالایشگاه ..." />
                         <span asp-validation-for="OriginPlaceName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="DestinationPlaceName" class="form-label"></label>
+                        <label asp-for="DestinationPlaceName" class="form-label">مقصد <span class="text-danger">*</span></label>
                         <input asp-for="DestinationPlaceName" class="form-control form-control-sm" placeholder="مثلاً اصفهان / انبار مقصد ..." />
                         <span asp-validation-for="DestinationPlaceName" class="text-danger small"></span>
                     </div>
@@ -164,19 +164,19 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <label asp-for="ProductName" class="form-label"></label>
+                        <label asp-for="ProductName" class="form-label">محصول <span class="text-danger">*</span></label>
                         <input asp-for="ProductName" class="form-control form-control-sm" placeholder="مثلاً گازوئیل / قیر / محصول ..." />
                         <span asp-validation-for="ProductName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="ProductAmount" class="form-label"></label>
+                        <label asp-for="ProductAmount" class="form-label">مقدار بار <span class="text-danger">*</span></label>
                         <input asp-for="ProductAmount" class="form-control form-control-sm" type="number" step="0.001" />
                         <span asp-validation-for="ProductAmount" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-2">
-                        <label asp-for="Unit" class="form-label"></label>
+                        <label asp-for="Unit" class="form-label">واحد <span class="text-danger">*</span></label>
                         <select asp-for="Unit" class="form-select form-select-sm">
                             <option value="کیلوگرم">کیلوگرم</option>
                             <option value="تن">تن</option>
@@ -186,7 +186,7 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label asp-for="ShortagePenaltyPerUnit" class="form-label"></label>
+                        <label asp-for="ShortagePenaltyPerUnit" class="form-label">جریمه کسری به ازای هر واحد</label>
                         <div class="input-group input-group-sm">
                             <input asp-for="ShortagePenaltyPerUnit" class="form-control form-control-sm" type="number" step="1" />
                             <span class="input-group-text">ریال</span>

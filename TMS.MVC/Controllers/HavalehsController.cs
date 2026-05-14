@@ -20,16 +20,20 @@ namespace TMS.MVC.Controllers
             if (page < 1) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
+            search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+
             var query = _context.Havalehs
                 .Include(x => x.TransportContractorLegalEntity)
                 .Include(x => x.GoodsOwnerLegalEntity)
                 .Include(x => x.OriginPlace)
                 .Include(x => x.Product)
+                .Include(x => x.SubHavalehs)
+                    .ThenInclude(x => x.TractorAssignments)
+                .AsNoTracking()
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                search = search.Trim();
                 query = query.Where(x =>
                     x.HavalehNumber.Contains(search) ||
                     (x.ContractNumber ?? "").Contains(search) ||
@@ -40,39 +44,102 @@ namespace TMS.MVC.Controllers
                     (x.Product != null ? x.Product.Name : "").Contains(search));
             }
 
-            var totalItems = await query.CountAsync();
-
-            var items = await query
+            var entities = await query
                 .OrderByDescending(x => x.Id)
+                .ToListAsync();
+
+            var allItems = entities
+                .Select(BuildHavalehIndexItem)
+                .ToList();
+
+            var activeItems = allItems
+                .Where(x => !x.IsCompleted)
+                .ToList();
+
+            var completedItems = allItems
+                .Where(x => x.IsCompleted)
+                .ToList();
+
+            var totalItems = activeItems.Count;
+            var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var items = activeItems
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new HavalehIndexItemViewModel
-                {
-                    Id = x.Id,
-                    HavalehNumber = x.HavalehNumber,
-                    ContractNumber = x.ContractNumber,
-                    HavalehType = x.HavalehType,
-                    RequiresFleetEntryPermit = x.RequiresFleetEntryPermit,
-                    TransportContractorName = x.TransportContractorLegalEntity != null ? x.TransportContractorLegalEntity.CompanyName : null,
-                    GoodsOwnerName = x.GoodsOwnerLegalEntity != null ? x.GoodsOwnerLegalEntity.CompanyName : null,
-                    OriginCityText = x.OriginPlace != null ? x.OriginPlace.Name : null,
-                    ProductName = x.Product != null ? x.Product.Name : null,
-                    ProductAmount = x.ProductAmount,
-                    Unit = x.Unit,
-                    PurchaseDate = x.PurchaseDate,
-                    AllowedLoadingDate = x.AllowedLoadingDate,
-                    ShortagePenaltyPerUnit = x.ShortagePenaltyPerUnit
-                })
-                .ToListAsync();
+                .ToList();
 
             return View(new HavalehIndexViewModel
             {
                 Items = items,
+                CompletedItems = completedItems,
                 Search = search,
                 Page = page,
                 PageSize = pageSize,
-                TotalItems = totalItems
+                TotalItems = totalItems,
+                CompletedTotalItems = completedItems.Count
             });
+        }
+
+        private static HavalehIndexItemViewModel BuildHavalehIndexItem(Havaleh x)
+        {
+            var subHavalehs = x.SubHavalehs?.ToList() ?? new List<SubHavaleh>();
+            var activeAssignments = subHavalehs
+                .SelectMany(s => s.TractorAssignments ?? new List<TractorAssignment>())
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .ToList();
+
+            var totalAmount = x.ProductAmount ?? 0;
+            var definedSubAmount = subHavalehs.Sum(s => s.RequestedCargoAmount ?? 0);
+            var assignedAmount = activeAssignments.Sum(a => a.AssignedCargoAmount ?? 0);
+            var loadedAmount = activeAssignments.Sum(a => a.LoadedAmount ?? 0);
+            var unloadedAmount = activeAssignments.Sum(a => a.UnloadedAmount ?? 0);
+            var remainingSubAmount = totalAmount - definedSubAmount;
+
+            var allSubHavalehsUnloaded = subHavalehs.Any() && subHavalehs.All(sub =>
+            {
+                var requested = sub.RequestedCargoAmount ?? 0;
+                var unloaded = (sub.TractorAssignments ?? new List<TractorAssignment>())
+                    .Where(a => a.Status != AssignmentStatus.Cancelled)
+                    .Sum(a => a.UnloadedAmount ?? 0);
+
+                var hasOpenAssignment = (sub.TractorAssignments ?? new List<TractorAssignment>())
+                    .Any(a => a.Status != AssignmentStatus.Cancelled &&
+                              a.Status != AssignmentStatus.Unloaded &&
+                              a.Status != AssignmentStatus.Completed);
+
+                return requested > 0 && unloaded >= requested && !hasOpenAssignment;
+            });
+
+            var isFullyDefined = totalAmount > 0 && definedSubAmount >= totalAmount;
+            var isCompleted = isFullyDefined && allSubHavalehsUnloaded && unloadedAmount >= totalAmount;
+
+            return new HavalehIndexItemViewModel
+            {
+                Id = x.Id,
+                HavalehNumber = x.HavalehNumber,
+                ContractNumber = x.ContractNumber,
+                HavalehType = x.HavalehType,
+                RequiresFleetEntryPermit = x.RequiresFleetEntryPermit,
+                TransportContractorName = x.TransportContractorLegalEntity?.CompanyName,
+                GoodsOwnerName = x.GoodsOwnerLegalEntity?.CompanyName,
+                OriginCityText = x.OriginPlace?.Name,
+                ProductName = x.Product?.Name,
+                ProductAmount = x.ProductAmount,
+                Unit = x.Unit,
+                PurchaseDate = x.PurchaseDate,
+                AllowedLoadingDate = x.AllowedLoadingDate,
+                ShortagePenaltyPerUnit = x.ShortagePenaltyPerUnit,
+                SubHavalehCount = subHavalehs.Count,
+                DefinedSubHavalehAmount = definedSubAmount,
+                RemainingSubHavalehAmount = remainingSubAmount,
+                AssignedAmount = assignedAmount,
+                LoadedAmount = loadedAmount,
+                UnloadedAmount = unloadedAmount,
+                ActiveAssignmentCount = activeAssignments.Count,
+                AllSubHavalehsUnloaded = allSubHavalehsUnloaded,
+                IsCompleted = isCompleted
+            };
         }
 
         [HttpGet]
@@ -127,6 +194,12 @@ namespace TMS.MVC.Controllers
             if (entity == null)
                 return NotFound();
 
+            if (await HasAnySubHavalehAsync(entity.Id))
+            {
+                TempData["Warning"] = "این حواله دارای ریزحواله است و امکان ویرایش آن وجود ندارد.";
+                return RedirectToAction(nameof(Details), new { id = entity.Id });
+            }
+
             return View(new HavalehUpsertViewModel
             {
                 Id = entity.Id,
@@ -162,6 +235,12 @@ namespace TMS.MVC.Controllers
             var entity = await _context.Havalehs.FirstOrDefaultAsync(x => x.Id == vm.Id);
             if (entity == null)
                 return NotFound();
+
+            if (await HasAnySubHavalehAsync(entity.Id))
+            {
+                TempData["Warning"] = "این حواله دارای ریزحواله است و امکان ویرایش آن وجود ندارد.";
+                return RedirectToAction(nameof(Details), new { id = entity.Id });
+            }
 
             entity.HavalehNumber = vm.HavalehNumber;
             entity.ContractNumber = vm.ContractNumber;
@@ -199,38 +278,77 @@ namespace TMS.MVC.Controllers
             if (entity == null)
                 return NotFound();
 
-            var subQuery = _context.SubHavalehs
+            var subEntities = await _context.SubHavalehs
                 .Where(x => x.HavalehId == id)
                 .Include(x => x.DestinationPlace)
                 .Include(x => x.IntermediatePlaces)
                     .ThenInclude(x => x.Place)
                 .Include(x => x.TractorAssignments)
-                .AsQueryable();
-
-            var subTotalItems = await subQuery.CountAsync();
-
-            var totalHavalehAmount = entity.ProductAmount ?? 0;
-            var totalSubAmount = await _context.SubHavalehs
-                .Where(x => x.HavalehId == id)
-                .SumAsync(x => (decimal?)x.RequestedCargoAmount) ?? 0;
-
-            var allSubHavalehIds = await _context.SubHavalehs
-                .Where(x => x.HavalehId == id)
-                .Select(x => x.Id)
-                .ToListAsync();
-
-            var activeAssignments = await _context.TractorAssignments
-                .Where(x => allSubHavalehIds.Contains(x.SubHavalehId) &&
-                            x.Status != AssignmentStatus.Cancelled)
-                .ToListAsync();
-
-            var subEntities = await subQuery
                 .OrderByDescending(x => x.Id)
+                .ToListAsync();
+
+            var allSubItems = subEntities
+                .Select(BuildSubHavalehIndexItem)
+                .ToList();
+
+            var activeSubItems = allSubItems
+                .Where(x => !x.IsCompleted)
+                .ToList();
+
+            var completedSubItems = allSubItems
+                .Where(x => x.IsCompleted)
+                .ToList();
+
+            var subTotalItems = activeSubItems.Count;
+            var subTotalPages = (int)Math.Ceiling((double)subTotalItems / subPageSize);
+            if (subTotalPages > 0 && subPage > subTotalPages) subPage = subTotalPages;
+
+            var subItems = activeSubItems
                 .Skip((subPage - 1) * subPageSize)
                 .Take(subPageSize)
-                .ToListAsync();
+                .ToList();
 
-            var subItems = subEntities.Select(x => new SubHavalehIndexItemViewModel
+            var totalHavalehAmount = entity.ProductAmount ?? 0;
+            var totalSubAmount = allSubItems.Sum(x => x.RequestedCargoAmount ?? 0);
+            var activeAssignments = subEntities
+                .SelectMany(x => x.TractorAssignments ?? new List<TractorAssignment>())
+                .Where(x => x.Status != AssignmentStatus.Cancelled)
+                .ToList();
+
+            return View(new HavalehDetailsViewModel
+            {
+                Entity = entity,
+                SubItems = subItems,
+                CompletedSubItems = completedSubItems,
+                SubPage = subPage,
+                SubPageSize = subPageSize,
+                SubTotalItems = subTotalItems,
+                CompletedSubTotalItems = completedSubItems.Count,
+                TotalHavalehAmount = totalHavalehAmount,
+                TotalSubHavalehAmount = totalSubAmount,
+                TotalAssignedAmount = activeAssignments.Sum(x => x.AssignedCargoAmount ?? 0),
+                TotalLoadedAmount = activeAssignments.Sum(x => x.LoadedAmount ?? 0),
+                TotalUnloadedAmount = activeAssignments.Sum(x => x.UnloadedAmount ?? 0)
+            });
+        }
+
+        private static SubHavalehIndexItemViewModel BuildSubHavalehIndexItem(SubHavaleh x)
+        {
+            var activeAssignments = (x.TractorAssignments ?? new List<TractorAssignment>())
+                .Where(a => a.Status != AssignmentStatus.Cancelled)
+                .ToList();
+
+            var requestedAmount = x.RequestedCargoAmount ?? 0;
+            var assignedAmount = activeAssignments.Sum(a => a.AssignedCargoAmount ?? 0);
+            var loadedAmount = activeAssignments.Sum(a => a.LoadedAmount ?? 0);
+            var unloadedAmount = activeAssignments.Sum(a => a.UnloadedAmount ?? 0);
+            var effectiveUsedAmount = activeAssignments.Sum(GetEffectiveUsedAmount);
+            var hasOpenAssignment = activeAssignments.Any(a =>
+                a.Status != AssignmentStatus.Unloaded &&
+                a.Status != AssignmentStatus.Completed);
+            var isCompleted = requestedAmount > 0 && unloadedAmount >= requestedAmount && !hasOpenAssignment;
+
+            return new SubHavalehIndexItemViewModel
             {
                 Id = x.Id,
                 Title = x.Title,
@@ -244,30 +362,14 @@ namespace TMS.MVC.Controllers
                 EndDate = x.EndDate,
                 RequestedCargoAmount = x.RequestedCargoAmount,
                 RequestedCargoAmountType = x.RequestedCargoAmountType,
-                AssignedAmount = x.TractorAssignments
-                    .Where(a => a.Status != AssignmentStatus.Cancelled)
-                    .Sum(a => a.AssignedCargoAmount ?? 0),
-                LoadedAmount = x.TractorAssignments
-                    .Where(a => a.Status != AssignmentStatus.Cancelled)
-                    .Sum(a => a.LoadedAmount ?? 0),
-                UnloadedAmount = x.TractorAssignments
-                    .Where(a => a.Status != AssignmentStatus.Cancelled)
-                    .Sum(a => a.UnloadedAmount ?? 0)
-            }).ToList();
-
-            return View(new HavalehDetailsViewModel
-            {
-                Entity = entity,
-                SubItems = subItems,
-                SubPage = subPage,
-                SubPageSize = subPageSize,
-                SubTotalItems = subTotalItems,
-                TotalHavalehAmount = totalHavalehAmount,
-                TotalSubHavalehAmount = totalSubAmount,
-                TotalAssignedAmount = activeAssignments.Sum(x => x.AssignedCargoAmount ?? 0),
-                TotalLoadedAmount = activeAssignments.Sum(x => x.LoadedAmount ?? 0),
-                TotalUnloadedAmount = activeAssignments.Sum(x => x.UnloadedAmount ?? 0)
-            });
+                ActiveAssignmentCount = activeAssignments.Count,
+                AssignedAmount = assignedAmount,
+                LoadedAmount = loadedAmount,
+                UnloadedAmount = unloadedAmount,
+                EffectiveUsedAmount = effectiveUsedAmount,
+                HasOpenAssignment = hasOpenAssignment,
+                IsCompleted = isCompleted
+            };
         }
 
         [HttpPost]
@@ -280,6 +382,12 @@ namespace TMS.MVC.Controllers
 
             if (entity == null)
                 return NotFound();
+
+            if (entity.SubHavalehs != null && entity.SubHavalehs.Any())
+            {
+                TempData["Warning"] = "این حواله دارای ریزحواله است و امکان حذف آن وجود ندارد.";
+                return RedirectToAction(nameof(Index));
+            }
 
             _context.Havalehs.Remove(entity);
             await _context.SaveChangesAsync();
@@ -298,7 +406,7 @@ namespace TMS.MVC.Controllers
             if (havaleh == null)
                 return NotFound();
 
-            return View(new SubHavalehUpsertViewModel
+            var vm = new SubHavalehUpsertViewModel
             {
                 HavalehId = havaleh.Id,
                 HavalehNumber = havaleh.HavalehNumber,
@@ -312,7 +420,10 @@ namespace TMS.MVC.Controllers
                 DriverTipCurrency = "ریال",
                 DriverStopFeeCurrency = "ریال",
                 LateDeliveryPenaltyCurrency = "ریال"
-            });
+            };
+
+            await SetRemainingSubHavalehAmountAsync(vm);
+            return View(vm);
         }
 
         [HttpPost]
@@ -331,6 +442,7 @@ namespace TMS.MVC.Controllers
             vm.HavalehNumber = havaleh.HavalehNumber;
             vm.OriginPlaceDisplayName = havaleh.OriginPlace == null ? "-" : havaleh.OriginPlace.Name;
             vm.HavalehUnit = havaleh.Unit;
+            await SetRemainingSubHavalehAmountAsync(vm);
 
             if (!ModelState.IsValid)
                 return View(vm);
@@ -418,12 +530,21 @@ namespace TMS.MVC.Controllers
                     .ThenInclude(x => x.Place)
                 .Include(x => x.TractorAssignments)
                     .ThenInclude(x => x.Tractor)
+                .Include(x => x.TractorAssignments)
+                    .ThenInclude(x => x.DriverProfile)
+                        .ThenInclude(x => x.ApplicationUser)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
                 return NotFound();
 
-            return View(new SubHavalehUpsertViewModel
+            if (HasActiveAssignment(entity))
+            {
+                TempData["Warning"] = "این ریزحواله دارای تخصیص لغونشده است و امکان ویرایش آن وجود ندارد.";
+                return RedirectToAction(nameof(SubHavalehDetails), new { id = entity.Id });
+            }
+
+            var vm = new SubHavalehUpsertViewModel
             {
                 Id = entity.Id,
                 HavalehId = entity.HavalehId,
@@ -472,7 +593,10 @@ namespace TMS.MVC.Controllers
                         SortOrder = x.SortOrder
                     })
                     .ToList()
-            });
+            };
+
+            await SetRemainingSubHavalehAmountAsync(vm, entity.Id);
+            return View(vm);
         }
 
         [HttpPost]
@@ -485,14 +609,22 @@ namespace TMS.MVC.Controllers
                 .Include(x => x.Havaleh)
                     .ThenInclude(x => x.OriginPlace)
                 .Include(x => x.IntermediatePlaces)
+                .Include(x => x.TractorAssignments)
                 .FirstOrDefaultAsync(x => x.Id == vm.Id);
 
             if (entity == null)
                 return NotFound();
 
+            if (HasActiveAssignment(entity))
+            {
+                TempData["Warning"] = "این ریزحواله دارای تخصیص لغونشده است و امکان ویرایش آن وجود ندارد.";
+                return RedirectToAction(nameof(SubHavalehDetails), new { id = entity.Id });
+            }
+
             vm.HavalehNumber = entity.Havaleh.HavalehNumber;
             vm.OriginPlaceDisplayName = entity.Havaleh.OriginPlace == null ? "-" : entity.Havaleh.OriginPlace.Name;
             vm.HavalehUnit = entity.Havaleh.Unit;
+            await SetRemainingSubHavalehAmountAsync(vm, entity.Id);
 
             if (!ModelState.IsValid)
                 return View(vm);
@@ -578,6 +710,9 @@ namespace TMS.MVC.Controllers
                     .ThenInclude(x => x.Place)
                 .Include(x => x.TractorAssignments)
                     .ThenInclude(x => x.Tractor)
+                .Include(x => x.TractorAssignments)
+                    .ThenInclude(x => x.DriverProfile)
+                        .ThenInclude(x => x.ApplicationUser)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
@@ -588,11 +723,57 @@ namespace TMS.MVC.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteSubHavaleh(long id, long havalehId)
+        public async Task<IActionResult> ReleaseSubHavalehRemaining(long id)
         {
-            var entity = await _context.SubHavalehs.FirstOrDefaultAsync(x => x.Id == id);
+            var entity = await _context.SubHavalehs
+                .Include(x => x.Havaleh)
+                .Include(x => x.TractorAssignments)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
             if (entity == null)
                 return NotFound();
+
+            var requestedAmount = entity.RequestedCargoAmount ?? 0;
+            var effectiveUsedAmount = (entity.TractorAssignments ?? new List<TractorAssignment>())
+                .Where(x => x.Status != AssignmentStatus.Cancelled)
+                .Sum(GetEffectiveUsedAmount);
+
+            if (requestedAmount <= 0 || effectiveUsedAmount >= requestedAmount)
+            {
+                TempData["Warning"] = "برای این ریزحواله مقدار باقیمانده‌ای جهت برگشت به حواله اصلی وجود ندارد.";
+                return RedirectToAction(nameof(SubHavalehDetails), new { id = entity.Id });
+            }
+
+            if (effectiveUsedAmount <= 0)
+            {
+                TempData["Warning"] = "این ریزحواله هنوز هیچ تخصیص یا بارگیری مؤثری ندارد؛ برای برگشت کامل مقدار، آن را حذف یا ویرایش کنید.";
+                return RedirectToAction(nameof(SubHavalehDetails), new { id = entity.Id });
+            }
+
+            var releasedAmount = requestedAmount - effectiveUsedAmount;
+            entity.RequestedCargoAmount = effectiveUsedAmount;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Ok"] = $"مقدار {releasedAmount:N3} {entity.Havaleh.Unit} از باقیمانده ریزحواله به حواله اصلی برگشت داده شد.";
+            return RedirectToAction(nameof(Details), new { id = entity.HavalehId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteSubHavaleh(long id, long havalehId)
+        {
+            var entity = await _context.SubHavalehs
+                .Include(x => x.TractorAssignments)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            if (entity == null)
+                return NotFound();
+
+            if (HasActiveAssignment(entity))
+            {
+                TempData["Warning"] = "این ریزحواله دارای تخصیص لغونشده است و امکان حذف آن وجود ندارد.";
+                return RedirectToAction(nameof(SubHavalehDetails), new { id = id });
+            }
 
             _context.SubHavalehs.Remove(entity);
             await _context.SaveChangesAsync();
@@ -667,6 +848,42 @@ namespace TMS.MVC.Controllers
                 .ToListAsync();
 
             return Json(items);
+        }
+
+
+        private async Task SetRemainingSubHavalehAmountAsync(SubHavalehUpsertViewModel vm, long? excludeSubHavalehId = null)
+        {
+            var havalehAmount = await _context.Havalehs
+                .Where(x => x.Id == vm.HavalehId)
+                .Select(x => x.ProductAmount ?? 0)
+                .FirstOrDefaultAsync();
+
+            var subQuery = _context.SubHavalehs
+                .Where(x => x.HavalehId == vm.HavalehId);
+
+            if (excludeSubHavalehId.HasValue)
+                subQuery = subQuery.Where(x => x.Id != excludeSubHavalehId.Value);
+
+            var usedAmount = await subQuery.SumAsync(x => (decimal?)x.RequestedCargoAmount) ?? 0;
+            vm.RemainingHavalehAmountForSubHavaleh = havalehAmount - usedAmount;
+        }
+
+        private static decimal GetEffectiveUsedAmount(TractorAssignment assignment)
+        {
+            var usedBeforeOrAfterLoading = assignment.LoadedAmount ?? assignment.AssignedCargoAmount ?? 0;
+            var unloaded = assignment.UnloadedAmount ?? 0;
+            return Math.Max(usedBeforeOrAfterLoading, unloaded);
+        }
+
+        private Task<bool> HasAnySubHavalehAsync(long havalehId)
+        {
+            return _context.SubHavalehs.AnyAsync(x => x.HavalehId == havalehId);
+        }
+
+        private static bool HasActiveAssignment(SubHavaleh subHavaleh)
+        {
+            return (subHavaleh.TractorAssignments ?? new List<TractorAssignment>())
+                .Any(x => x.Status != AssignmentStatus.Cancelled);
         }
 
         private static void NormalizeHavalehVm(HavalehUpsertViewModel vm)

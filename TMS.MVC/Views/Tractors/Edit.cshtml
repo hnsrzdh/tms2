@@ -53,7 +53,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
                     <div class="col-md-12 d-flex justify-content-center">
@@ -118,6 +118,13 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="mt-1">
+                                <span asp-validation-for="PlatePartLeft2" class="text-danger small d-block"></span>
+                                <span asp-validation-for="PlateLetter" class="text-danger small d-block"></span>
+                                <span asp-validation-for="PlatePartMiddle3" class="text-danger small d-block"></span>
+                                <span asp-validation-for="PlatePartRight2" class="text-danger small d-block"></span>
+                            </div>
                         </div>
 
                         <div class="mt-2">
@@ -140,13 +147,15 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="NationalId" class="form-label"></label>
+                        <label asp-for="NationalId" class="form-label"></label> <span class="text-danger">*</span>
                         <input asp-for="NationalId" class="form-control form-control-sm" />
+                        <span asp-validation-for="NationalId" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="Status" class="form-label"></label>
+                        <label asp-for="Status" class="form-label"></label> <span class="text-danger">*</span>
                         <select asp-for="Status" class="form-select form-select-sm">
+                        <span asp-validation-for="Status" class="text-danger small"></span>
                             <option value="فعال">فعال</option>
                             <option value="غیرفعال">غیرفعال</option>
                         </select>
@@ -200,16 +209,16 @@
                                autocomplete="off"
                                value="@(Model.MaxLoadCapacity.HasValue ? string.Format("{0:N0}", Model.MaxLoadCapacity.Value) : "")" />
                         <input type="hidden" asp-for="MaxLoadCapacity" id="MaxLoadCapacity" />
-                        <span asp-validation-for="MaxLoadCapacity" class="text-danger"></span>
+                        <span asp-validation-for="MaxLoadCapacity" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-2">
-                        <label asp-for="CapacityUnit" class="form-label"></label>
+                        <label asp-for="CapacityUnit" class="form-label"></label> <span class="text-danger">*</span>
                         <select asp-for="CapacityUnit" class="form-select form-select-sm">
                             <option selected value="لیتر">لیتر</option>
                             <option value="کیلوگرم">کیلوگرم</option>
                         </select>
-                        <span asp-validation-for="CapacityUnit" class="text-danger"></span>
+                        <span asp-validation-for="CapacityUnit" class="text-danger small"></span>
                     </div>
                     
                     <div class="col-md-4">
@@ -224,7 +233,7 @@
                                class="form-control form-control-sm jalali-date"
                                autocomplete="off"
                                placeholder="1405/01/25" />
-                        <span asp-validation-for="TechnicalInspectionExpireDate" class="text-danger"></span>
+                        <span asp-validation-for="TechnicalInspectionExpireDate" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
@@ -239,7 +248,7 @@
                                class="form-control form-control-sm jalali-date"
                                autocomplete="off"
                                placeholder="1405/01/25" />
-                        <span asp-validation-for="ThirdPartyInsuranceExpireDate" class="text-danger"></span>
+                        <span asp-validation-for="ThirdPartyInsuranceExpireDate" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">

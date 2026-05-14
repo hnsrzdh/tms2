@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using TMS.MVC.Models;
 
 namespace TMS.MVC.ViewModels
@@ -40,7 +40,7 @@ namespace TMS.MVC.ViewModels
 
     public class AssignmentRequestCreateViewModel
     {
-        [Required]
+        [Required(ErrorMessage = "انتخاب ریزحواله الزامی است.")]
         public long SubHavalehId { get; set; }
 
         public string? HavalehNumber { get; set; }

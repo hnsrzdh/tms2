@@ -4,7 +4,7 @@ public class TransportAgreementDocument
 {
     public int Id { get; set; }
 
-    [Required]
+    [Required(ErrorMessage = "انتخاب تفاهم‌نامه حمل الزامی است.")]
     public int TransportAgreementId { get; set; }
 
     public TransportAgreement TransportAgreement { get; set; } = null!;
@@ -14,11 +14,11 @@ public class TransportAgreementDocument
     [Display(Name = "نام مدرک")]
     public string DocumentName { get; set; } = "";
 
-    [Required]
+    [Required(ErrorMessage = "وارد کردن نام فایل الزامی است.")]
     [MaxLength(260)]
     public string OriginalFileName { get; set; } = "";
 
-    [Required]
+    [Required(ErrorMessage = "وارد کردن مسیر فایل الزامی است.")]
     [MaxLength(500)]
     public string FilePath { get; set; } = "";
 

@@ -106,8 +106,6 @@
         <input type="hidden" asp-for="HavalehId" />
         <input type="hidden" asp-for="HavalehUnit" />
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
         <div class="alert alert-info py-2 small mb-3">
             مبالغ مالی در همین فرم با واحد پولی مستقل ثبت می‌شوند. کرایه‌ها بر اساس @priceBaseLabel، حق توقف به‌صورت ساعتی و جریمه تاخیر به‌صورت روزانه محاسبه می‌شود.
         </div>
@@ -120,29 +118,31 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-md-3">
-                        <label asp-for="HavalehNumber" class="form-label"></label>
+                        <label asp-for="HavalehNumber" class="form-label">شماره حواله <span class="required-star">*</span></label>
                         <input asp-for="HavalehNumber" class="form-control form-control-sm" readonly />
+                        <span asp-validation-for="HavalehNumber" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3">
                         <label asp-for="OriginPlaceDisplayName" class="form-label"></label>
                         <input asp-for="OriginPlaceDisplayName" class="form-control form-control-sm" readonly />
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">مقصد نهایی</label>
+                        <label class="form-label">مقصد نهایی <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
                             <input asp-for="DestinationPlaceId" type="hidden" />
                             <input asp-for="DestinationPlaceDisplayName" class="form-control form-control-sm" readonly />
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="openDestinationPlaceModal">انتخاب</button>
                         </div>
-                        <span asp-validation-for="DestinationPlaceId" class="text-danger"></span>
+                        <span asp-validation-for="DestinationPlaceId" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3">
                         <label asp-for="TransportType" class="form-label"></label>
                         <input asp-for="TransportType" class="form-control form-control-sm" placeholder="مثلاً جاده‌ای، ترکیبی..." />
                     </div>
                     <div class="col-md-4">
-                        <label asp-for="Title" class="form-label"></label>
+                        <label asp-for="Title" class="form-label">عنوان <span class="required-star">*</span></label>
                         <input asp-for="Title" class="form-control form-control-sm" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4">
                         <label asp-for="ContractType" class="form-label"></label>
@@ -196,9 +196,9 @@
                 <div class="row g-2">
                     <div class="col-12"><label class="form-label fw-bold">بخش صاحب کالا</label></div>
                     <div class="col-md-4">
-                        <label asp-for="GoodsOwnerPricePer1000Unit" class="form-label"></label>
+                        <label asp-for="GoodsOwnerPricePer1000Unit" class="form-label">فی هر 1000 واحد - صاحب کالا <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="GoodsOwnerPricePer1000Unit" class="form-control form-control-sm" />
+                            <input asp-for="GoodsOwnerPricePer1000Unit" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <select asp-for="GoodsOwnerPriceCurrency"
                                     class="form-select form-select-sm currency-select text-center">
                                 <option value="ریال">ریال</option>
@@ -207,49 +207,54 @@
                             </select>
                         </div>
                         <small class="mini-help">کرایه @priceBaseLabel</small>
-                        <span asp-validation-for="GoodsOwnerPricePer1000Unit" class="text-danger"></span>
+                        <span asp-validation-for="GoodsOwnerPricePer1000Unit" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4">
-                        <label asp-for="GoodsOwnerTip" class="form-label"></label>
+                        <label asp-for="GoodsOwnerTip" class="form-label">انعام - صاحب کالا <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="GoodsOwnerTip" class="form-control form-control-sm" />
+                            <input asp-for="GoodsOwnerTip" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <select asp-for="GoodsOwnerTipCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
                         </div>
                         <small class="mini-help">انعام ثابت از طرف صاحب کالا</small>
+                        <span asp-validation-for="GoodsOwnerTip" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4">
-                        <label asp-for="GoodsOwnerStopFee" class="form-label"></label>
+                        <label asp-for="GoodsOwnerStopFee" class="form-label">حق توقف ساعتی - صاحب کالا <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="GoodsOwnerStopFee" class="form-control form-control-sm" />
+                            <input asp-for="GoodsOwnerStopFee" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <select asp-for="GoodsOwnerStopFeeCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
                         </div>
                         <small class="mini-help">حق توقف به ازای هر ساعت محاسبه می‌شود.</small>
+                        <span asp-validation-for="GoodsOwnerStopFee" class="text-danger small"></span>
                     </div>
 
                     <div class="col-12 mt-2"><label class="form-label fw-bold">بخش راننده</label></div>
                     <div class="col-md-4">
-                        <label asp-for="DriverPricePer1000Unit" class="form-label"></label>
+                        <label asp-for="DriverPricePer1000Unit" class="form-label">فی هر 1000 واحد - راننده <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="DriverPricePer1000Unit" class="form-control form-control-sm" />
+                            <input asp-for="DriverPricePer1000Unit" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <select asp-for="DriverPriceCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
                         </div>
                         <small class="mini-help">کرایه پرداختی به راننده @priceBaseLabel</small>
+                        <span asp-validation-for="DriverPricePer1000Unit" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4">
-                        <label asp-for="DriverTip" class="form-label"></label>
+                        <label asp-for="DriverTip" class="form-label">انعام - راننده <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="DriverTip" class="form-control form-control-sm" />
+                            <input asp-for="DriverTip" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <select asp-for="DriverTipCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
                         </div>
                         <small class="mini-help">انعام ثابت پرداختی به راننده</small>
+                        <span asp-validation-for="DriverTip" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4">
-                        <label asp-for="DriverStopFee" class="form-label"></label>
+                        <label asp-for="DriverStopFee" class="form-label">حق توقف ساعتی - راننده <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="DriverStopFee" class="form-control form-control-sm" />
+                            <input asp-for="DriverStopFee" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <select asp-for="DriverStopFeeCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
                         </div>
                         <small class="mini-help">حق توقف پرداختی به راننده که به ازای هر ساعت محاسبه می‌شود.</small>
+                        <span asp-validation-for="DriverStopFee" class="text-danger small"></span>
                     </div>
                 </div>
             </div>
@@ -263,31 +268,35 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-md-3">
-                        <label asp-for="AllowedLoadingTime" class="form-label"></label>
+                        <label asp-for="AllowedLoadingTime" class="form-label">زمان مجاز بارگیری <span class="required-star">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="AllowedLoadingTime" class="form-control form-control-sm" />
+                            <input asp-for="AllowedLoadingTime" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <span class="input-group-text">روز</span>
                             </div>
                         <small class="mini-help">از زمان تخصیص کشنده محاسبه می شود</small>
+                        <span asp-validation-for="AllowedLoadingTime" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3">
-                        <label asp-for="AllowedDeliveryTime" class="form-label"></label>
-                        <div class="input-group input-group-sm"><input asp-for="AllowedDeliveryTime" class="form-control form-control-sm" /><span class="input-group-text">روز</span></div>
+                        <label asp-for="AllowedDeliveryTime" class="form-label">زمان مجاز تحویل <span class="required-star">*</span></label>
+                        <div class="input-group input-group-sm"><input asp-for="AllowedDeliveryTime" class="form-control form-control-sm" type="number" min="0" step="1" /><span class="input-group-text">روز</span></div>
                         <small class="mini-help">از زمان تخصیص کشنده محاسبه می شود</small>
+                        <span asp-validation-for="AllowedDeliveryTime" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3">
                         <label asp-for="LateDeliveryPenalty" class="form-label"></label>
                         <div class="input-group input-group-sm">
-                            <input asp-for="LateDeliveryPenalty" class="form-control form-control-sm" />
+                            <input asp-for="LateDeliveryPenalty" class="form-control form-control-sm" type="number" min="0" step="1" />
                             <select asp-for="LateDeliveryPenaltyCurrency" class="form-select form-select-sm currency-select"><option value="ریال">ریال</option><option value="دلار">دلار</option><option value="یورو">یورو</option></select>
                             <span class="input-group-text">روز</span>
                         </div>
                         <small class="mini-help">جریمه تاخیر به ازای هر روز محاسبه می‌شود.</small>
+                        <span asp-validation-for="LateDeliveryPenalty" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3">
                         <label asp-for="AcceptableWeightLoss" class="form-label"></label>
-                        <div class="input-group input-group-sm"><input asp-for="AcceptableWeightLoss" class="form-control form-control-sm" /><span class="input-group-text">@cargoUnit</span></div>
+                        <div class="input-group input-group-sm"><input asp-for="AcceptableWeightLoss" class="form-control form-control-sm" type="number" min="0" step="1" /><span class="input-group-text">@cargoUnit</span></div>
                         <span class="mini-help">کسری بیشتر مشمول جریمه می شود.</span>
+                        <span asp-validation-for="AcceptableWeightLoss" class="text-danger small"></span>
                     </div>
                 </div>
             </div>
@@ -301,21 +310,25 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-md-3">
-                        <label asp-for="RequestedCargoAmount" class="form-label"></label>
-                        <div class="input-group input-group-sm"><input asp-for="RequestedCargoAmount" class="form-control form-control-sm" /><span class="input-group-text">@cargoUnit</span></div>
-                        <small class="mini-help">باید کمتر یا مساوی مقدار باقیمانده حواله باشد.</small>
+                        <label asp-for="RequestedCargoAmount" class="form-label">میزان محموله درخواستی <span class="required-star">*</span></label>
+                        <div class="input-group input-group-sm"><input asp-for="RequestedCargoAmount" class="form-control form-control-sm" type="number" min="0.000001" step="0.001" /><span class="input-group-text">@cargoUnit</span></div>
+                        <span asp-validation-for="RequestedCargoAmount" class="text-danger small"></span>
+                        <small class="mini-help d-block">مقدار باقیمانده حواله: <strong>@((Model.RemainingHavalehAmountForSubHavaleh ?? 0).ToString("N3"))</strong> @cargoUnit</small>
+                        <small class="mini-help d-block">مقدار ریزحواله باید کمتر یا مساوی مقدار باقیمانده حواله باشد.</small>
                     </div>
                     <div class="col-md-3">
-                        <label asp-for="StartDate" class="form-label"></label>
+                        <label asp-for="StartDate" class="form-label">تاریخ شروع <span class="required-star">*</span></label>
                         <input type="hidden" asp-for="StartDate" id="StartDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
                         <input id="StartDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
                         <small class="mini-help">امکان تخصیص کشنده از این تاریخ وجود دارد.</small>
+                        <span asp-validation-for="StartDate" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3">
-                        <label asp-for="EndDate" class="form-label"></label>
+                        <label asp-for="EndDate" class="form-label">تاریخ پایان <span class="required-star">*</span></label>
                         <input type="hidden" asp-for="EndDate" id="EndDate" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
                         <input id="EndDate_shamsi" class="form-control form-control-sm" autocomplete="off" />
                         <small class="mini-help">بعد از این تاریخ امکان تخصیص کشنده وجود ندارد.</small>
+                        <span asp-validation-for="EndDate" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <div class="form-check mb-3 mx-3">

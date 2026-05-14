@@ -6,7 +6,7 @@ namespace TMS.MVC.Models
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب کاربر راننده الزامی است.")]
         public string ApplicationUserId { get; set; } = null!;
         public ApplicationUser ApplicationUser { get; set; } = null!;
 
@@ -34,6 +34,7 @@ namespace TMS.MVC.Models
         public int DriverProfileId { get; set; }
         public DriverProfile DriverProfile { get; set; } = null!;
 
+        [Required(ErrorMessage = "نام صاحب حساب الزامی است.")]
         [MaxLength(200)]
         public string? AccountOwnerName { get; set; }
 
@@ -46,6 +47,7 @@ namespace TMS.MVC.Models
         [MaxLength(50)]
         public string? CardNumber { get; set; }
 
+        [Required(ErrorMessage = "شماره شبا الزامی است.")]
         [MaxLength(50)]
         public string? ShebaNumber { get; set; }
 

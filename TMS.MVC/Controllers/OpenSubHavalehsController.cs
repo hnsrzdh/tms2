@@ -88,6 +88,11 @@ namespace TMS.MVC.Controllers
                     UnloadedAmount = x.TractorAssignments
                         .Where(a => a.Status != AssignmentStatus.Cancelled)
                         .Sum(a => a.UnloadedAmount ?? 0),
+                    EffectiveUsedAmount = x.TractorAssignments
+                        .Where(a => a.Status != AssignmentStatus.Cancelled)
+                        .Sum(a => ((a.LoadedAmount ?? a.AssignedCargoAmount ?? 0) > (a.UnloadedAmount ?? 0))
+                            ? (a.LoadedAmount ?? a.AssignedCargoAmount ?? 0)
+                            : (a.UnloadedAmount ?? 0)),
                     PendingRequestedAmount = _context.SubHavalehAssignmentRequests
                         .Where(r => r.SubHavalehId == x.Id && r.Status == AssignmentRequestStatus.Pending)
                         .Sum(r => (decimal?)r.RequestedCargoAmount) ?? 0
@@ -110,7 +115,7 @@ namespace TMS.MVC.Controllers
                     LoadedAmount = x.LoadedAmount,
                     UnloadedAmount = x.UnloadedAmount,
                     PendingRequestedAmount = x.PendingRequestedAmount,
-                    RemainingAssignableAmount = Math.Max(0, (x.RequestedCargoAmount ?? 0) - x.AssignedAmount - x.PendingRequestedAmount),
+                    RemainingAssignableAmount = Math.Max(0, (x.RequestedCargoAmount ?? 0) - x.EffectiveUsedAmount - x.PendingRequestedAmount),
                     Unit = x.Unit,
                     StartDate = x.StartDate,
                     EndDate = x.EndDate,
@@ -380,6 +385,11 @@ namespace TMS.MVC.Controllers
                     AssignedAmount = x.TractorAssignments
                         .Where(a => a.Status != AssignmentStatus.Cancelled)
                         .Sum(a => a.AssignedCargoAmount ?? 0),
+                    EffectiveUsedAmount = x.TractorAssignments
+                        .Where(a => a.Status != AssignmentStatus.Cancelled)
+                        .Sum(a => ((a.LoadedAmount ?? a.AssignedCargoAmount ?? 0) > (a.UnloadedAmount ?? 0))
+                            ? (a.LoadedAmount ?? a.AssignedCargoAmount ?? 0)
+                            : (a.UnloadedAmount ?? 0)),
                     PendingRequestedAmount = _context.SubHavalehAssignmentRequests
                         .Where(r => r.SubHavalehId == x.Id && r.Status == AssignmentRequestStatus.Pending)
                         .Sum(r => (decimal?)r.RequestedCargoAmount) ?? 0
@@ -399,7 +409,7 @@ namespace TMS.MVC.Controllers
             vm.RequestedCargoAmountTotal = item.RequestedCargoAmount ?? 0;
             vm.AssignedAmount = item.AssignedAmount;
             vm.PendingRequestedAmount = item.PendingRequestedAmount;
-            vm.RemainingAssignableAmount = Math.Max(0, (item.RequestedCargoAmount ?? 0) - item.AssignedAmount - item.PendingRequestedAmount);
+            vm.RemainingAssignableAmount = Math.Max(0, (item.RequestedCargoAmount ?? 0) - item.EffectiveUsedAmount - item.PendingRequestedAmount);
             vm.StartDate = item.StartDate;
             vm.EndDate = item.EndDate;
 

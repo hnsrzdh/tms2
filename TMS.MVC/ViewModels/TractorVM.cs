@@ -6,7 +6,7 @@ namespace TMS.MVC.ViewModels
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب شناسه کشنده الزامی است.")]
         public int TractorId { get; set; }
 
         [Display(Name = "عنوان")]
@@ -61,23 +61,23 @@ namespace TMS.MVC.ViewModels
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن دو رقم اول پلاک الزامی است.")]
         [Display(Name = "دو رقم اول پلاک")]
         public string PlatePartLeft2 { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "انتخاب حرف پلاک الزامی است.")]
         [Display(Name = "حرف پلاک")]
         public string PlateLetter { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن واحد ظرفیت الزامی است.")]
         [Display(Name = "واحد ظرفیت")]
         public string? CapacityUnit { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن سه رقم وسط پلاک الزامی است.")]
         [Display(Name = "سه رقم وسط پلاک")]
         public string PlatePartMiddle3 { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "وارد کردن دو رقم کد استان الزامی است.")]
         [Display(Name = "دو رقم کد استان")]
         public string PlatePartRight2 { get; set; } = "";
 
@@ -134,6 +134,7 @@ namespace TMS.MVC.ViewModels
         public int Id { get; set; }
         public int TractorId { get; set; }
 
+        [Required(ErrorMessage = "نام صاحب حساب الزامی است.")]
         [Display(Name = "نام صاحب حساب")]
         public string? AccountOwnerName { get; set; }
 
@@ -146,6 +147,7 @@ namespace TMS.MVC.ViewModels
         [Display(Name = "شماره کارت")]
         public string? CardNumber { get; set; }
 
+        [Required(ErrorMessage = "شماره شبا الزامی است.")]
         [Display(Name = "شماره شبا")]
         public string? ShebaNumber { get; set; }
 

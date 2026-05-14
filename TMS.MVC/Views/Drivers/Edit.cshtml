@@ -1,4 +1,4 @@
-@model TMS.MVC.ViewModels.DriverUpsertViewModel
+﻿@model TMS.MVC.ViewModels.DriverUpsertViewModel
 
 @{
     ViewData["Title"] = "ویرایش راننده";
@@ -48,7 +48,7 @@
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="ApplicationUserId" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
 
                 <div class="row g-2">
                     <div class="col-md-6">
@@ -57,21 +57,21 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="NationalId" class="form-label"></label>
+                        <label asp-for="NationalId" class="form-label"></label> <span class="text-danger">*</span>
                         <input asp-for="NationalId" class="form-control form-control-sm" />
-                        <span asp-validation-for="NationalId" class="text-danger"></span>
+                        <span asp-validation-for="NationalId" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="SmartCardNumber" class="form-label"></label>
                         <input asp-for="SmartCardNumber" class="form-control form-control-sm" />
-                        <span asp-validation-for="SmartCardNumber" class="text-danger"></span>
+                        <span asp-validation-for="SmartCardNumber" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="DrivingLicenseNumber" class="form-label"></label>
                         <input asp-for="DrivingLicenseNumber" class="form-control form-control-sm" />
-                        <span asp-validation-for="DrivingLicenseNumber" class="text-danger"></span>
+                        <span asp-validation-for="DrivingLicenseNumber" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-3">
@@ -85,7 +85,7 @@
                     <div class="col-md-9">
                         <label asp-for="BlockDescription" class="form-label"></label>
                         <textarea asp-for="BlockDescription" class="form-control form-control-sm" rows="3"></textarea>
-                        <span asp-validation-for="BlockDescription" class="text-danger"></span>
+                        <span asp-validation-for="BlockDescription" class="text-danger small"></span>
                     </div>
                 </div>
 

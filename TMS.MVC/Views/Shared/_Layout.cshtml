@@ -90,6 +90,12 @@
         .logo-wrapper a {
             text-decoration: none;
         }
+
+        .required-star {
+            color: #dc3545;
+            font-weight: 700;
+            margin-right: .15rem;
+        }
     </style>
 </head>
 
@@ -380,6 +386,214 @@
     <script src="~/assets/js/slick/slick.min.js"></script>
     <script src="~/assets/js/slick/slick.js"></script>
     <script src="~/assets/js/script.js"></script>
+
+    <script>
+        (function () {
+            function hasExistingRequiredStar(label) {
+                if (!label) return false;
+                if (label.querySelector('.required-star')) return true;
+
+                const labelHasManualStar = Array.from(label.querySelectorAll('span')).some(function (item) {
+                    return item.textContent.trim() === '*';
+                });
+                if (labelHasManualStar || label.textContent.trim().endsWith('*')) return true;
+
+                let node = label.nextSibling;
+                while (node && node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) {
+                    node = node.nextSibling;
+                }
+                return !!(node && node.nodeType === Node.ELEMENT_NODE && node.textContent.trim() === '*');
+            }
+
+            function addRequiredStarsAndValidationSpans() {
+                document.querySelectorAll('input[data-val-required], select[data-val-required], textarea[data-val-required]').forEach(function (field) {
+                    const type = (field.getAttribute('type') || '').toLowerCase();
+                    if (type === 'checkbox' || type === 'radio') return;
+
+                    const id = field.id;
+                    const name = field.getAttribute('name');
+                    if (!name) return;
+
+                    let label = null;
+                    if (id) {
+                        label = Array.from(document.querySelectorAll('label[for]')).find(function (item) {
+                            return item.getAttribute('for') === id;
+                        });
+                    }
+
+                    if (!label) {
+                        const container = field.closest('.col, [class*="col-"], .mb-3, .mb-2, .form-group, .form-floating');
+                        if (container) {
+                            label = container.querySelector('label.form-label:not(.form-check-label), label:not(.form-check-label)');
+                        }
+                    }
+
+                    if (label && !hasExistingRequiredStar(label)) {
+                        const star = document.createElement('span');
+                        star.className = 'required-star';
+                        star.textContent = '*';
+                        label.appendChild(document.createTextNode(' '));
+                        label.appendChild(star);
+                    }
+
+                    const form = field.closest('form') || document;
+                    const hasValidationMessage = Array.from(form.querySelectorAll('[data-valmsg-for]')).some(function (item) {
+                        return item.getAttribute('data-valmsg-for') === name;
+                    });
+
+                    if (!hasValidationMessage) {
+                        const message = document.createElement('span');
+                        message.className = 'text-danger small field-validation-valid d-block';
+                        message.setAttribute('data-valmsg-for', name);
+                        message.setAttribute('data-valmsg-replace', 'true');
+
+                        const inputGroup = field.closest('.input-group');
+                        if (inputGroup) {
+                            inputGroup.insertAdjacentElement('afterend', message);
+                        } else {
+                            field.insertAdjacentElement('afterend', message);
+                        }
+                    }
+                });
+            }
+
+            addRequiredStarsAndValidationSpans();
+
+            function normalizeNumber(value) {
+                if (value === null || value === undefined) return '';
+                return String(value).replace(/,/g, '').replace(/\s/g, '').trim();
+            }
+
+            function isNumericValue(value) {
+                const normalized = normalizeNumber(value);
+                return normalized !== '' && /^-?\d+(\.\d+)?$/.test(normalized);
+            }
+
+            function toTwoDecimalComma(value) {
+                const normalized = normalizeNumber(value);
+                if (!isNumericValue(normalized)) return value;
+                return Number(normalized).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            function looksLikeAmountOrQuantityField(field) {
+                const text = [
+                    field.name || '',
+                    field.id || '',
+                    field.className || '',
+                    field.getAttribute('data-number-format') || ''
+                ].join(' ');
+                return /(amount|price|fee|fare|penalty|tip|balance|weight|quantity|cargo|loaded|unloaded|assigned|shortage|loss|wallet|rial|riyal|مبلغ|مقدار|فی|کرایه|جریمه|انعام|توقف|وزن|بار|برداشت|پرداخت|موجودی)/i.test(text);
+            }
+
+            function formatReadableNumbers() {
+                document.querySelectorAll('input, textarea').forEach(function (field) {
+                    const type = (field.getAttribute('type') || '').toLowerCase();
+                    if (['hidden', 'checkbox', 'radio', 'date', 'datetime-local', 'time', 'file', 'password', 'email'].includes(type)) return;
+                    if (!looksLikeAmountOrQuantityField(field)) return;
+
+                    if (type === 'number') field.setAttribute('type', 'text');
+                    field.classList.add('js-readable-number');
+                    if (isNumericValue(field.value)) field.value = toTwoDecimalComma(field.value);
+
+                    field.addEventListener('focus', function () {
+                        field.value = normalizeNumber(field.value);
+                    });
+                    field.addEventListener('blur', function () {
+                        if (isNumericValue(field.value)) field.value = toTwoDecimalComma(field.value);
+                    });
+                });
+
+                document.querySelectorAll('form').forEach(function (form) {
+                    if (form.dataset.numberCleanupAttached === '1') return;
+                    form.dataset.numberCleanupAttached = '1';
+                    form.addEventListener('submit', function () {
+                        form.querySelectorAll('.js-readable-number').forEach(function (field) {
+                            field.value = normalizeNumber(field.value);
+                        });
+                    });
+                });
+
+                document.querySelectorAll('table').forEach(function (table) {
+                    const headers = Array.from(table.querySelectorAll('thead th')).map(function (th) {
+                        return (th.textContent || '').trim();
+                    });
+                    table.querySelectorAll('tbody tr').forEach(function (tr) {
+                        Array.from(tr.children).forEach(function (td, index) {
+                            if (!td.matches('td')) return;
+                            if (td.querySelector('input, select, textarea, button, a.badge, .btn')) return;
+                            const header = headers[index] || '';
+                            if (!/(مبلغ|مقدار|فی|کرایه|جریمه|انعام|توقف|وزن|بار|برداشت|پرداخت|موجودی|کسری|تخصیص|حمل|بدهی|طلب|Amount|Price|Fee|Fare|Penalty|Tip|Balance|Weight|Cargo|Quantity)/i.test(header)) return;
+                            const value = (td.textContent || '').trim();
+                            if (isNumericValue(value)) td.textContent = toTwoDecimalComma(value);
+                        });
+                    });
+                });
+            }
+
+            formatReadableNumbers();
+
+            function attachLightweightRequiredValidation() {
+                document.querySelectorAll('form').forEach(function (form) {
+                    if (form.dataset.requiredValidationAttached === '1') return;
+                    form.dataset.requiredValidationAttached = '1';
+                    form.addEventListener('submit', function (event) {
+                        let isValid = true;
+                        const errorMessages = [];
+
+                        form.querySelectorAll('input[data-val-required], select[data-val-required], textarea[data-val-required]').forEach(function (field) {
+                            const type = (field.getAttribute('type') || '').toLowerCase();
+                            if (type === 'checkbox' || type === 'radio') return;
+
+                            const name = field.getAttribute('name');
+                            if (!name) return;
+
+                            const value = normalizeNumber(field.value || '');
+                            const requiredMessage = field.getAttribute('data-val-required') || 'وارد کردن این فیلد الزامی است.';
+                            const messageSpan = Array.from(form.querySelectorAll('[data-valmsg-for]')).find(function (item) {
+                                return item.getAttribute('data-valmsg-for') === name;
+                            });
+
+                            if (value === '') {
+                                isValid = false;
+                                errorMessages.push(requiredMessage);
+                                field.classList.add('is-invalid');
+                                if (messageSpan) {
+                                    messageSpan.textContent = requiredMessage;
+                                    messageSpan.classList.remove('field-validation-valid');
+                                    messageSpan.classList.add('field-validation-error');
+                                }
+                            } else {
+                                field.classList.remove('is-invalid');
+                                if (messageSpan && messageSpan.textContent === requiredMessage) {
+                                    messageSpan.textContent = '';
+                                    messageSpan.classList.remove('field-validation-error');
+                                    messageSpan.classList.add('field-validation-valid');
+                                }
+                            }
+                        });
+
+                        if (!isValid) {
+                            event.preventDefault();
+                            const summary = form.querySelector('[data-valmsg-summary="true"], .validation-summary-errors, .validation-summary-valid');
+                            if (summary) {
+                                summary.classList.remove('validation-summary-valid', 'd-none');
+                                summary.classList.add('validation-summary-errors');
+                                const uniqueMessages = Array.from(new Set(errorMessages));
+                                summary.innerHTML = '<ul class="mb-0"><li>' + uniqueMessages.join('</li><li>') + '</li></ul>';
+                            }
+                            const firstInvalid = form.querySelector('.is-invalid');
+                            if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    });
+                });
+            }
+
+            attachLightweightRequiredValidation();
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

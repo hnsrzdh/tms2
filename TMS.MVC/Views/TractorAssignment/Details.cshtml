@@ -402,8 +402,8 @@
                     صحبت با راننده
                 </a>
 
-                <a asp-action="Index"
-                   asp-route-subHavalehId="@Model.SubHavalehId"
+                <a asp-controller="Havalehs" asp-action="SubHavalehDetails"
+                   asp-route-id="@Model.SubHavalehId"
                    class="btn btn-secondary btn-sm px-3">
                     بازگشت
                 </a>
@@ -1823,7 +1823,7 @@
 
                 <div class="modal-body small">
                     <div class="mb-3">
-                        <label class="form-label">عنوان مدرک</label>
+                        <label class="form-label">عنوان مدرک <span class="text-danger">*</span></label>
                         <input type="text" name="title" class="form-control form-control-sm" placeholder="مثلاً: بارنامه" />
                     </div>
 
@@ -1857,7 +1857,7 @@
 
                 <div class="modal-body small">
                     <div class="mb-3">
-                        <label class="form-label">عنوان مدرک</label>
+                        <label class="form-label">عنوان مدرک <span class="text-danger">*</span></label>
                         <input type="text" name="title" class="form-control form-control-sm" placeholder="مثلاً: رسید تخلیه" />
                     </div>
 

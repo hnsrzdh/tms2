@@ -36,9 +36,9 @@ namespace TMS.MVC.Controllers
                     x.Title.Contains(search) ||
                     x.CargoOwnerName.Contains(search) ||
                     x.Origin.Contains(search) ||
-                    x.Destination.Contains(search) ||
+                    (x.Destination != null && x.Destination.Contains(search)) ||
                     x.ProductName.Contains(search) ||
-                    x.Status.Contains(search) ||
+                    (x.Status != null && x.Status.Contains(search)) ||
                     x.Unit.Contains(search));
             }
 
@@ -54,11 +54,11 @@ namespace TMS.MVC.Controllers
                     Title = x.Title,
                     CargoOwnerName = x.CargoOwnerName,
                     Origin = x.Origin,
-                    Destination = x.Destination,
+                    Destination = x.Destination ?? "",
                     ProductName = x.ProductName,
                     Amount = x.Amount,
                     Unit = x.Unit,
-                    Status = x.Status,
+                    Status = x.Status ?? "",
                     DocumentCount = x.Documents.Count()
                 })
                 .ToListAsync();
@@ -176,7 +176,7 @@ namespace TMS.MVC.Controllers
                 TransportAgreementId = entity.Id,
                 TransportAgreementTitle = entity.Title,
                 CargoOwnerName = entity.CargoOwnerName,
-                RouteText = $"{entity.Origin} به {entity.Destination}",
+                RouteText = string.IsNullOrWhiteSpace(entity.Destination) ? entity.Origin : $"{entity.Origin} به {entity.Destination}",
                 Documents = entity.Documents
                     .OrderByDescending(x => x.UploadedAt)
                     .Select(x => new TransportAgreementDocumentItemViewModel
@@ -207,13 +207,13 @@ namespace TMS.MVC.Controllers
 
             if (string.IsNullOrWhiteSpace(documentName))
             {
-                TempData["Err"] = "نام مدرک الزامی است.";
+                TempData["DocumentNameError"] = "وارد کردن نام مدرک الزامی است.";
                 return RedirectToAction(nameof(Documents), new { id = transportAgreementId });
             }
 
             if (file == null || file.Length <= 0)
             {
-                TempData["Err"] = "لطفاً فایل مدرک را انتخاب کنید.";
+                TempData["FileError"] = "انتخاب فایل الزامی است.";
                 return RedirectToAction(nameof(Documents), new { id = transportAgreementId });
             }
 

@@ -1,4 +1,4 @@
-@using TMS.MVC.ViewModels
+﻿@using TMS.MVC.ViewModels
 @model TransportAgreementDocumentsViewModel
 
 @{
@@ -40,6 +40,20 @@
         font-size: 0.78rem;
         color: #6c757d;
     }
+
+    .transport-agreement-documents-compact .upload-validation-slot {
+        min-height: 1.25rem;
+    }
+
+    .transport-agreement-documents-compact .upload-submit-col {
+        padding-top: 1.73rem;
+    }
+
+    @@media (max-width: 767.98px) {
+        .transport-agreement-documents-compact .upload-submit-col {
+            padding-top: 0;
+        }
+    }
 </style>
 
 <div class="container-fluid">
@@ -69,10 +83,6 @@
         <div class="alert alert-success py-2 small">@TempData["Ok"]</div>
     }
 
-    @if (TempData["Err"] != null)
-    {
-        <div class="alert alert-danger py-2 small">@TempData["Err"]</div>
-    }
 
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -96,25 +106,37 @@
         </div>
 
         <div class="card-body">
-            <form method="post" asp-action="UploadDocument" enctype="multipart/form-data" class="row g-2 align-items-end">
+            <form method="post" asp-action="UploadDocument" enctype="multipart/form-data" class="row g-2 align-items-start">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="transportAgreementId" value="@Model.TransportAgreementId" />
 
                 <div class="col-md-4">
-                    <label class="form-label">نام مدرک</label>
+                    <label class="form-label">نام مدرک <span class="required-star text-danger">*</span></label>
                     <input type="text"
                            name="documentName"
                            class="form-control form-control-sm"
                            maxlength="300"
                            placeholder="مثلاً قرارداد، پیوست نرخ، نامه صاحب کالا" />
+                    <div class="upload-validation-slot">
+                        @if (TempData["DocumentNameError"] != null)
+                        {
+                            <span class="text-danger small d-block mt-1">@TempData["DocumentNameError"]</span>
+                        }
+                    </div>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">فایل</label>
+                    <label class="form-label">فایل <span class="required-star text-danger">*</span></label>
                     <input type="file" name="file" class="form-control form-control-sm" />
+                    <div class="upload-validation-slot">
+                        @if (TempData["FileError"] != null)
+                        {
+                            <span class="text-danger small d-block mt-1">@TempData["FileError"]</span>
+                        }
+                    </div>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-2 upload-submit-col">
                     <button type="submit" class="btn btn-primary btn-sm w-100">
                         آپلود مدرک
                     </button>
